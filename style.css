@@ -855,11 +855,9 @@ body[data-claude-ui].cu-compact-composer #send_textarea { grid-column: 2; grid-r
 body[data-claude-ui].cu-compact-composer #rightSendForm { grid-column: 3; grid-row: 1; flex-wrap: nowrap; }
 body[data-claude-ui].cu-compact-composer #send_form { padding: 5px 6px; }
 @media (min-width: 900px) {
-    body[data-claude-ui] { --cu-sidebar-space: 0px; --cu-left-dock: 0px; --cu-right-dock: 0px; --cu-dock-width: clamp(240px,25vw,360px); }
+    body[data-claude-ui] { --cu-sidebar-space: 0px; --cu-dock-width: clamp(240px,25vw,360px); }
     body[data-claude-ui].cu-sidebar-open { --cu-sidebar-space: var(--cu-sidebar-width); }
-    body[data-claude-ui].cu-left-dock-open { --cu-left-dock: var(--cu-dock-width); }
-    body[data-claude-ui].cu-right-dock-open { --cu-right-dock: var(--cu-dock-width); }
-    body[data-claude-ui].cu-shell-ready #sheld { left: calc(var(--cu-sidebar-space) + var(--cu-left-dock)) !important; right: var(--cu-right-dock) !important; width: calc(100vw - var(--cu-sidebar-space) - var(--cu-left-dock) - var(--cu-right-dock)) !important; }
+    body[data-claude-ui].cu-shell-ready #sheld { left: var(--cu-sidebar-space) !important; right: 0 !important; width: calc(100vw - var(--cu-sidebar-space)) !important; }
     body[data-claude-ui].cu-shell-ready #top-settings-holder { left: var(--cu-sidebar-space) !important; width: calc(100vw - var(--cu-sidebar-space)) !important; max-width: none !important; }
     body[data-claude-ui].cu-shell-ready #top-settings-holder > .drawer > :is(#left-nav-panel,#right-nav-panel) { top: var(--cu-chat-top) !important; bottom: 0 !important; translate: none !important; width: var(--cu-dock-width) !important; max-width: var(--cu-dock-width) !important; height: calc(100dvh - var(--cu-chat-top)) !important; max-height: calc(100dvh - var(--cu-chat-top)) !important; padding: 14px !important; border-radius: 0 !important; box-shadow: none; }
     body[data-claude-ui].cu-shell-ready #top-settings-holder > .drawer > #left-nav-panel { left: var(--cu-sidebar-space) !important; right: auto !important; border-width: 0 1px 0 0; }
