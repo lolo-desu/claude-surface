@@ -9,7 +9,7 @@ const ctx = () => SillyTavern.getContext();
 const media = matchMedia('(prefers-color-scheme: dark)');
 const desktop = matchMedia('(min-width: 900px)');
 const mediaReduced = matchMedia('(prefers-reduced-motion: reduce)');
-const defaults = { enabled: true, mode: 'dark', serif: true, background: false, nativeToolbar: false, quickRepliesCollapsed: false, compactComposer: false, scrollHeader: false, sidebarPinned: false, recentCharacters: [] };
+const defaults = { enabled: true, mode: 'dark', serif: true, background: false, nativeToolbar: false, quickRepliesCollapsed: false, compactComposer: false, scrollHeader: false, sidebarPinned: false, useNativeHome: false, messageStyle: 'minimal', recentCharacters: [] };
 const state = { initialized: false, recents: [], sheet: null, returnFocus: null, refreshing: false };
 const icons = {
     sidebar: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M5.8 8v8"/>',
@@ -27,7 +27,7 @@ const icons = {
     history: '<path d="M3 11a9 9 0 1 1 2 7M3 4v7h7M12 7v5l3 2"/>',
     arrow: '<path d="m7 17 10-10M7 7h10v10"/>',
     home: '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-6v-7h-4v7H4a1 1 0 0 1-1-1Z"/>',
-    plug: '<path d="M8 3v5m8-5v5M6 8h12v3a6 6 0 0 1-6 6v4m-4-4h8"/>',
+    plug: '<path d="M8 3v5m8-5v5M6 8h12v3a6 6 0 0 1-12 0V8ZM12 17v4"/>',
     type: '<path d="M4 5h16M12 5v15M8 20h8"/>',
     image: '<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 5-5 4 4 4-6 5 7"/>',
     user: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',
@@ -90,12 +90,14 @@ function applyAppearance() {
     document.body.classList.toggle('cu-native-open', config.enabled && config.nativeToolbar);
     document.body.classList.toggle('cu-qr-collapsed', config.enabled && config.quickRepliesCollapsed);
     document.body.classList.toggle('cu-compact-composer', config.enabled && config.compactComposer);
+    if (config.enabled) document.body.dataset.cuMessageStyle = ['minimal','avatar','banner'].includes(config.messageStyle) ? config.messageStyle : 'minimal';
+    else delete document.body.dataset.cuMessageStyle;
     if (!config.enabled || !config.scrollHeader) revealHeader();
     try { localStorage.setItem('claude-surface-boot', JSON.stringify({ enabled: config.enabled, mode: config.mode })); } catch { /* Storage can be unavailable in private contexts. */ }
     document.documentElement.toggleAttribute('data-cu-boot', config.enabled);
     document.documentElement.dataset.cuBootMode = mode;
     document.querySelectorAll('.cu-header,.cu-sidebar,.cu-composer-meta').forEach(el => { el.hidden = !config.enabled; });
-    document.querySelector('.cu-return-home').hidden = !config.enabled || !state.nativeHome;
+    document.querySelector('.cu-return-home').hidden = !config.enabled || !settings().useNativeHome || !state.isHome;
     document.querySelector('.cu-home-content').hidden = !config.enabled || !document.body.classList.contains('cu-home');
     if (!config.enabled) {
         closeSheet();
@@ -235,12 +237,41 @@ function decorateMessages(enabled = settings().enabled) {
         const block = message.querySelector('.mes_block');
         const footer = block?.querySelector(':scope > .ch_name');
         if (!avatar || !footer) return;
-        if (enabled && message.getAttribute('is_user') === 'true') {
+        const hero = enabled && settings().messageStyle !== 'minimal' && ['avatar','banner'].includes(settings().messageStyle)
+            && message.getAttribute('is_user') !== 'true' && message.getAttribute('is_system') !== 'true';
+        avatar.classList.toggle('cu-message-hero', hero);
+        if (hero) {
+            if (avatar.parentElement !== message || avatar.nextElementSibling !== block) message.insertBefore(avatar, block);
+        } else if (enabled && message.getAttribute('is_user') === 'true') {
             if (avatar.parentElement !== message) message.append(avatar);
         } else if (enabled && avatar.parentElement !== footer) footer.prepend(avatar);
         else if (!enabled) {
             const before = message.querySelector(':scope > .swipe_left') || block;
             if (avatar.parentElement !== message || avatar.nextElementSibling !== before) message.insertBefore(avatar, before);
+        }
+        // Use the character cover at full resolution for banners, keeping the
+        // existing avatar element and its native click behavior. Restore on exit.
+        const image = avatar.querySelector('.avatar img');
+        if (image) {
+            const current = image.getAttribute('src');
+            if (image.dataset.cuCover && current !== image.dataset.cuCover) {
+                delete image.dataset.cuOriginalAvatar; delete image.dataset.cuCover;
+            }
+            if (hero && settings().messageStyle === 'banner' && !image.dataset.cuCover) {
+                try {
+                    const url = new URL(current, location.href);
+                    const file = url.searchParams.get('file');
+                    if (url.origin === location.origin && url.pathname === '/thumbnail' && url.searchParams.get('type') === 'avatar' && file) {
+                        const cover = `/characters/${encodeURIComponent(file)}`;
+                        image.dataset.cuOriginalAvatar = current;
+                        image.dataset.cuCover = cover;
+                        image.setAttribute('src', cover);
+                    }
+                } catch { /* Custom avatars keep their original URL. */ }
+            } else if ((!hero || settings().messageStyle !== 'banner') && image.dataset.cuCover) {
+                image.setAttribute('src', image.dataset.cuOriginalAvatar);
+                delete image.dataset.cuOriginalAvatar; delete image.dataset.cuCover;
+            }
         }
         for (const [name, icon] of [['copy','copy'],['edit','edit'],['close_all','collapse'],['edit_done','check'],['edit_cancel','close'],['delete','trash']]) {
             const control = message.querySelector(`.mes_reasoning_${name}`);
@@ -401,15 +432,7 @@ function showTools() {
         const item = button(title, glyphs[index], () => index === 8 ? showCharacters() : openNative(toggle));
         grid.append(item);
     });
-    const note = document.createElement('p');
-    note.className = 'cu-sheet-note';
-    note.textContent = '下拉把手或点击关闭即可收起。';
-    content.append(grid, note,
-        button('显示 / 收起原生工具栏', 'sliders', () => {
-            closeSheet(); setSidebar(false); setNativeToolbar(!settings().nativeToolbar);
-        }),
-        button('主题设置', 'sun', showAppearance),
-        button(state.nativeHome ? '返回 Claude 首页' : '原版首页与最近记录', 'home', async () => { if (state.nativeHome) await goHome(); else { await goHome(); state.nativeHome = true; updateContext(); } }));
+    content.append(grid, button('主题设置', 'sun', showAppearance));
 }
 
 function showAppearance() {
@@ -471,7 +494,21 @@ function showAppearance() {
         input.addEventListener('change', () => { settings()[key] = input.checked; save(); applyAppearance(); });
         option.append(text, input); layoutRows.push(option);
     }
-    content.append(row, fontRow, toolbarRow, backgroundRow, qrRow, ...layoutRows, note, button('SillyTavern 用户设置', 'sliders', () => nativeTarget('#user-settings-button .drawer-icon')),
+    const homeRow = document.createElement('label'); homeRow.className = 'cu-settings-row';
+    const homeLabel = document.createElement('span'); homeLabel.textContent = '原版首页与最近记录';
+    const homeCheck = document.createElement('input'); homeCheck.type = 'checkbox'; homeCheck.checked = settings().useNativeHome;
+    homeCheck.addEventListener('change', () => { settings().useNativeHome = homeCheck.checked; save(); applyAppearance(); });
+    homeRow.append(homeLabel, homeCheck);
+    const messageRow = document.createElement('label'); messageRow.className = 'cu-settings-row';
+    const messageLabel = document.createElement('span'); messageLabel.textContent = '角色消息样式';
+    const messageSelect = document.createElement('select'); messageSelect.className = 'cu-settings-select'; messageSelect.setAttribute('aria-label', '角色消息样式');
+    for (const [value, title] of [['minimal','极简'],['avatar','头像'],['banner','横幅']]) {
+        const option = document.createElement('option'); option.value = value; option.textContent = title; messageSelect.append(option);
+    }
+    messageSelect.value = settings().messageStyle;
+    messageSelect.addEventListener('change', () => { settings().messageStyle = messageSelect.value; save(); applyAppearance(); });
+    messageRow.append(messageLabel, messageSelect);
+    content.append(row, messageRow, fontRow, toolbarRow, homeRow, backgroundRow, qrRow, ...layoutRows, note, button('SillyTavern 用户设置', 'sliders', () => nativeTarget('#user-settings-button .drawer-icon')),
         button('停用 Claude Surface', 'close', () => { settings().enabled = false; save(); applyAppearance(); }));
 }
 
@@ -480,7 +517,7 @@ function showChatActions() {
     const list = document.createElement('div');
     list.className = 'cu-sheet-list';
     list.append(
-        button('Claude 首页', 'home', goHome),
+        button('Claude 首页', 'home', () => goHome(true)),
         button('聊天记录', 'history', () => { quietNavigation(); closeSheet(); document.querySelector('#option_select_chat')?.click(); }),
         button('新建聊天', 'plus', () => { quietNavigation(); closeSheet(); document.querySelector('#option_start_new_chat')?.click(); }),
         button('编辑角色世界书', 'book', showCharacterWorld),
@@ -488,9 +525,9 @@ function showChatActions() {
     content.append(list);
 }
 
-async function goHome() {
+async function goHome(forceClaude = false) {
     quietNavigation();
-    state.nativeHome = false;
+    if (forceClaude && settings().useNativeHome) { settings().useNativeHome = false; save(); }
     state.homeRecent = false;
     closeSheet();
     closeNativePanels();
@@ -589,7 +626,6 @@ async function openCharacter(entity, file) {
             setActiveCharacter(entity.avatar);
             if (file && ctx().getCurrentChatId() !== file) await ctx().openCharacterChat(file);
         }
-        state.nativeHome = false;
         settings().recentCharacters = [entity.key, ...settings().recentCharacters.filter(key => key !== entity.key)].slice(0, 60);
         save();
         closeSheet();
@@ -657,9 +693,10 @@ function updateContext() {
     if (!settings().enabled) return;
     const context = ctx();
     const home = context.characterId == null && !context.groupId && (!!document.querySelector('#chat .welcomePanel') || context.chat.every(message => message.is_system));
-    document.body.classList.toggle('cu-home', home && !state.nativeHome);
+    state.isHome = home;
+    document.body.classList.toggle('cu-home', home && !settings().useNativeHome);
     const greeting = document.querySelector('.cu-home-greeting');
-    greeting.hidden = !home || !!state.nativeHome;
+    greeting.hidden = !home || settings().useNativeHome;
     const day = new Date().getDay();
     greeting.querySelector('span').textContent = `${day === 0 || day === 6 ? '周末愉快' : '今天过得怎么样'}，${context.name1 || '朋友'}`;
     state.chatTitle = home ? '新建对话' : (context.groups.find(group => group.id === context.groupId)?.name || context.characters[context.characterId]?.name || context.name2 || '对话');
@@ -674,7 +711,7 @@ function updateContext() {
     textarea.placeholder = home ? '今天我能为您做些什么？' : '回复';
     textarea.setAttribute('aria-label', '消息');
     if (document.querySelector('.cu-recents')) renderRecents();
-    document.querySelector('.cu-return-home').hidden = !state.nativeHome;
+    document.querySelector('.cu-return-home').hidden = !home || !settings().useNativeHome;
     renderHome();
     syncNativePanels();
 }
@@ -782,7 +819,7 @@ function initialize() {
     const welcome = document.createElement('section'); welcome.className = 'cu-home-welcome';
     welcome.append(greeting, homeContent);
     document.querySelector('#sheld').append(welcome);
-    const returnHome = button('返回 Claude 首页', 'home', goHome, 'cu-return-home'); returnHome.hidden = true; document.body.append(returnHome);
+    const returnHome = button('返回 Claude 首页', 'home', () => goHome(true), 'cu-return-home'); returnHome.hidden = true; document.body.append(returnHome);
     let homeTouch;
     const homeGestureTarget = event => document.body.classList.contains('cu-home') && !state.sheet && !event.target.closest('#form_sheld,.cu-home-history,input,textarea');
     document.querySelector('#sheld').addEventListener('wheel', event => { if (homeGestureTarget(event) && event.deltaY > 20) showHomeRecents(true); }, { passive: true });

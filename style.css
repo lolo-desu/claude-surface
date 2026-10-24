@@ -165,10 +165,10 @@ body[data-claude-ui] #chat .avatar { width: 24px; height: 24px; border-radius: 5
 body[data-claude-ui] #chat .avatar img { width: 100%; height: 100%; object-fit: cover; box-shadow: none; }
 body[data-claude-ui] #chat .mesIDDisplay, body[data-claude-ui] #chat .mes_timer, body[data-claude-ui] #chat .tokenCounterDisplay { font-size: 9px; color: var(--cu-muted); }
 body[data-claude-ui] #chat .swipe_left, body[data-claude-ui] #chat .swipeRightBlock { position: static; align-self: flex-end; font-size: 12px; color: var(--cu-muted); flex-shrink: 0; }
-body[data-claude-ui] #chat .mes .swipe_left { position: absolute; bottom: 3px; right: 32px; width: 24px; height: 24px; }
-body[data-claude-ui] #chat .mes .swipeRightBlock { position: absolute; bottom: 0; right: 0; width: 28px; margin: 0; }
-body[data-claude-ui] #chat .mes .swipe_right { font-size: 14px; height: 20px; }
-body[data-claude-ui] #chat .mes .swipes-counter { font-size: 10px; }
+body[data-claude-ui] #chat .mes .swipe_left { position: absolute; bottom: 14px; left: auto !important; right: 32px; width: 24px; height: 24px; z-index: 1; }
+body[data-claude-ui] #chat .mes .swipeRightBlock { position: absolute; bottom: 0; right: 0; width: 28px; margin: 0; z-index: 1; }
+body[data-claude-ui] #chat .mes .swipe_right { font-size: 14px; height: 24px; width: 28px; }
+body[data-claude-ui] #chat .mes .swipes-counter { font-size: 10px; height: 14px; min-width: 28px; margin: 0; padding: 0; line-height: 14px; }
 /* A real footer grid reserves space for the avatar, metadata and actions in both
    viewing and editing states; no avatar is positioned over changing text. */
 body[data-claude-ui] #chat .mes .ch_name {
@@ -586,8 +586,6 @@ body[data-claude-ui].cu-shell-ready #top-settings-holder > .drawer > .openDrawer
 @keyframes cu-sheet-in { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes cu-sheet-out { to { opacity: 0; transform: translateY(40px); } }
 @keyframes cu-native-in { from { opacity: 0; transform: translateY(-18px); } to { opacity: 1; transform: translateY(0); } }
-.cu-sampler-toolbar { display: none; }
-body[data-claude-ui] .cu-sampler-toolbar { position: sticky; top: -16px; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0 12px; background: var(--cu-surface); font-size: 14px; font-weight: 500; }
 body[data-claude-ui] #left-nav-panel :is(#clickSlidersTips,.topRightInset:has([name="samplerHelpButton"]),#lm_button_panel_pin_div,#left-nav-panelheader) { display: none !important; }
 body[data-claude-ui] :is(.drawer-content,.popup,.floating_panel) .cu-range-row {
     display: grid !important; grid-template-columns: minmax(0,1fr) 72px; align-items: center !important;
@@ -643,7 +641,6 @@ body[data-claude-ui]:not(.cu-baibai-tools) #left-nav-panel #completion_prompt_ma
         padding: 24px !important;
     }
     body[data-claude-ui] #left-nav-panel .scrollableInner { padding-right: 8px; }
-    body[data-claude-ui] .cu-sampler-toolbar { top: -24px; }
     body[data-claude-ui] #range_block_openai:not([style*="display: none"]) { display: grid !important; grid-template-columns: repeat(2,minmax(0,1fr)); column-gap: 28px; align-items: start; }
     body[data-claude-ui] #range_block_openai > :is(.inline-drawer,.checkbox_label,.toggle-description) { grid-column: 1 / -1; }
     body[data-claude-ui] #range_block_openai > :is(hr,.range-block:has(> .checkbox_label),.range-block:has(#openai_max_context)) { grid-column: 1 / -1; }
@@ -863,7 +860,6 @@ body[data-claude-ui].cu-compact-composer #send_form { padding: 5px 6px; }
     body[data-claude-ui].cu-shell-ready #top-settings-holder > .drawer > #left-nav-panel { left: var(--cu-sidebar-space) !important; right: auto !important; border-width: 0 1px 0 0; }
     body[data-claude-ui].cu-shell-ready #top-settings-holder > .drawer > #right-nav-panel { left: auto !important; right: 0 !important; border-width: 0 0 0 1px; }
     body[data-claude-ui] :is(#left-nav-panel,#right-nav-panel) > .cu-dock-heading { display: flex; align-items: center; justify-content: space-between; min-height: 34px; margin-bottom: 12px; color: var(--cu-text); }
-    body[data-claude-ui] #left-nav-panel > .cu-sampler-toolbar { display: none; }
     body[data-claude-ui] #left-nav-panel #range_block_openai:not([style*="display: none"]) { display: flex !important; flex-direction: column; gap: 8px; }
     body[data-claude-ui] #left-nav-panel #range_block_openai > * { width: 100%; min-width: 0; }
 }
@@ -874,3 +870,30 @@ body[data-claude-ui].cu-compact-composer #send_form { padding: 5px 6px; }
     body[data-claude-ui] #top-settings-holder > .drawer > .drawer-content::before { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { body[data-claude-ui] .cu-header { transition: none; } }
+
+/* Hero portraits stay above the reading column and never consume its width. */
+body[data-claude-ui] #chat .mes > .cu-message-hero {
+    position: static; width: 100%; height: auto; min-height: 0; flex: none;
+    margin: 0 0 16px; padding: 0; opacity: 1;
+}
+body[data-claude-ui] #chat .mes > .cu-message-hero .avatar {
+    flex: none !important; width: 68px !important; height: 68px !important;
+    min-width: 68px; min-height: 68px; max-width: none; max-height: none;
+    margin: 0; border-radius: 50%; overflow: hidden;
+}
+body[data-claude-ui] #chat .mes > .cu-message-hero .avatar img {
+    display: block; width: 100%; height: 100%; max-height: none;
+    object-fit: cover; object-position: center 25%; aspect-ratio: auto; border-radius: inherit;
+}
+body[data-claude-ui][data-cu-message-style="banner"] #chat .mes > .cu-message-hero .avatar {
+    width: 100% !important; height: clamp(140px,28vw,240px) !important;
+    min-width: 0; min-height: 140px; aspect-ratio: auto; border-radius: 12px;
+}
+body[data-claude-ui] #chat .mes:has(> .cu-message-hero) .ch_name { grid-template-columns: minmax(0,1fr); }
+body[data-claude-ui] #chat .mes:has(> .cu-message-hero) .ch_name > .flex-container.flex1 { grid-column: 1; }
+body[data-claude-ui] .cu-settings-select {
+    width: auto; min-width: 130px; max-width: 100%; padding: 8px 30px 8px 12px;
+    border: 1px solid var(--cu-border); border-radius: 9px; background-color: var(--cu-input);
+    color: var(--cu-text); font: inherit;
+}
+body[data-claude-ui] .cu-native-icon svg { flex: 0 0 21px; overflow: visible; }

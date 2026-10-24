@@ -10,12 +10,8 @@ export function setupNativeUI({ settings, svg, showCharacters, openCharacter, ch
     };
     const mobileWorld = setupMobileWorldInfo(settings, { toggleDrawer, externalLayout: hasBaiBaiTools });
     const compactViewport = matchMedia('(max-width: 899px)');
-    const panel = document.getElementById('left-nav-panel');
     const presetIcon = document.getElementById('leftNavDrawerIcon');
     const originalPresetTitle = presetIcon?.title;
-    const toolbar = document.createElement('div'); toolbar.className = 'cu-sampler-toolbar';
-    const title = document.createElement('span'); title.textContent = '预设';
-    toolbar.append(title); panel.prepend(toolbar);
     function refreshTitle() {
         if (presetIcon) {
             presetIcon.title = settings().enabled ? '预设' : originalPresetTitle;
