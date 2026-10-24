@@ -472,7 +472,7 @@ body[data-claude-ui].cu-shell-ready.cu-home #chat { visibility: hidden; pointer-
 .cu-sheet, .cu-backdrop { height: 100dvh; width: 100vw; }
 .cu-sidebar-open .cu-sidebar { transform: translateX(0); }
 .cu-sidebar-top { height: 36px; display: flex; align-items: center; gap: 8px; padding: 0 2px; margin-bottom: 8px; }
-.cu-wordmark { font: bold 22px Georgia,serif; flex: 1; letter-spacing: -.8px; }
+.cu-wordmark { font: bold 22px Georgia,var(--cu-sans); flex: 1; letter-spacing: -.8px; }
 .cu-sidebar .cu-nav { display: flex; flex-direction: column; gap: 4px; }
 .cu-sidebar .cu-nav .cu-button { width: 100%; justify-content: flex-start; min-height: 42px; }
 .cu-sidebar .cu-nav .cu-button { background: transparent; }
@@ -897,3 +897,69 @@ body[data-claude-ui] .cu-settings-select {
     color: var(--cu-text); font: inherit;
 }
 body[data-claude-ui] .cu-native-icon svg { flex: 0 0 21px; overflow: visible; }
+
+/* Plain accordion rows replace the native compact gradient headers. */
+body[data-claude-ui] :is(.drawer-content:not(#WorldInfo),.popup,.floating_panel) .inline-drawer-toggle.inline-drawer-header:not(#WorldInfo *) {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    min-height: 44px; padding: 10px 8px !important; margin: 0 !important;
+    border: 0 !important; border-radius: 8px; background: transparent !important;
+    font-size: 14px; font-weight: 500; line-height: 24px; filter: none !important;
+    transition: background-color 140ms ease;
+}
+body[data-claude-ui] :is(.drawer-content:not(#WorldInfo),.popup,.floating_panel) .inline-drawer-toggle.inline-drawer-header:not(#WorldInfo *):hover { background: var(--cu-hover) !important; }
+body[data-claude-ui] :is(.drawer-content:not(#WorldInfo),.popup,.floating_panel) .inline-drawer-toggle.inline-drawer-header:not(#WorldInfo *) > b { font-size: inherit; font-weight: 500; }
+body[data-claude-ui] #rm_extensions_block :is(#extensions_settings,#extensions_settings2) .inline-drawer-content { padding: 8px 8px 16px; }
+body[data-claude-ui] #rm_extensions_block > .extensions_block > .alignitemscenter.flex-container {
+    display: grid; grid-template-columns: minmax(0,1fr) auto auto auto; gap: 10px 12px;
+    align-items: center; margin-bottom: 16px;
+}
+body[data-claude-ui] #rm_extensions_block > .extensions_block > .alignitemscenter.flex-container > h3 { margin: 0 !important; min-width: 0; }
+body[data-claude-ui] #rm_extensions_block label[for="extensions_notify_updates"] {
+    display: flex; align-items: center; justify-content: flex-end; gap: 8px !important;
+    margin: 0; padding: 0; min-width: 0; line-height: 20px;
+}
+body[data-claude-ui] #extensions_notify_updates { margin: 0; flex: 0 0 16px; width: 16px; height: 16px; position: static; transform: none; }
+body[data-claude-ui] #rm_extensions_block :is(#extensions_details,#third_party_extension_button) { margin: 0; min-height: 36px; align-items: center; justify-content: center; }
+/* One fixed hit box aligns every native glyph independently of Font Awesome. */
+body[data-claude-ui].cu-shell-ready.cu-native-open #top-settings-holder { align-items: center; }
+body[data-claude-ui].cu-shell-ready.cu-native-open #top-settings-holder > .drawer { display: flex; align-items: center; justify-content: center; min-width: 0; }
+body[data-claude-ui].cu-shell-ready.cu-native-open #top-settings-holder > .drawer > .drawer-toggle { width: 100%; height: 34px; padding: 0; margin: 0; }
+body[data-claude-ui].cu-shell-ready.cu-native-open #top-settings-holder > .drawer > .drawer-toggle > .cu-native-icon {
+    display: grid; place-items: center; flex: 0 0 32px; width: 32px; height: 32px;
+    min-width: 0; padding: 6px; margin: 0; line-height: 0; box-sizing: border-box;
+}
+body[data-claude-ui] #top-settings-holder .cu-native-icon svg { width: 20px; height: 20px; flex: none; }
+.cu-title-wrap { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; }
+.cu-header-avatar { display: block; flex: 0 0 24px; width: 24px; height: 24px; }
+.cu-header-avatar .cu-card-avatar { display: grid; width: 24px; height: 24px; min-width: 24px; border-radius: 50%; overflow: hidden; font: 12px/24px var(--cu-sans); }
+.cu-header-avatar img { display: block; width: 24px; height: 24px; object-fit: cover; border-radius: 50%; }
+.cu-header-avatar[hidden] { display: none; }
+/* The banner fades into the page at both edges; its middle stays crisp. */
+body[data-claude-ui][data-cu-message-style="banner"] #chat .mes > .cu-message-hero .avatar { background: transparent; border-radius: 0; }
+body[data-claude-ui][data-cu-message-style="banner"] #chat .mes > .cu-message-hero .avatar img {
+    -webkit-mask-image: linear-gradient(to bottom,transparent 0%,#000 22%,#000 78%,transparent 100%);
+    mask-image: linear-gradient(to bottom,transparent 0%,#000 22%,#000 78%,transparent 100%);
+}
+.cu-sheet-body { padding: 3px; }
+.cu-tools-footer { display: flex; justify-content: flex-start; padding: 16px 4px 2px; }
+.cu-tools-footer > .cu-button { padding: 10px 12px; }
+.cu-settings-footer { display: flex; justify-content: flex-start; padding: 20px 0 4px; }
+.cu-button.cu-danger { color: #e4978b; background: #e4776412; border: 1px solid #e477642e; padding: 9px 12px; }
+.cu-button.cu-danger:hover { background: #e4776424; }
+body[data-claude-ui="light"] .cu-button.cu-danger { color: #b54435; }
+.cu-wordmark { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.cu-brand-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cu-brand-mark { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 24px; width: 24px; height: 24px; color: var(--cu-accent); }
+.cu-brand-mark :is(svg,img) { display: block; width: 100%; height: 100%; max-width: 100%; max-height: 100%; object-fit: contain; flex: none; }
+.cu-brand-mark[data-brand="chatgpt"] { color: var(--cu-text); }
+.cu-brand-mark[data-brand="gemini"] { color: #8b8ff5; }
+.cu-brand-mark[data-brand="deepseek"] { color: #6e94ff; }
+.cu-home-greeting > .cu-brand-mark { width: 28px; height: 28px; flex-basis: 28px; }
+.cu-brand-name-input { width: 180px; max-width: 58%; min-width: 0; padding: 8px 10px; border: 1px solid var(--cu-border); border-radius: 9px; color: var(--cu-text); background: var(--cu-input); font: inherit; }
+.cu-brand-upload[hidden] { display: none; }
+@media (max-width: 899px) {
+    body[data-claude-ui] #rm_extensions_block > .extensions_block > .alignitemscenter.flex-container { grid-template-columns: repeat(2,minmax(0,1fr)); }
+    body[data-claude-ui] #rm_extensions_block :is(#extensions_details,#third_party_extension_button) { width: 100%; min-width: 0; padding: 8px; }
+    .cu-sheet-panel { padding-left: 16px; padding-right: 16px; }
+    .cu-appearance-settings .cu-settings-row { gap: 10px; }
+}

@@ -1,5 +1,6 @@
 import { closeCurrentChat, setActiveCharacter, setActiveGroup } from '../../../../script.js';
 import { openGroupById } from '../../../group-chats.js';
+import { brandMarks } from './brand-marks.js';
 import { setupNativeUI } from './native-ui.js';
 import { setupManagedTheme } from './theme-manager.js';
 import { openWorldInfoEditor } from '../../../world-info.js';
@@ -9,7 +10,7 @@ const ctx = () => SillyTavern.getContext();
 const media = matchMedia('(prefers-color-scheme: dark)');
 const desktop = matchMedia('(min-width: 900px)');
 const mediaReduced = matchMedia('(prefers-reduced-motion: reduce)');
-const defaults = { enabled: true, mode: 'dark', serif: true, background: false, nativeToolbar: false, quickRepliesCollapsed: false, compactComposer: false, scrollHeader: false, sidebarPinned: false, useNativeHome: false, messageStyle: 'minimal', recentCharacters: [] };
+const defaults = { enabled: true, mode: 'dark', serif: true, background: false, nativeToolbar: false, quickRepliesCollapsed: false, compactComposer: false, scrollHeader: false, sidebarPinned: false, useNativeHome: false, messageStyle: 'minimal', brandName: 'Claude', brandIcon: 'claude', customBrandIcon: '', recentCharacters: [] };
 const state = { initialized: false, recents: [], sheet: null, returnFocus: null, refreshing: false };
 const icons = {
     sidebar: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M5.8 8v8"/>',
@@ -30,7 +31,7 @@ const icons = {
     plug: '<path d="M8 3v5m8-5v5M6 8h12v3a6 6 0 0 1-12 0V8ZM12 17v4"/>',
     type: '<path d="M4 5h16M12 5v15M8 20h8"/>',
     image: '<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 5-5 4 4 4-6 5 7"/>',
-    user: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',
+    user: '<circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',
     edit: '<path d="m15 4 5 5M4 20l5-1L21 7a2 2 0 0 0-5-4L4 15Z"/>',
     lock: '<rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/>',
     unlock: '<rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 7-2M12 14v3"/>',
@@ -41,6 +42,41 @@ const icons = {
 };
 const svg = (name) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || icons.sliders}</svg>`;
 const star = '<svg class="cu-star" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" aria-hidden="true"><path d="M16 2v28M2 16h28M6 6l20 20M6 26 26 6M10 3l12 26M3 10l26 12M3 22l26-12M10 29 22 3"/></svg>';
+
+function brandElement() {
+    const mark = document.createElement('span');
+    mark.className = 'cu-brand-mark'; mark.setAttribute('aria-hidden', 'true');
+    return mark;
+}
+
+function applyBranding() {
+    const config = settings();
+    const kind = ['claude','chatgpt','gemini','deepseek','custom'].includes(config.brandIcon) ? config.brandIcon : 'claude';
+    const custom = /^data:image\/(?:png|jpeg|webp|gif);base64,/.test(config.customBrandIcon) ? config.customBrandIcon : '';
+    document.querySelectorAll('.cu-brand-name').forEach(name => { name.textContent = config.brandName.trim().slice(0,40) || 'Claude'; });
+    const clear = document.getElementById('cu-clear-brand-icon');
+    if (clear) clear.disabled = !custom;
+    document.querySelectorAll('.cu-brand-mark').forEach(mark => {
+        if (mark.dataset.brand === kind && (kind !== 'custom' || mark.querySelector('img')?.getAttribute('src') === custom)) return;
+        mark.dataset.brand = kind;
+        if (kind === 'custom' && custom) {
+            const image = document.createElement('img'); image.src = custom; image.alt = ''; mark.replaceChildren(image);
+        } else mark.innerHTML = brandMarks[kind] || star;
+    });
+}
+
+async function storeBrandImage(file) {
+    if (!file || !file.type.startsWith('image/') || file.size > 20 * 1024 * 1024) throw new Error('请选择小于 20 MB 的图片。');
+    const url = URL.createObjectURL(file);
+    try {
+        const image = new Image(); image.src = url; await image.decode();
+        const canvas = document.createElement('canvas'); canvas.width = canvas.height = 128;
+        const scale = Math.min(128 / image.naturalWidth, 128 / image.naturalHeight);
+        const width = image.naturalWidth * scale, height = image.naturalHeight * scale;
+        canvas.getContext('2d').drawImage(image, (128-width)/2, (128-height)/2, width, height);
+        settings().customBrandIcon = canvas.toDataURL('image/png'); save(); applyBranding();
+    } finally { URL.revokeObjectURL(url); }
+}
 
 function settings() {
     const ext = ctx().extensionSettings;
@@ -82,6 +118,7 @@ function quietNavigation() {
 
 function applyAppearance() {
     const config = settings();
+    applyBranding();
     const mode = config.mode === 'system' ? (media.matches ? 'dark' : 'light') : config.mode;
     if (config.enabled) document.body.dataset.claudeUi = mode;
     else delete document.body.dataset.claudeUi;
@@ -208,6 +245,8 @@ function syncNativePanels() {
     const close = document.getElementById('cu-native-close');
     if (close) close.hidden = !opened;
     const title = document.querySelector('.cu-title');
+    const headerAvatar = document.querySelector('.cu-header-avatar');
+    if (headerAvatar) headerAvatar.hidden = !state.headerEntity || pages.length > 0;
     const panelTitles = { 'left-nav-panel': '预设', WorldInfo: '世界书', 'right-nav-panel': '角色卡' };
     if (title) title.textContent = pages.length
         ? (panelTitles[pages.at(-1).id] || pages.at(-1).parentElement.querySelector('.drawer-icon')?.title || '更多')
@@ -336,7 +375,7 @@ function closeSheet(immediate = false) {
     if (!editable(state.returnFocus)) state.returnFocus?.focus({ preventScroll: true });
 }
 
-function sheet(title, { anchor } = {}) {
+function sheet(title, { anchor, closeButton = true } = {}) {
     revealHeader();
     quietNavigation();
     closeSheet(true);
@@ -346,6 +385,7 @@ function sheet(title, { anchor } = {}) {
     root.setAttribute('role', 'presentation');
     const panel = document.createElement('section');
     panel.className = 'cu-sheet-panel';
+    panel.tabIndex = -1;
     panel.setAttribute('role', 'dialog');
     panel.setAttribute('aria-modal', 'true');
     panel.setAttribute('aria-label', title);
@@ -375,7 +415,8 @@ function sheet(title, { anchor } = {}) {
     heading.className = 'cu-sheet-heading';
     const label = document.createElement('span');
     label.textContent = title;
-    heading.append(label, button('关闭', 'close', closeSheet, 'cu-icon'));
+    heading.append(label);
+    if (closeButton) heading.append(button('关闭', 'close', closeSheet, 'cu-icon'));
     const content = document.createElement('div');
     content.className = 'cu-sheet-body';
     panel.append(handle, heading, content);
@@ -409,7 +450,7 @@ function sheet(title, { anchor } = {}) {
     });
     document.body.append(root);
     state.sheet = root;
-    heading.querySelector('button').focus({ preventScroll: true });
+    (heading.querySelector('button') || panel).focus({ preventScroll: true });
     return content;
 }
 
@@ -432,11 +473,14 @@ function showTools() {
         const item = button(title, glyphs[index], () => index === 8 ? showCharacters() : openNative(toggle));
         grid.append(item);
     });
-    content.append(grid, button('主题设置', 'sun', showAppearance));
+    const footer = document.createElement('div'); footer.className = 'cu-tools-footer';
+    footer.append(button('主题设置', 'sun', showAppearance));
+    content.append(grid, footer);
 }
 
 function showAppearance() {
-    const content = sheet('主题设置');
+    const content = sheet('主题设置', { closeButton: false });
+    content.classList.add('cu-appearance-settings');
     const row = document.createElement('div');
     row.className = 'cu-settings-row';
     const label = document.createElement('span');
@@ -477,9 +521,6 @@ function showAppearance() {
     backgroundCheck.checked = settings().background;
     backgroundCheck.addEventListener('change', () => { settings().background = backgroundCheck.checked; save(); applyAppearance(); });
     backgroundRow.append(backgroundLabel, backgroundCheck);
-    const note = document.createElement('p');
-    note.className = 'cu-sheet-note';
-    note.textContent = '中文始终使用系统无衬线字体；英文回复可单独切换衬线字体。界面控件保持统一的无衬线排版。';
     const qrRow = document.createElement('label');
     qrRow.className = 'cu-settings-row cu-mobile-setting';
     const qrLabel = document.createElement('span'); qrLabel.textContent = '快速回复收起';
@@ -508,8 +549,42 @@ function showAppearance() {
     messageSelect.value = settings().messageStyle;
     messageSelect.addEventListener('change', () => { settings().messageStyle = messageSelect.value; save(); applyAppearance(); });
     messageRow.append(messageLabel, messageSelect);
-    content.append(row, messageRow, fontRow, toolbarRow, homeRow, backgroundRow, qrRow, ...layoutRows, note, button('SillyTavern 用户设置', 'sliders', () => nativeTarget('#user-settings-button .drawer-icon')),
-        button('停用 Claude Surface', 'close', () => { settings().enabled = false; save(); applyAppearance(); }));
+    const nameRow = document.createElement('label'); nameRow.className = 'cu-settings-row';
+    const nameLabel = document.createElement('span'); nameLabel.textContent = '侧栏名称';
+    const nameInput = document.createElement('input'); nameInput.type = 'text'; nameInput.className = 'cu-brand-name-input';
+    nameInput.setAttribute('aria-label', '侧栏名称'); nameInput.maxLength = 40; nameInput.value = settings().brandName; nameInput.placeholder = 'Claude';
+    nameInput.addEventListener('input', () => { settings().brandName = nameInput.value; save(); applyBranding(); });
+    nameRow.append(nameLabel, nameInput);
+    const iconRow = document.createElement('label'); iconRow.className = 'cu-settings-row';
+    const iconLabel = document.createElement('span'); iconLabel.textContent = '品牌图标';
+    const iconSelect = document.createElement('select'); iconSelect.className = 'cu-settings-select'; iconSelect.setAttribute('aria-label', '品牌图标');
+    for (const [value, title] of [['claude','Claude'],['chatgpt','ChatGPT'],['gemini','Gemini'],['deepseek','DeepSeek'],['custom','自定义']]) {
+        const option = document.createElement('option'); option.value = value; option.textContent = title; iconSelect.append(option);
+    }
+    iconSelect.value = settings().brandIcon; iconRow.append(iconLabel, iconSelect);
+    const uploadRow = document.createElement('div'); uploadRow.className = 'cu-settings-row cu-brand-upload'; uploadRow.hidden = settings().brandIcon !== 'custom';
+    const uploadLabel = document.createElement('span'); uploadLabel.textContent = '自定义图标';
+    const fileInput = document.createElement('input'); fileInput.type = 'file'; fileInput.accept = 'image/png,image/jpeg,image/webp,image/gif,image/svg+xml'; fileInput.hidden = true;
+    const preview = brandElement();
+    const uploadButton = button('上传图标', 'image', () => {});
+    // Keep the picker inside the original user gesture in WKWebView.
+    uploadButton.addEventListener('click', () => fileInput.click());
+    const clearButton = button('移除自定义图标', 'trash', () => { settings().customBrandIcon = ''; save(); applyBranding(); }, 'cu-icon');
+    clearButton.id = 'cu-clear-brand-icon';
+    fileInput.addEventListener('change', async () => {
+        const file = fileInput.files?.[0];
+        if (!file) return;
+        uploadButton.disabled = true;
+        try { await storeBrandImage(file); }
+        catch (error) { toastr.error(error.message || '图片加载失败，请换一张图片。'); }
+        finally { uploadButton.disabled = false; fileInput.value = ''; }
+    });
+    uploadRow.append(uploadLabel, preview, uploadButton, clearButton, fileInput);
+    iconSelect.addEventListener('change', () => { settings().brandIcon = iconSelect.value; uploadRow.hidden = iconSelect.value !== 'custom'; save(); applyBranding(); });
+    const footer = document.createElement('div'); footer.className = 'cu-settings-footer';
+    footer.append(button('停用 Claude Surface', 'close', () => { settings().enabled = false; save(); applyAppearance(); }, 'cu-danger'));
+    content.append(row, nameRow, iconRow, uploadRow, messageRow, fontRow, toolbarRow, homeRow, backgroundRow, qrRow, ...layoutRows, footer);
+    applyBranding();
 }
 
 function showChatActions() {
@@ -698,9 +773,16 @@ function updateContext() {
     const greeting = document.querySelector('.cu-home-greeting');
     greeting.hidden = !home || settings().useNativeHome;
     const day = new Date().getDay();
-    greeting.querySelector('span').textContent = `${day === 0 || day === 6 ? '周末愉快' : '今天过得怎么样'}，${context.name1 || '朋友'}`;
+    greeting.querySelector('.cu-greeting-text').textContent = `${day === 0 || day === 6 ? '周末愉快' : '今天过得怎么样'}，${context.name1 || '朋友'}`;
     state.chatTitle = home ? '新建对话' : (context.groups.find(group => group.id === context.groupId)?.name || context.characters[context.characterId]?.name || context.name2 || '对话');
     document.querySelector('.cu-title').textContent = state.chatTitle;
+    const headerAvatar = document.querySelector('.cu-header-avatar');
+    const entity = characterEntities().find(entity => entity.group ? entity.group === context.groupId : !context.groupId && String(entity.id) === String(context.characterId));
+    state.headerEntity = home ? null : entity;
+    if (state.headerEntity && headerAvatar.dataset.character !== entity.key) {
+        headerAvatar.dataset.character = entity.key; headerAvatar.replaceChildren(avatarElement(entity));
+    }
+    headerAvatar.hidden = !state.headerEntity;
     document.querySelector('.cu-account-name').textContent = context.name1 || '用户';
     document.querySelector('.cu-avatar').textContent = (context.name1 || 'U').slice(0,1).toUpperCase();
     let model = '';
@@ -722,12 +804,9 @@ function registerExtensionSettings() {
     const block = document.createElement('div');
     block.id = 'cu-extension-settings';
     block.className = 'inline-drawer';
-    block.innerHTML = '<div class="inline-drawer-toggle inline-drawer-header"><b>Claude Surface</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div><div class="inline-drawer-content"><label class="checkbox_label"><input id="cu-extension-enabled" type="checkbox"><span>启用 Claude 界面</span></label><label>主题 <select id="cu-extension-mode"><option value="dark">深色</option><option value="light">浅色</option><option value="system">跟随系统</option></select></label><p>完整功能由原版 SillyTavern 提供。</p></div>';
+    block.innerHTML = '<div class="inline-drawer-toggle inline-drawer-header"><b>Claude Surface</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div><div class="inline-drawer-content"><label class="checkbox_label"><input id="cu-extension-enabled" type="checkbox"><span>启用 Claude 界面</span></label><label>主题 <select id="cu-extension-mode"><option value="dark">深色</option><option value="light">浅色</option><option value="system">跟随系统</option></select></label></div>';
     host.append(block);
     const options = block.querySelector('.inline-drawer-content');
-    const themeNote = document.createElement('p');
-    themeNote.textContent = '启用时自动切换自带主题；原主题与自定义 CSS 会备份，停用扩展时恢复。';
-    options.append(themeNote);
     for (const [id,key,title] of [['cu-extension-serif','serif','英文回复使用衬线字体'],['cu-extension-toolbar','nativeToolbar','显示原生菜单栏'],['cu-extension-compact','compactComposer','输入栏紧凑模式'],['cu-extension-scroll-header','scrollHeader','顶栏滑动隐藏']]) {
         const label = document.createElement('label');
         label.className = 'checkbox_label';
@@ -755,10 +834,13 @@ function initialize() {
     sidebarToggle.setAttribute('aria-expanded', 'false');
     const title = document.createElement('div');
     title.className = 'cu-title';
+    const titleWrap = document.createElement('div'); titleWrap.className = 'cu-title-wrap';
+    const headerAvatar = document.createElement('span'); headerAvatar.className = 'cu-header-avatar'; headerAvatar.hidden = true; headerAvatar.setAttribute('aria-hidden', 'true');
+    titleWrap.append(headerAvatar, title);
     const closeNative = button('关闭原生面板', 'close', closeNativePanels, 'cu-icon');
     closeNative.id = 'cu-native-close';
     closeNative.hidden = true;
-    header.append(sidebarToggle, title, closeNative, button('对话操作', 'more', showChatActions, 'cu-icon'), button('Claude 首页', 'home', goHome, 'cu-icon'), button('更多', 'sliders', showTools, 'cu-icon'));
+    header.append(sidebarToggle, titleWrap, closeNative, button('对话操作', 'more', showChatActions, 'cu-icon'), button('Claude 首页', 'home', goHome, 'cu-icon'), button('更多', 'sliders', showTools, 'cu-icon'));
     const sidebar = document.createElement('nav');
     sidebar.id = 'cu-sidebar';
     sidebar.className = 'cu-sidebar';
@@ -776,7 +858,8 @@ function initialize() {
     top.className = 'cu-sidebar-top';
     const wordmark = document.createElement('span');
     wordmark.className = 'cu-wordmark';
-    wordmark.textContent = 'Claude';
+    const brandName = document.createElement('span'); brandName.className = 'cu-brand-name';
+    wordmark.append(brandElement(), brandName);
     top.append(button('关闭侧边栏', 'sidebar', () => {
         if (desktop.matches) { settings().sidebarPinned = false; save(); }
         setSidebar(false); sidebarToggle.focus({ preventScroll: true });
@@ -810,7 +893,8 @@ function initialize() {
     document.body.append(header, backdrop, sidebar);
     const greeting = document.createElement('div');
     greeting.className = 'cu-home-greeting';
-    greeting.innerHTML = `${star}<span></span>`;
+    const greetingText = document.createElement('span'); greetingText.className = 'cu-greeting-text';
+    greeting.append(brandElement(), greetingText);
     const homeContent = document.createElement('div'); homeContent.className = 'cu-home-content';
     const choose = button('选择角色，开始对话', 'people', showCharacters, 'cu-home-choose');
     const recentToggle = button('最近聊天', 'chevron', () => showHomeRecents(), 'cu-home-history-toggle');
