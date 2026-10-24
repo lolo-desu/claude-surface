@@ -93,6 +93,7 @@ body[data-claude-ui] #sheld {
     inset: var(--cu-chat-top) 0 var(--cu-bottom-inset) !important;
     width: 100% !important;
     max-width: none !important;
+    max-height: none !important;
     height: calc(100dvh - var(--cu-chat-top) - var(--cu-bottom-inset)) !important;
     margin: 0 !important;
     border: 0 !important;
@@ -962,4 +963,16 @@ body[data-claude-ui="light"] .cu-button.cu-danger { color: #b54435; }
     body[data-claude-ui] #rm_extensions_block :is(#extensions_details,#third_party_extension_button) { width: 100%; min-width: 0; padding: 8px; }
     .cu-sheet-panel { padding-left: 16px; padding-right: 16px; }
     .cu-appearance-settings .cu-settings-row { gap: 10px; }
+}
+
+/* Header visibility never changes the bottom edge of the composer. */
+.cu-header-reveal {
+    position: fixed; top: 0; left: 50%; transform: translateX(-50%); z-index: 1021;
+    width: 48px; height: 26px; min-height: 26px; padding: 3px 12px;
+    border: 1px solid var(--cu-border); border-top: 0; border-radius: 0 0 10px 10px;
+    background: var(--cu-surface); color: var(--cu-muted); touch-action: manipulation;
+}
+.cu-header-reveal[hidden] { display: none; }
+@media (min-width: 900px) {
+    body[data-claude-ui].cu-sidebar-open .cu-header-reveal { left: calc(50% + var(--cu-sidebar-width) / 2); }
 }

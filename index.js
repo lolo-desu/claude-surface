@@ -10,7 +10,7 @@ const ctx = () => SillyTavern.getContext();
 const media = matchMedia('(prefers-color-scheme: dark)');
 const desktop = matchMedia('(min-width: 900px)');
 const mediaReduced = matchMedia('(prefers-reduced-motion: reduce)');
-const defaults = { enabled: true, mode: 'dark', serif: true, background: false, nativeToolbar: false, quickRepliesCollapsed: false, compactComposer: false, scrollHeader: false, sidebarPinned: false, useNativeHome: false, messageStyle: 'minimal', brandName: 'Claude', brandIcon: 'claude', customBrandIcon: '', recentCharacters: [] };
+const defaults = { enabled: true, mode: 'dark', serif: true, background: false, nativeToolbar: false, quickRepliesCollapsed: false, compactComposer: false, headerMode: 'always', sidebarPinned: false, useNativeHome: false, messageStyle: 'minimal', brandName: 'Claude', brandIcon: 'claude', customBrandIcon: '', recentCharacters: [] };
 const state = { initialized: false, recents: [], sheet: null, returnFocus: null, refreshing: false };
 const icons = {
     sidebar: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M5.8 8v8"/>',
@@ -81,6 +81,7 @@ async function storeBrandImage(file) {
 function settings() {
     const ext = ctx().extensionSettings;
     ext[KEY] ??= { ...defaults };
+    ext[KEY].headerMode ??= ext[KEY].scrollHeader ? 'scroll' : 'always';
     for (const [key, value] of Object.entries(defaults)) ext[KEY][key] ??= value;
     return ext[KEY];
 }
@@ -124,12 +125,10 @@ function applyAppearance() {
     else delete document.body.dataset.claudeUi;
     document.body.classList.toggle('cu-shell-ready', config.enabled);
     document.body.classList.toggle('cu-background-enabled', config.enabled && config.background);
-    document.body.classList.toggle('cu-native-open', config.enabled && config.nativeToolbar);
     document.body.classList.toggle('cu-qr-collapsed', config.enabled && config.quickRepliesCollapsed);
     document.body.classList.toggle('cu-compact-composer', config.enabled && config.compactComposer);
     if (config.enabled) document.body.dataset.cuMessageStyle = ['minimal','avatar','banner'].includes(config.messageStyle) ? config.messageStyle : 'minimal';
     else delete document.body.dataset.cuMessageStyle;
-    if (!config.enabled || !config.scrollHeader) revealHeader();
     try { localStorage.setItem('claude-surface-boot', JSON.stringify({ enabled: config.enabled, mode: config.mode })); } catch { /* Storage can be unavailable in private contexts. */ }
     document.documentElement.toggleAttribute('data-cu-boot', config.enabled);
     document.documentElement.dataset.cuBootMode = mode;
@@ -149,10 +148,13 @@ function applyAppearance() {
     if (enabledInput) enabledInput.checked = config.enabled;
     const modeInput = document.querySelector('#cu-extension-mode');
     if (modeInput) modeInput.value = config.mode;
-    for (const [id, key] of [['cu-extension-serif','serif'],['cu-extension-toolbar','nativeToolbar'],['cu-extension-compact','compactComposer'],['cu-extension-scroll-header','scrollHeader']]) {
+    for (const [id, key] of [['cu-extension-serif','serif'],['cu-extension-toolbar','nativeToolbar'],['cu-extension-compact','compactComposer']]) {
         const control = document.getElementById(id);
         if (control) control.checked = config[key];
     }
+    const headerModeInput = document.getElementById('cu-extension-header-mode');
+    if (headerModeInput) headerModeInput.value = headerMode();
+    syncHeaderVisibility();
     state.nativeUI?.refresh();
     void state.themeUI?.sync().catch(report);
     if (config.enabled) { decorateMessages(); updateContext(); }
@@ -199,18 +201,56 @@ function setHeaderHidden(hidden) {
     state.headerTravel = 0;
 }
 
-function revealHeader() { setHeaderHidden(false); }
+const headerModes = [['always','完全显示'],['scroll','滑动隐藏'],['tap','点击显示'],['hidden','完全隐藏']];
+function headerMode() { return headerModes.some(([mode]) => mode === settings().headerMode) ? settings().headerMode : 'always'; }
+function nativePanelOpen() { return !!document.querySelector('#top-settings-holder > .drawer > .drawer-content.openDrawer'); }
+
+function syncHeaderVisibility() {
+    const config = settings(), mode = headerMode();
+    const nativeOpen = nativePanelOpen();
+    const sidebarOpen = !desktop.matches && document.body.classList.contains('cu-sidebar-open');
+    const temporary = !!state.sheet || nativeOpen || sidebarOpen;
+    const hidden = config.enabled && !temporary && (mode === 'hidden' || (mode === 'tap' && !state.headerTappedOpen) || (mode === 'scroll' && !!state.headerScrollHidden));
+    // This is the only writer of visibility; opening a page never changes prefs.
+    document.body.classList.toggle('cu-native-open', config.enabled && (config.nativeToolbar || (mode === 'hidden' && nativeOpen)));
+    if (config.enabled) document.body.dataset.cuHeaderMode = mode;
+    else delete document.body.dataset.cuHeaderMode;
+    setHeaderHidden(hidden);
+    const header = document.querySelector('.cu-header');
+    const nativeBar = document.getElementById('top-settings-holder');
+    if (header) header.inert = hidden || sidebarOpen;
+    if (nativeBar) nativeBar.inert = (hidden && !nativeOpen) || sidebarOpen;
+    const trigger = document.getElementById('cu-header-reveal');
+    if (trigger) {
+        trigger.hidden = !config.enabled || mode !== 'tap' || !hidden;
+        trigger.setAttribute('aria-expanded', String(!hidden));
+    }
+}
+
+function setHeaderMode(mode) {
+    if (!headerModes.some(([value]) => mode === value)) return;
+    settings().headerMode = mode;
+    settings().scrollHeader = mode === 'scroll'; // Preserve downgrade compatibility.
+    state.headerScrollHidden = false; state.headerTappedOpen = false;
+    state.headerTravel = 0; state.headerScrollIntentUntil = 0;
+    save(); applyAppearance();
+}
+
+function revealHeader() {
+    if (headerMode() === 'scroll') state.headerScrollHidden = false;
+    syncHeaderVisibility();
+}
 
 function setupHeaderScroll() {
     const chatRoot = document.getElementById('chat');
     state.lastHeaderScroll = chatRoot?.scrollTop || 0;
     for (const type of ['wheel','touchstart','touchmove','pointerdown']) chatRoot?.addEventListener(type, () => { state.headerScrollIntentUntil = performance.now() + 1500; }, { passive: true });
-    chatRoot?.addEventListener('wheel', event => { if (event.deltaY < 0) revealHeader(); }, { passive: true });
+    chatRoot?.addEventListener('wheel', event => { if (headerMode() === 'scroll' && event.deltaY < 0) revealHeader(); }, { passive: true });
     let touchY;
     chatRoot?.addEventListener('touchstart', event => { touchY = event.touches[0]?.clientY; }, { passive: true });
     chatRoot?.addEventListener('touchmove', event => {
         const y = event.touches[0]?.clientY;
-        if (touchY != null && y - touchY > 10) revealHeader();
+        if (headerMode() === 'scroll' && touchY != null && y - touchY > 10) revealHeader();
         touchY = y;
     }, { passive: true });
     document.addEventListener('keydown', event => {
@@ -221,15 +261,24 @@ function setupHeaderScroll() {
         const chat = event.target;
         const previous = state.lastHeaderScroll ?? chat.scrollTop;
         state.lastHeaderScroll = chat.scrollTop;
-        if (!settings().enabled || !settings().scrollHeader || performance.now() > (state.headerScrollIntentUntil || 0) || state.sheet || state.dropdownOpen || (!desktop.matches && document.body.classList.contains('cu-sidebar-open')) || editable(document.activeElement)) return;
+        if (!settings().enabled || headerMode() !== 'scroll' || performance.now() > (state.headerScrollIntentUntil || 0) || state.sheet || state.dropdownOpen || (!desktop.matches && document.body.classList.contains('cu-sidebar-open')) || editable(document.activeElement)) return;
         const delta = chat.scrollTop - previous;
         if (!delta) return;
         state.headerTravel = Math.sign(delta) === Math.sign(state.headerTravel || delta) ? (state.headerTravel || 0) + delta : delta;
         if (chat.scrollTop <= 2 || state.headerTravel < -18) revealHeader();
-        else if (state.headerTravel > 24 && chat.scrollTop > 48) setHeaderHidden(true);
+        else if (state.headerTravel > 24 && chat.scrollTop > 48) { state.headerScrollHidden = true; syncHeaderVisibility(); }
     }, { capture: true, passive: true });
-    document.addEventListener('focusin', event => { if (event.target.closest?.('.cu-header,#send_textarea')) revealHeader(); });
-    document.addEventListener('keydown', event => { if (event.key === 'Tab') revealHeader(); });
+    document.addEventListener('focusin', event => { if (headerMode() === 'scroll' && event.target.closest?.('.cu-header,#send_textarea')) revealHeader(); });
+    document.addEventListener('keydown', event => {
+        if (event.key !== 'Tab' || !settings().enabled) return;
+        if (headerMode() === 'tap') state.headerTappedOpen = true;
+        revealHeader();
+    });
+    document.addEventListener('pointerdown', event => {
+        if (!settings().enabled || headerMode() !== 'tap' || !state.headerTappedOpen || state.sheet || nativePanelOpen()) return;
+        if (event.target.closest('.cu-header,#cu-header-reveal,#top-settings-holder,.cu-sidebar')) return;
+        state.headerTappedOpen = false; syncHeaderVisibility();
+    }, { passive: true });
 }
 
 function syncNativePanels() {
@@ -238,7 +287,7 @@ function syncNativePanels() {
     const opened = settings().enabled && panels.length > 0;
     const pages = desktop.matches ? panels.filter(panel => !['left-nav-panel','right-nav-panel'].includes(panel.id)) : panels;
     state.dropdownOpen = pages.length > 0;
-    if (state.dropdownOpen) revealHeader();
+    syncHeaderVisibility();
     document.body.classList.toggle('cu-left-dock-open', settings().enabled && desktop.matches && panels.some(panel => panel.id === 'left-nav-panel'));
     document.body.classList.toggle('cu-right-dock-open', settings().enabled && desktop.matches && panels.some(panel => panel.id === 'right-nav-panel'));
     document.body.classList.toggle('cu-panel-open', opened);
@@ -357,6 +406,7 @@ function setSidebar(open) {
     if (opener) opener.title = label;
     if (desktop.matches) opener?.setAttribute('aria-pressed', String(open));
     else opener?.removeAttribute('aria-pressed');
+    syncHeaderVisibility();
     if (open) document.querySelector('.cu-sidebar-top button')?.focus({ preventScroll: true });
 }
 
@@ -372,6 +422,7 @@ function closeSheet(immediate = false) {
         setTimeout(() => previous.remove(), 220);
     }
     state.sheet = null;
+    syncHeaderVisibility();
     if (!editable(state.returnFocus)) state.returnFocus?.focus({ preventScroll: true });
 }
 
@@ -450,6 +501,7 @@ function sheet(title, { anchor, closeButton = true } = {}) {
     });
     document.body.append(root);
     state.sheet = root;
+    syncHeaderVisibility();
     (heading.querySelector('button') || panel).focus({ preventScroll: true });
     return content;
 }
@@ -528,13 +580,19 @@ function showAppearance() {
     qrCheck.addEventListener('change', () => { settings().quickRepliesCollapsed = qrCheck.checked; save(); applyAppearance(); });
     qrRow.append(qrLabel, qrCheck);
     const layoutRows = [];
-    for (const [key, title] of [['compactComposer','输入栏紧凑模式'],['scrollHeader','顶栏滑动隐藏']]) {
+    for (const [key, title] of [['compactComposer','输入栏紧凑模式']]) {
         const option = document.createElement('label'); option.className = 'cu-settings-row';
         const text = document.createElement('span'); text.textContent = title;
         const input = document.createElement('input'); input.type = 'checkbox'; input.checked = settings()[key];
         input.addEventListener('change', () => { settings()[key] = input.checked; save(); applyAppearance(); });
         option.append(text, input); layoutRows.push(option);
     }
+    const headerRow = document.createElement('label'); headerRow.className = 'cu-settings-row';
+    const headerLabel = document.createElement('span'); headerLabel.textContent = '顶栏显示';
+    const headerSelect = document.createElement('select'); headerSelect.className = 'cu-settings-select'; headerSelect.setAttribute('aria-label', '顶栏显示');
+    for (const [value,title] of headerModes) { const option = document.createElement('option'); option.value = value; option.textContent = title; headerSelect.append(option); }
+    headerSelect.value = headerMode(); headerSelect.addEventListener('change', () => setHeaderMode(headerSelect.value));
+    headerRow.append(headerLabel, headerSelect);
     const homeRow = document.createElement('label'); homeRow.className = 'cu-settings-row';
     const homeLabel = document.createElement('span'); homeLabel.textContent = '原版首页与最近记录';
     const homeCheck = document.createElement('input'); homeCheck.type = 'checkbox'; homeCheck.checked = settings().useNativeHome;
@@ -583,7 +641,7 @@ function showAppearance() {
     iconSelect.addEventListener('change', () => { settings().brandIcon = iconSelect.value; uploadRow.hidden = iconSelect.value !== 'custom'; save(); applyBranding(); });
     const footer = document.createElement('div'); footer.className = 'cu-settings-footer';
     footer.append(button('停用 Claude Surface', 'close', () => { settings().enabled = false; save(); applyAppearance(); }, 'cu-danger'));
-    content.append(row, nameRow, iconRow, uploadRow, messageRow, fontRow, toolbarRow, homeRow, backgroundRow, qrRow, ...layoutRows, footer);
+    content.append(row, nameRow, iconRow, uploadRow, messageRow, fontRow, toolbarRow, homeRow, backgroundRow, qrRow, ...layoutRows, headerRow, footer);
     applyBranding();
 }
 
@@ -807,7 +865,7 @@ function registerExtensionSettings() {
     block.innerHTML = '<div class="inline-drawer-toggle inline-drawer-header"><b>Claude Surface</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div><div class="inline-drawer-content"><label class="checkbox_label"><input id="cu-extension-enabled" type="checkbox"><span>启用 Claude 界面</span></label><label>主题 <select id="cu-extension-mode"><option value="dark">深色</option><option value="light">浅色</option><option value="system">跟随系统</option></select></label></div>';
     host.append(block);
     const options = block.querySelector('.inline-drawer-content');
-    for (const [id,key,title] of [['cu-extension-serif','serif','英文回复使用衬线字体'],['cu-extension-toolbar','nativeToolbar','显示原生菜单栏'],['cu-extension-compact','compactComposer','输入栏紧凑模式'],['cu-extension-scroll-header','scrollHeader','顶栏滑动隐藏']]) {
+    for (const [id,key,title] of [['cu-extension-serif','serif','英文回复使用衬线字体'],['cu-extension-toolbar','nativeToolbar','显示原生菜单栏'],['cu-extension-compact','compactComposer','输入栏紧凑模式']]) {
         const label = document.createElement('label');
         label.className = 'checkbox_label';
         const input = document.createElement('input');
@@ -816,6 +874,11 @@ function registerExtensionSettings() {
         label.append(input,text); options.append(label);
         input.addEventListener('change', () => { settings()[key] = input.checked; save(); applyAppearance(); });
     }
+    const headerLabel = document.createElement('label'); headerLabel.textContent = '顶栏显示 ';
+    const headerSelect = document.createElement('select'); headerSelect.id = 'cu-extension-header-mode';
+    for (const [value,title] of headerModes) { const option = document.createElement('option'); option.value = value; option.textContent = title; headerSelect.append(option); }
+    headerSelect.addEventListener('change', () => setHeaderMode(headerSelect.value));
+    headerLabel.append(headerSelect); options.append(headerLabel);
     block.querySelector('#cu-extension-enabled').addEventListener('change', event => { settings().enabled = event.target.checked; save(); applyAppearance(); });
     block.querySelector('#cu-extension-mode').addEventListener('change', event => { settings().mode = event.target.value; save(); applyAppearance(); });
 }
@@ -824,7 +887,7 @@ function initialize() {
     if (state.initialized) return;
     state.initialized = true;
     const header = document.createElement('header');
-    header.className = 'cu-header';
+    header.className = 'cu-header'; header.id = 'cu-header';
     const sidebarToggle = button('打开侧边栏', 'sidebar', () => {
         if (desktop.matches) { settings().sidebarPinned = !settings().sidebarPinned; save(); }
         setSidebar(!document.body.classList.contains('cu-sidebar-open')); void refreshRecents();
@@ -890,7 +953,9 @@ function initialize() {
     backdrop.hidden = true;
     backdrop.setAttribute('aria-label', '关闭侧边栏');
     backdrop.addEventListener('click', () => setSidebar(false));
-    document.body.append(header, backdrop, sidebar);
+    const reveal = button('显示顶栏', 'chevron', () => { state.headerTappedOpen = true; syncHeaderVisibility(); }, 'cu-header-reveal cu-icon');
+    reveal.id = 'cu-header-reveal'; reveal.hidden = true; reveal.setAttribute('aria-controls', 'cu-header');
+    document.body.append(header, reveal, backdrop, sidebar);
     const greeting = document.createElement('div');
     greeting.className = 'cu-home-greeting';
     const greetingText = document.createElement('span'); greetingText.className = 'cu-greeting-text';
