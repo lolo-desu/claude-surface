@@ -1,6 +1,8 @@
 import { closeCurrentChat, setActiveCharacter, setActiveGroup } from '../../../../script.js';
 import { openGroupById } from '../../../group-chats.js';
 import { setupNativeUI } from './native-ui.js';
+import { setupManagedTheme } from './theme-manager.js';
+import { openWorldInfoEditor } from '../../../world-info.js';
 
 const KEY = 'claude_surface';
 const ctx = () => SillyTavern.getContext();
@@ -32,6 +34,10 @@ const icons = {
     edit: '<path d="m15 4 5 5M4 20l5-1L21 7a2 2 0 0 0-5-4L4 15Z"/>',
     lock: '<rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/>',
     unlock: '<rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 7-2M12 14v3"/>',
+    copy: '<rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V4a1 1 0 0 0-1-1H5a2 2 0 0 0-2 2v10a1 1 0 0 0 1 1h4"/>',
+    check: '<path d="m5 12 4 4L19 6"/>',
+    trash: '<path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/>',
+    collapse: '<path d="m7 4 5 5 5-5M7 20l5-5 5 5M4 12h16"/>',
 };
 const svg = (name) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || icons.sliders}</svg>`;
 const star = '<svg class="cu-star" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" aria-hidden="true"><path d="M16 2v28M2 16h28M6 6l20 20M6 26 26 6M10 3l12 26M3 10l26 12M3 22l26-12M10 29 22 3"/></svg>';
@@ -66,6 +72,13 @@ function report(error) {
     toastr.error('操作未完成，请通过原生工具栏重试。', 'Claude Surface');
 }
 
+const editable = element => element?.matches('input:not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]),textarea,[contenteditable="true"],[role="textbox"]');
+function quietNavigation() {
+    state.navigationInputIntent = false;
+    state.navigationFocusUntil = performance.now() + 900;
+    if (editable(document.activeElement)) document.activeElement.blur();
+}
+
 function applyAppearance() {
     const config = settings();
     const mode = config.mode === 'system' ? (media.matches ? 'dark' : 'light') : config.mode;
@@ -98,6 +111,7 @@ function applyAppearance() {
         if (control) control.checked = config[key];
     }
     state.nativeUI?.refresh();
+    void state.themeUI?.sync().catch(report);
     if (config.enabled) { decorateMessages(); updateContext(); }
     syncNativePanels();
 }
@@ -115,8 +129,9 @@ function syncNativePanels() {
     const close = document.getElementById('cu-native-close');
     if (close) close.hidden = !opened;
     const title = document.querySelector('.cu-title');
+    const panelTitles = { 'left-nav-panel': '预设', WorldInfo: '世界书', 'right-nav-panel': '角色卡' };
     if (title) title.textContent = opened
-        ? (panels.at(-1).parentElement.querySelector('.drawer-icon')?.title || '工具与设置')
+        ? (panelTitles[panels.at(-1).id] || panels.at(-1).parentElement.querySelector('.drawer-icon')?.title || '更多')
         : (state.chatTitle || '新建对话');
 }
 
@@ -127,6 +142,7 @@ function closeNativePanels() {
 }
 
 function openNative(toggle) {
+    quietNavigation();
     closeSheet();
     setSidebar(false);
     if (!toggle.querySelector('.openIcon')) toggle.click();
@@ -139,8 +155,19 @@ function decorateMessages(enabled = settings().enabled) {
         const block = message.querySelector('.mes_block');
         const footer = block?.querySelector(':scope > .ch_name');
         if (!avatar || !footer) return;
-        if (enabled && avatar.parentElement !== footer) footer.prepend(avatar);
-        else if (!enabled && avatar.parentElement === footer) message.insertBefore(avatar, message.querySelector(':scope > .swipe_left') || block);
+        if (enabled && message.getAttribute('is_user') === 'true') {
+            if (avatar.parentElement !== message) message.append(avatar);
+        } else if (enabled && avatar.parentElement !== footer) footer.prepend(avatar);
+        else if (!enabled) {
+            const before = message.querySelector(':scope > .swipe_left') || block;
+            if (avatar.parentElement !== message || avatar.nextElementSibling !== before) message.insertBefore(avatar, before);
+        }
+        for (const [name, icon] of [['copy','copy'],['edit','edit'],['close_all','collapse'],['edit_done','check'],['edit_cancel','close'],['delete','trash']]) {
+            const control = message.querySelector(`.mes_reasoning_${name}`);
+            if (control && !control.classList.contains('cu-reasoning-icon')) {
+                control.classList.add('cu-reasoning-icon'); control.innerHTML = svg(icon);
+            }
+        }
     });
     const anchor = state.editorAnchor;
     if (anchor?.text.isConnected) {
@@ -164,15 +191,16 @@ function captureEditorAnchor(event) {
 }
 
 function setSidebar(open) {
+    if (open) quietNavigation();
     document.body.classList.toggle('cu-sidebar-open', open);
     const nav = document.querySelector('.cu-sidebar');
     if (nav) { nav.inert = !open; nav.setAttribute('aria-hidden', String(!open)); }
-    for (const region of document.querySelectorAll('#sheld,.cu-header')) region.inert = open && !desktop.matches;
+    for (const region of document.querySelectorAll('#sheld,.cu-header,#top-settings-holder')) region.inert = open && !desktop.matches;
     const backdrop = document.querySelector('.cu-backdrop');
-    if (backdrop) backdrop.hidden = !open || desktop.matches;
+    if (backdrop) backdrop.hidden = true;
     const opener = document.querySelector('#cu-sidebar-toggle');
     opener?.setAttribute('aria-expanded', String(open));
-    if (open) document.querySelector('.cu-sidebar .cu-search')?.focus({ preventScroll: true });
+    if (open) document.querySelector('.cu-sidebar-top button')?.focus({ preventScroll: true });
 }
 
 function closeSheet(immediate = false) {
@@ -187,10 +215,11 @@ function closeSheet(immediate = false) {
         setTimeout(() => previous.remove(), 220);
     }
     state.sheet = null;
-    state.returnFocus?.focus({ preventScroll: true });
+    if (!editable(state.returnFocus)) state.returnFocus?.focus({ preventScroll: true });
 }
 
 function sheet(title, { anchor } = {}) {
+    quietNavigation();
     closeSheet(true);
     state.returnFocus = document.activeElement;
     const root = document.createElement('div');
@@ -273,10 +302,10 @@ function nativeTarget(selector) {
 }
 
 function showTools() {
-    const content = sheet('工具与设置', { anchor: state.invoker });
+    const content = sheet('更多', { anchor: state.invoker });
     const grid = document.createElement('div');
     grid.className = 'cu-tool-grid';
-    const names = ['AI 回复配置', 'API 连接', '回复格式', '世界书', '用户设置', '背景', '扩展程序', '用户设定', '角色'];
+    const names = ['预设', 'API 连接', '回复格式', '世界书', '用户设置', '背景', '扩展程序', '用户设定', '角色卡'];
     const glyphs = ['sliders','plug','type','book','sliders','image','puzzle','user','people'];
     document.querySelectorAll('#top-settings-holder > .drawer > .drawer-toggle').forEach((toggle, index) => {
         const original = toggle.querySelector('.drawer-icon');
@@ -345,21 +374,20 @@ function showAppearance() {
 }
 
 function showChatActions() {
-    const content = sheet('对话');
+    const content = sheet('对话', { anchor: state.invoker });
     const list = document.createElement('div');
     list.className = 'cu-sheet-list';
     list.append(
-        button('当前角色的聊天记录', 'history', () => { closeSheet(); document.querySelector('#option_select_chat')?.click(); }),
-        button('当前角色新建聊天', 'plus', () => { closeSheet(); document.querySelector('#option_start_new_chat')?.click(); }),
-        button('完整聊天菜单', 'more', () => { closeSheet(); document.querySelector('#options_button')?.click(); }),
-        button('角色', 'people', showCharacters),
-        button('编辑当前角色', 'edit', showCharacterEditor),
         button('Claude 首页', 'home', goHome),
-        button('工具与设置', 'sliders', showTools));
+        button('聊天记录', 'history', () => { quietNavigation(); closeSheet(); document.querySelector('#option_select_chat')?.click(); }),
+        button('新建聊天', 'plus', () => { quietNavigation(); closeSheet(); document.querySelector('#option_start_new_chat')?.click(); }),
+        button('编辑角色世界书', 'book', showCharacterWorld),
+        button('编辑角色详情', 'edit', showCharacterEditor));
     content.append(list);
 }
 
 async function goHome() {
+    quietNavigation();
     state.nativeHome = false;
     state.homeRecent = false;
     closeSheet();
@@ -368,7 +396,6 @@ async function goHome() {
     await closeCurrentChat();
     updateContext();
     void refreshRecents();
-    if (desktop.matches) document.querySelector('#send_textarea')?.focus({ preventScroll: true });
 }
 
 async function refreshRecents() {
@@ -446,6 +473,7 @@ function characterRow(entity, subtitle, action = () => openCharacter(entity)) {
 }
 
 async function openCharacter(entity, file) {
+    quietNavigation();
     if (state.selecting) return;
     state.selecting = true;
     try {
@@ -471,9 +499,21 @@ async function openCharacter(entity, file) {
 }
 
 async function showCharacterEditor() {
+    quietNavigation();
     const id = ctx().characterId;
     if (id != null) await ctx().selectCharacterById(id, { switchMenu: true });
     nativeTarget('#rightNavDrawerIcon');
+}
+
+async function showCharacterWorld() {
+    quietNavigation();
+    closeSheet(); setSidebar(false);
+    const id = ctx().characterId;
+    if (id == null) { toastr.info('请先选择角色卡。'); return; }
+    const world = ctx().characters[id]?.data?.extensions?.world;
+    if (world) { openWorldInfoEditor(world); return; }
+    await showCharacterEditor();
+    document.getElementById('world_button')?.click();
 }
 
 function showCharacters() {
@@ -545,6 +585,9 @@ function registerExtensionSettings() {
     block.innerHTML = '<div class="inline-drawer-toggle inline-drawer-header"><b>Claude Surface</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div><div class="inline-drawer-content"><label class="checkbox_label"><input id="cu-extension-enabled" type="checkbox"><span>启用 Claude 界面</span></label><label>主题 <select id="cu-extension-mode"><option value="dark">深色</option><option value="light">浅色</option><option value="system">跟随系统</option></select></label><p>完整功能由原版 SillyTavern 提供。</p></div>';
     host.append(block);
     const options = block.querySelector('.inline-drawer-content');
+    const themeNote = document.createElement('p');
+    themeNote.textContent = '启用时自动切换自带主题；原主题与自定义 CSS 会备份，停用扩展时恢复。';
+    options.append(themeNote);
     for (const [id,key,title] of [['cu-extension-serif','serif','英文回复使用衬线字体'],['cu-extension-toolbar','nativeToolbar','原生顶栏常驻']]) {
         const label = document.createElement('label');
         label.className = 'checkbox_label';
@@ -572,7 +615,7 @@ function initialize() {
     const closeNative = button('关闭原生面板', 'close', closeNativePanels, 'cu-icon');
     closeNative.id = 'cu-native-close';
     closeNative.hidden = true;
-    header.append(sidebarToggle, title, closeNative, button('对话操作', 'more', showChatActions, 'cu-icon'), button('Claude 首页', 'home', goHome, 'cu-icon'), button('工具与设置', 'sliders', showTools, 'cu-icon'));
+    header.append(sidebarToggle, title, closeNative, button('对话操作', 'more', showChatActions, 'cu-icon'), button('Claude 首页', 'home', goHome, 'cu-icon'), button('更多', 'sliders', showTools, 'cu-icon'));
     const sidebar = document.createElement('nav');
     sidebar.id = 'cu-sidebar';
     sidebar.className = 'cu-sidebar';
@@ -600,7 +643,7 @@ function initialize() {
     search.addEventListener('input', renderRecents);
     const nav = document.createElement('div');
     nav.className = 'cu-nav';
-    nav.append(button('Claude 首页', 'home', goHome, 'cu-new'), button('角色', 'people', showCharacters), button('世界书', 'book', () => nativeTarget('#WIDrawerIcon')), button('扩展程序', 'puzzle', () => nativeTarget('#extensions-settings-button .drawer-icon')), button('工具与设置', 'sliders', showTools));
+    nav.append(button('首页', 'home', goHome), button('预设', 'sliders', () => nativeTarget('#leftNavDrawerIcon')), button('扩展程序', 'puzzle', () => nativeTarget('#extensions-settings-button .drawer-icon')), button('世界书', 'book', () => nativeTarget('#WIDrawerIcon')), button('角色卡', 'people', showCharacters), button('更多', 'more', showTools));
     const recentHeading = document.createElement('div');
     recentHeading.className = 'cu-recent-heading';
     recentHeading.textContent = '最近使用的角色';
@@ -640,12 +683,24 @@ function initialize() {
     meta.className = 'cu-composer-meta';
     const modelButton = button('API 连接与模型选择', 'chevron', () => nativeTarget('#API-status-top'));
     modelButton.querySelector('span').className = 'cu-model-label';
-    meta.append(button('工具与设置', 'sliders', showTools), modelButton);
+    meta.append(button('更多', 'sliders', showTools), modelButton);
     document.querySelector('#form_sheld').append(meta);
     document.querySelector('#options_button')?.setAttribute('aria-label', '完整聊天菜单');
     document.querySelector('#extensionsMenuButton')?.setAttribute('aria-label', '附件与扩展菜单');
     registerExtensionSettings();
     state.nativeUI = setupNativeUI({ settings, save, button, svg, showCharacters, openCharacter, characterEntities });
+    state.themeUI = setupManagedTheme({ settings, save, report });
+    document.addEventListener('pointerdown', event => {
+        if (editable(event.target) || editable(event.target.closest('label')?.control) || event.target.closest('#rm_button_search')) { state.navigationFocusUntil = 0; state.navigationInputIntent = true; }
+    }, true);
+    document.addEventListener('keydown', event => { if (event.key === 'Tab') { state.navigationFocusUntil = 0; state.navigationInputIntent = true; } }, true);
+    document.addEventListener('focusin', event => {
+        if (!settings().enabled || state.navigationInputIntent || (!state.selecting && performance.now() > (state.navigationFocusUntil || 0)) || !editable(event.target)) return;
+        if (event.target.closest('#top-settings-holder,#select_chat_popup,#sheld,.cu-sidebar,.select2-dropdown')) event.target.blur();
+    }, true);
+    jQuery(document).on('select2:opening.claudeSurface', event => {
+        if (settings().enabled && !desktop.matches && event.target instanceof HTMLSelectElement && !event.target.multiple) quietNavigation();
+    });
     applyAppearance();
     void refreshRecents();
     const context = ctx();
@@ -670,7 +725,9 @@ function initialize() {
         cancelAnimationFrame(state.nativeFrame);
         state.nativeFrame = requestAnimationFrame(syncNativePanels);
     });
-    nativeObserver.observe(document.querySelector('#top-settings-holder'), { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+    document.querySelectorAll('#top-settings-holder > .drawer > .drawer-content').forEach(panel => {
+        nativeObserver.observe(panel, { attributes: true, attributeFilter: ['class'] });
+    });
     document.addEventListener('keydown', event => {
         if (event.key === 'Escape' && !state.sheet && document.body.classList.contains('cu-sidebar-open')) {
             setSidebar(false); sidebarToggle.focus({ preventScroll: true });

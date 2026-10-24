@@ -1,17 +1,24 @@
 import { setupMobileWorldInfo } from './world-info-ui.js';
+import { toggleDrawer } from '../../../utils.js';
 /* Adapt native elements in place: their IDs, values and event handlers stay intact. */
 export function setupNativeUI({ settings, save, button, svg, showCharacters, openCharacter, characterEntities }) {
-    const mobileWorld = setupMobileWorldInfo(settings);
+    const mobileWorld = setupMobileWorldInfo(settings, { toggleDrawer });
     const compactViewport = matchMedia('(max-width: 899px)');
     const panel = document.getElementById('left-nav-panel');
+    const presetIcon = document.getElementById('leftNavDrawerIcon');
+    const originalPresetTitle = presetIcon?.title;
     const toolbar = document.createElement('div'); toolbar.className = 'cu-sampler-toolbar';
-    const title = document.createElement('span'); title.textContent = '预设与生成参数';
+    const title = document.createElement('span'); title.textContent = '预设';
     const lock = button('解锁参数', 'lock', () => {
         settings().slidersLocked = !settings().slidersLocked;
         save(); refreshLock();
     }, 'cu-icon cu-sampler-lock');
     toolbar.append(title, lock); panel.prepend(toolbar);
     function refreshLock() {
+        if (presetIcon) {
+            presetIcon.title = settings().enabled ? '预设' : originalPresetTitle;
+            presetIcon.setAttribute('aria-label', presetIcon.title);
+        }
         const locked = settings().enabled && settings().slidersLocked;
         panel.classList.toggle('cu-sampler-locked', locked);
         lock.innerHTML = svg(locked ? 'lock' : 'unlock');
@@ -61,6 +68,12 @@ export function setupNativeUI({ settings, save, button, svg, showCharacters, ope
         document.querySelectorAll('#top-settings-holder > .drawer > .drawer-toggle > .drawer-icon').forEach((icon, index) => {
             if (!icon.classList.contains('cu-native-icon')) { icon.classList.add('cu-native-icon'); icon.innerHTML = svg(glyphs[index]); }
         });
+        for (const [id, glyph] of [['rm_button_create','plus'],['character_import_button','arrow'],['external_import_button','plug'],['rm_button_group_chats','people'],['rm_button_search','search'],['charListGridToggle','image'],['bulkEditButton','edit'],['rm_button_characters','people']]) {
+            const control = document.getElementById(id);
+            if (control && !control.classList.contains('cu-outline-control')) {
+                control.classList.add('cu-outline-control'); control.insertAdjacentHTML('afterbegin', svg(glyph));
+            }
+        }
     }
     decorate();
     compactViewport.addEventListener('change', () => decorate());
@@ -86,7 +99,7 @@ export function setupNativeUI({ settings, save, button, svg, showCharacters, ope
         const icon = event.target.closest('#rightNavDrawerIcon');
         if (icon && event.isTrusted) { event.preventDefault(); event.stopImmediatePropagation(); showCharacters(); return; }
         const card = event.target.closest('#right-nav-panel .character_select');
-        if (!card || event.target.closest('input,.character_fav_button')) return;
+        if (!card || event.target.closest('input,button,a,select,textarea,label,.tag,.menu_button,.character_fav_button,.ch_fav_icon')) return;
         const characterId = card.dataset.chid || card.getAttribute('chid');
         const entity = characterEntities().find(entity => !entity.group && String(entity.id) === characterId);
         if (!entity) return;
