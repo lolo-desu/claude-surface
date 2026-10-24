@@ -1,0 +1,10 @@
+{
+  "display_name": "Claude Surface",
+  "loading_order": 100,
+  "requires": [],
+  "optional": [],
+  "js": "index.js",
+  "css": "style.css",
+  "author": "milo",
+  "version": "0.3.0"
+}
