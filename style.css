@@ -167,9 +167,17 @@ body[data-claude-ui] #chat .avatar img { width: 100%; height: 100%; object-fit: 
 body[data-claude-ui] #chat .mesIDDisplay, body[data-claude-ui] #chat .mes_timer, body[data-claude-ui] #chat .tokenCounterDisplay { font-size: 9px; color: var(--cu-muted); }
 body[data-claude-ui] #chat .swipe_left, body[data-claude-ui] #chat .swipeRightBlock { position: static; align-self: flex-end; font-size: 12px; color: var(--cu-muted); flex-shrink: 0; }
 body[data-claude-ui] #chat .mes .swipe_left { position: absolute; bottom: 14px; left: auto !important; right: 32px; width: 24px; height: 24px; z-index: 1; }
-body[data-claude-ui] #chat .mes .swipeRightBlock { position: absolute; bottom: 0; right: 0; width: 28px; margin: 0; z-index: 1; }
-body[data-claude-ui] #chat .mes .swipe_right { font-size: 14px; height: 24px; width: 28px; }
-body[data-claude-ui] #chat .mes .swipes-counter { font-size: 10px; height: 14px; min-width: 28px; margin: 0; padding: 0; line-height: 14px; }
+body[data-claude-ui] #chat .mes .swipeRightBlock { position: absolute; bottom: 0; right: 0; display: grid; grid-template-columns: 28px; grid-template-rows: 24px 14px; place-items: center; gap: 0; width: 28px; height: 38px; margin: 0; padding: 0; z-index: 1; }
+/* Both glyphs need the same line box, not just matching outer rectangles.
+   WebKit otherwise leaves the block left glyph above the flex-centered right. */
+body[data-claude-ui] #chat .mes :is(.swipe_left,.swipe_right) {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; line-height: 1; padding: 0; margin: 0;
+    height: 24px; min-height: 24px; max-height: 24px; box-sizing: border-box;
+}
+body[data-claude-ui] #chat .mes :is(.swipe_left,.swipe_right)::before { display: block; line-height: 1; }
+body[data-claude-ui] #chat .mes .swipe_right { position: static; grid-row: 1; width: 28px; }
+body[data-claude-ui] #chat .mes .swipes-counter { font-size: 10px; grid-row: 2; height: 14px; min-height: 14px; min-width: 28px; margin: 0; padding: 0; line-height: 14px; white-space: nowrap; }
 /* A real footer grid reserves space for the avatar, metadata and actions in both
    viewing and editing states; no avatar is positioned over changing text. */
 body[data-claude-ui] #chat .mes .ch_name {
