@@ -9,7 +9,7 @@ const ctx = () => SillyTavern.getContext();
 const media = matchMedia('(prefers-color-scheme: dark)');
 const desktop = matchMedia('(min-width: 900px)');
 const mediaReduced = matchMedia('(prefers-reduced-motion: reduce)');
-const defaults = { enabled: true, mode: 'dark', serif: true, background: false, nativeToolbar: false, slidersLocked: true, recentCharacters: [] };
+const defaults = { enabled: true, mode: 'dark', serif: true, background: false, nativeToolbar: false, quickRepliesCollapsed: false, recentCharacters: [] };
 const state = { initialized: false, recents: [], sheet: null, returnFocus: null, refreshing: false };
 const icons = {
     sidebar: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M5.8 8v8"/>',
@@ -87,6 +87,7 @@ function applyAppearance() {
     document.body.classList.toggle('cu-shell-ready', config.enabled);
     document.body.classList.toggle('cu-background-enabled', config.enabled && config.background);
     document.body.classList.toggle('cu-native-open', config.enabled && config.nativeToolbar);
+    document.body.classList.toggle('cu-qr-collapsed', config.enabled && config.quickRepliesCollapsed);
     try { localStorage.setItem('claude-surface-boot', JSON.stringify({ enabled: config.enabled, mode: config.mode })); } catch { /* Storage can be unavailable in private contexts. */ }
     document.documentElement.toggleAttribute('data-cu-boot', config.enabled);
     document.documentElement.dataset.cuBootMode = mode;
@@ -320,12 +321,12 @@ function showTools() {
         button('显示 / 收起原生工具栏', 'sliders', () => {
             closeSheet(); setSidebar(false); setNativeToolbar(!settings().nativeToolbar);
         }),
-        button('主题外观', 'sun', showAppearance),
+        button('主题设置', 'sun', showAppearance),
         button(state.nativeHome ? '返回 Claude 首页' : '原版首页与最近记录', 'home', async () => { if (state.nativeHome) await goHome(); else { await goHome(); state.nativeHome = true; updateContext(); } }));
 }
 
 function showAppearance() {
-    const content = sheet('外观');
+    const content = sheet('主题设置');
     const row = document.createElement('div');
     row.className = 'cu-settings-row';
     const label = document.createElement('span');
@@ -369,7 +370,13 @@ function showAppearance() {
     const note = document.createElement('p');
     note.className = 'cu-sheet-note';
     note.textContent = '中文始终使用系统无衬线字体；英文回复可单独切换衬线字体。界面控件保持统一的无衬线排版。';
-    content.append(row, fontRow, toolbarRow, backgroundRow, note, button('SillyTavern 用户设置', 'sliders', () => nativeTarget('#user-settings-button .drawer-icon')),
+    const qrRow = document.createElement('label');
+    qrRow.className = 'cu-settings-row cu-mobile-setting';
+    const qrLabel = document.createElement('span'); qrLabel.textContent = '快速回复收起';
+    const qrCheck = document.createElement('input'); qrCheck.type = 'checkbox'; qrCheck.checked = settings().quickRepliesCollapsed;
+    qrCheck.addEventListener('change', () => { settings().quickRepliesCollapsed = qrCheck.checked; save(); applyAppearance(); });
+    qrRow.append(qrLabel, qrCheck);
+    content.append(row, fontRow, toolbarRow, backgroundRow, qrRow, note, button('SillyTavern 用户设置', 'sliders', () => nativeTarget('#user-settings-button .drawer-icon')),
         button('停用 Claude Surface', 'close', () => { settings().enabled = false; save(); applyAppearance(); }));
 }
 
@@ -653,7 +660,7 @@ function initialize() {
     footer.className = 'cu-sidebar-footer';
     const account = button('用户设定', 'people', () => nativeTarget('#persona-management-button .drawer-icon'), 'cu-account');
     account.innerHTML = '<span class="cu-avatar"></span><span class="cu-account-name"></span>';
-    footer.append(account, button('外观', 'sun', showAppearance, 'cu-icon'));
+    footer.append(account, button('主题设置', 'sun', showAppearance, 'cu-icon'));
     sidebar.append(top, search, nav, recentHeading, recents, footer);
     const backdrop = document.createElement('button');
     backdrop.type = 'button';

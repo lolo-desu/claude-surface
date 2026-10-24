@@ -1,5 +1,5 @@
 /* Adapt semantic fields once. Keep native nodes, editor instances and events. */
-export function setupMobileWorldInfo(settings, { toggleDrawer } = {}) {
+export function setupMobileWorldInfo(settings, { toggleDrawer, externalLayout = () => false } = {}) {
     const mobile = matchMedia('(max-width: 899px)');
     const list = document.getElementById('world_popup_entries_list');
     const headers = new Map(), editors = new Map();
@@ -18,7 +18,7 @@ export function setupMobileWorldInfo(settings, { toggleDrawer } = {}) {
         for (const wrapper of record.wrappers) wrapper.remove();
     }
     function adaptHeader(header) {
-        if (headers.has(header)) return;
+        if (headers.has(header) || header.closest('[data-bai-bai-world-info-mobile-header-layout="true"]')) return;
         const title = header.querySelector('.WIEntryTitleAndStatus');
         if (!title) return;
         const record = { nodes: [], classes: [], wrappers: [] };
@@ -46,7 +46,7 @@ export function setupMobileWorldInfo(settings, { toggleDrawer } = {}) {
         headers.set(header, record);
     }
     function adaptEditor(editor) {
-        if (editors.has(editor)) return;
+        if (editors.has(editor) || editor.matches('[data-bai-bai-world-info-mobile-expanded-layout="true"]')) return;
         const record = { nodes: [], classes: [], wrappers: [] };
         const details = document.createElement('details'); details.className = 'cu-wi-advanced';
         const summary = document.createElement('summary'); summary.textContent = '更多条目设置';
@@ -77,7 +77,8 @@ export function setupMobileWorldInfo(settings, { toggleDrawer } = {}) {
     function refresh() {
         observer.disconnect();
         try {
-            const enabled = settings().enabled && mobile.matches;
+            const enabled = settings().enabled && mobile.matches && !externalLayout();
+            list.classList.toggle('cu-wi-layout', enabled);
             for (const map of [headers, editors]) for (const [element, record] of map) {
                 if (!element.isConnected) { map.delete(element); continue; }
                 if (!enabled) { restore(record); map.delete(element); }
@@ -96,7 +97,7 @@ export function setupMobileWorldInfo(settings, { toggleDrawer } = {}) {
     if (!list) return { refresh() {} };
     observe();
     list.addEventListener('click', event => {
-        if (!settings().enabled || !mobile.matches || !toggleDrawer) return;
+        if (!settings().enabled || !mobile.matches || externalLayout() || !toggleDrawer) return;
         const toggle = event.target.closest('.world_entry .inline-drawer-toggle');
         if (!toggle || event.target.closest('input,textarea,select,[contenteditable="true"]')) return;
         const drawer = toggle.closest('.inline-drawer');
@@ -105,7 +106,7 @@ export function setupMobileWorldInfo(settings, { toggleDrawer } = {}) {
         toggleDrawer(drawer, open);
     }, true);
     list.addEventListener('inline-drawer-toggle', event => {
-        if (!settings().enabled || !mobile.matches) return;
+        if (!settings().enabled || !mobile.matches || externalLayout()) return;
         const drawer = event.target;
         queueMicrotask(() => {
             const content = drawer.querySelector(':scope > .inline-drawer-content');

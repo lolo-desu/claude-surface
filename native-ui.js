@@ -1,51 +1,34 @@
 import { setupMobileWorldInfo } from './world-info-ui.js';
 import { toggleDrawer } from '../../../utils.js';
+import { extensionNames } from '../../../extensions.js';
 /* Adapt native elements in place: their IDs, values and event handlers stay intact. */
-export function setupNativeUI({ settings, save, button, svg, showCharacters, openCharacter, characterEntities }) {
-    const mobileWorld = setupMobileWorldInfo(settings, { toggleDrawer });
+export function setupNativeUI({ settings, svg, showCharacters, openCharacter, characterEntities }) {
+    const hasBaiBaiTools = () => {
+        const disabled = SillyTavern.getContext().extensionSettings.disabledExtensions || [];
+        return extensionNames.some(name => /(?:^|\/)ST-BaiBai-Tools(?:$|[-_])/i.test(name) && !disabled.includes(name))
+            || !!document.querySelector('style[id^="bai_bai_toolkit_"],[data-bai-bai-world-info-mobile-header-layout="true"]');
+    };
+    const mobileWorld = setupMobileWorldInfo(settings, { toggleDrawer, externalLayout: hasBaiBaiTools });
     const compactViewport = matchMedia('(max-width: 899px)');
     const panel = document.getElementById('left-nav-panel');
     const presetIcon = document.getElementById('leftNavDrawerIcon');
     const originalPresetTitle = presetIcon?.title;
     const toolbar = document.createElement('div'); toolbar.className = 'cu-sampler-toolbar';
     const title = document.createElement('span'); title.textContent = '预设';
-    const lock = button('解锁参数', 'lock', () => {
-        settings().slidersLocked = !settings().slidersLocked;
-        save(); refreshLock();
-    }, 'cu-icon cu-sampler-lock');
-    toolbar.append(title, lock); panel.prepend(toolbar);
-    function refreshLock() {
+    toolbar.append(title); panel.prepend(toolbar);
+    function refreshTitle() {
         if (presetIcon) {
             presetIcon.title = settings().enabled ? '预设' : originalPresetTitle;
             presetIcon.setAttribute('aria-label', presetIcon.title);
         }
-        const locked = settings().enabled && settings().slidersLocked;
-        panel.classList.toggle('cu-sampler-locked', locked);
-        lock.innerHTML = svg(locked ? 'lock' : 'unlock');
-        lock.title = locked ? '解锁参数' : '锁定参数';
-        lock.setAttribute('aria-label', lock.title);
-        lock.setAttribute('aria-pressed', String(locked));
-        panel.querySelectorAll('.cu-range-row input,.range-block-range-and-counter input').forEach(input => {
-            if (input.type === 'range' || input.type === 'number') {
-                if (locked) input.setAttribute('aria-disabled', 'true');
-                else input.removeAttribute('aria-disabled');
-            }
-        });
-    }
-    // Block user gestures only. Native preset loading can still update these values.
-    for (const type of ['pointerdown', 'click', 'wheel', 'keydown', 'beforeinput', 'paste', 'drop']) {
-        panel.addEventListener(type, event => {
-            if (!settings().enabled || !settings().slidersLocked || event.key === 'Tab') return;
-            const input = event.target.closest('input');
-            if (!input || !['range','number'].includes(input.type) || !input.closest('.cu-range-row,.range-block-range-and-counter')) return;
-            event.preventDefault(); event.stopImmediatePropagation();
-        }, { capture: true, passive: false });
     }
     const paintRange = input => {
         const minimum = Number(input.min) || 0, maximum = Number(input.max) || 100;
         input.style.setProperty('--cu-range-fill', `${Math.max(0, Math.min(100, 100 * (Number(input.value) - minimum) / (maximum - minimum || 1)))}%`);
     };
     function decorate(root = document) {
+        document.body.classList.toggle('cu-baibai-tools', settings().enabled && hasBaiBaiTools());
+        mobileWorld.refresh();
         root.querySelectorAll('input[type="range"]').forEach(input => {
             const parent = input.parentElement;
             if (input.closest('#WorldInfo') && !compactViewport.matches) {
@@ -55,15 +38,15 @@ export function setupNativeUI({ settings, save, button, svg, showCharacters, ope
                 paintRange(input);
                 return;
             }
-            // The legacy layout has separate range/counter wrappers; the newer one has direct children.
-            if (parent.classList.contains('range-block-range')) parent.parentElement.classList.add('cu-range-row', 'cu-range-legacy');
-            else {
+            const row = input.closest('.range-block-range-and-counter');
+            if (row) row.classList.add('cu-range-row', 'cu-range-legacy');
+            else if (parent.querySelector(':scope > .neo-range-input')) {
                 parent.classList.add('cu-range-row');
                 [...parent.children].filter(child => child !== input && !child.matches('input,.range-block-counter')).forEach(child => child.classList.add('cu-range-label'));
             }
             paintRange(input);
         });
-        refreshLock();
+        refreshTitle();
         const glyphs = ['sliders','plug','type','book','sliders','image','puzzle','user','people'];
         document.querySelectorAll('#top-settings-holder > .drawer > .drawer-toggle > .drawer-icon').forEach((icon, index) => {
             if (!icon.classList.contains('cu-native-icon')) { icon.classList.add('cu-native-icon'); icon.innerHTML = svg(glyphs[index]); }
@@ -108,5 +91,5 @@ export function setupNativeUI({ settings, save, button, svg, showCharacters, ope
     }, true);
     const context = SillyTavern.getContext();
     for (const name of ['SETTINGS_UPDATED','MAIN_API_CHANGED']) if (context.eventTypes[name]) context.eventSource.on(context.eventTypes[name], () => { decorate(); });
-    return { refresh: () => { refreshLock(); mobileWorld.refresh(); } };
+    return { refresh: () => { refreshTitle(); mobileWorld.refresh(); } };
 }
