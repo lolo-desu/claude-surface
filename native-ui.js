@@ -79,8 +79,6 @@ export function setupNativeUI({ settings, svg, showCharacters, openCharacter, ch
     // Open chats directly from the native list; keep explicit editing as a separate action.
     document.addEventListener('click', event => {
         if (!settings().enabled) return;
-        const icon = event.target.closest('#rightNavDrawerIcon');
-        if (icon && event.isTrusted) { event.preventDefault(); event.stopImmediatePropagation(); showCharacters(); return; }
         const card = event.target.closest('#right-nav-panel .character_select');
         if (!card || event.target.closest('input,button,a,select,textarea,label,.tag,.menu_button,.character_fav_button,.ch_fav_icon')) return;
         const characterId = card.dataset.chid || card.getAttribute('chid');

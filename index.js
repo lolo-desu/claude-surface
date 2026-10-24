@@ -9,7 +9,7 @@ const ctx = () => SillyTavern.getContext();
 const media = matchMedia('(prefers-color-scheme: dark)');
 const desktop = matchMedia('(min-width: 900px)');
 const mediaReduced = matchMedia('(prefers-reduced-motion: reduce)');
-const defaults = { enabled: true, mode: 'dark', serif: true, background: false, nativeToolbar: false, quickRepliesCollapsed: false, recentCharacters: [] };
+const defaults = { enabled: true, mode: 'dark', serif: true, background: false, nativeToolbar: false, quickRepliesCollapsed: false, compactComposer: false, scrollHeader: false, sidebarPinned: false, recentCharacters: [] };
 const state = { initialized: false, recents: [], sheet: null, returnFocus: null, refreshing: false };
 const icons = {
     sidebar: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M5.8 8v8"/>',
@@ -74,6 +74,7 @@ function report(error) {
 
 const editable = element => element?.matches('input:not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]),textarea,[contenteditable="true"],[role="textbox"]');
 function quietNavigation() {
+    revealHeader();
     state.navigationInputIntent = false;
     state.navigationFocusUntil = performance.now() + 900;
     if (editable(document.activeElement)) document.activeElement.blur();
@@ -88,6 +89,8 @@ function applyAppearance() {
     document.body.classList.toggle('cu-background-enabled', config.enabled && config.background);
     document.body.classList.toggle('cu-native-open', config.enabled && config.nativeToolbar);
     document.body.classList.toggle('cu-qr-collapsed', config.enabled && config.quickRepliesCollapsed);
+    document.body.classList.toggle('cu-compact-composer', config.enabled && config.compactComposer);
+    if (!config.enabled || !config.scrollHeader) revealHeader();
     try { localStorage.setItem('claude-surface-boot', JSON.stringify({ enabled: config.enabled, mode: config.mode })); } catch { /* Storage can be unavailable in private contexts. */ }
     document.documentElement.toggleAttribute('data-cu-boot', config.enabled);
     document.documentElement.dataset.cuBootMode = mode;
@@ -107,7 +110,7 @@ function applyAppearance() {
     if (enabledInput) enabledInput.checked = config.enabled;
     const modeInput = document.querySelector('#cu-extension-mode');
     if (modeInput) modeInput.value = config.mode;
-    for (const [id, key] of [['cu-extension-serif','serif'],['cu-extension-toolbar','nativeToolbar']]) {
+    for (const [id, key] of [['cu-extension-serif','serif'],['cu-extension-toolbar','nativeToolbar'],['cu-extension-compact','compactComposer'],['cu-extension-scroll-header','scrollHeader']]) {
         const control = document.getElementById(id);
         if (control) control.checked = config[key];
     }
@@ -115,6 +118,7 @@ function applyAppearance() {
     void state.themeUI?.sync().catch(report);
     if (config.enabled) { decorateMessages(); updateContext(); }
     syncNativePanels();
+    setSidebar(false);
 }
 
 function setNativeToolbar(visible) {
@@ -123,26 +127,101 @@ function setNativeToolbar(visible) {
     applyAppearance();
 }
 
+function syncDesktopDocks() {
+    state.dockPins ??= new Map();
+    const docked = settings().enabled && desktop.matches;
+    for (const id of ['left-nav-panel','right-nav-panel']) {
+        const panel = document.getElementById(id);
+        const icon = panel?.parentElement.querySelector('.drawer-icon');
+        if (!panel || !icon) continue;
+        if (docked && !state.dockPins.has(panel)) state.dockPins.set(panel, { pinned: panel.classList.contains('pinnedOpen'), iconPinned: icon.classList.contains('drawerPinnedOpen') });
+        const original = state.dockPins.get(panel);
+        if (docked) {
+            if (!panel.classList.contains('pinnedOpen')) panel.classList.add('pinnedOpen');
+            if (!icon.classList.contains('drawerPinnedOpen')) icon.classList.add('drawerPinnedOpen');
+        }
+        else if (original) {
+            panel.classList.toggle('pinnedOpen', original.pinned);
+            icon.classList.toggle('drawerPinnedOpen', original.iconPinned);
+            state.dockPins.delete(panel);
+        }
+    }
+}
+
+function setHeaderHidden(hidden) {
+    if (document.body.classList.contains('cu-header-hidden') === hidden) return;
+    const chat = document.getElementById('chat');
+    const before = chat?.getBoundingClientRect().top;
+    const scroll = chat?.scrollTop;
+    document.body.classList.toggle('cu-header-hidden', hidden);
+    // Keep the current line still when the toolbar changes the scroll viewport.
+    if (chat && before != null) chat.scrollTop = scroll + chat.getBoundingClientRect().top - before;
+    state.lastHeaderScroll = chat?.scrollTop;
+    state.headerTravel = 0;
+}
+
+function revealHeader() { setHeaderHidden(false); }
+
+function setupHeaderScroll() {
+    const chatRoot = document.getElementById('chat');
+    state.lastHeaderScroll = chatRoot?.scrollTop || 0;
+    for (const type of ['wheel','touchstart','touchmove','pointerdown']) chatRoot?.addEventListener(type, () => { state.headerScrollIntentUntil = performance.now() + 1500; }, { passive: true });
+    chatRoot?.addEventListener('wheel', event => { if (event.deltaY < 0) revealHeader(); }, { passive: true });
+    let touchY;
+    chatRoot?.addEventListener('touchstart', event => { touchY = event.touches[0]?.clientY; }, { passive: true });
+    chatRoot?.addEventListener('touchmove', event => {
+        const y = event.touches[0]?.clientY;
+        if (touchY != null && y - touchY > 10) revealHeader();
+        touchY = y;
+    }, { passive: true });
+    document.addEventListener('keydown', event => {
+        if (!editable(event.target) && ['PageDown','PageUp','ArrowDown','ArrowUp','Home','End',' '].includes(event.key)) state.headerScrollIntentUntil = performance.now() + 1500;
+    });
+    document.addEventListener('scroll', event => {
+        if (event.target?.id !== 'chat') return;
+        const chat = event.target;
+        const previous = state.lastHeaderScroll ?? chat.scrollTop;
+        state.lastHeaderScroll = chat.scrollTop;
+        if (!settings().enabled || !settings().scrollHeader || performance.now() > (state.headerScrollIntentUntil || 0) || state.sheet || state.dropdownOpen || (!desktop.matches && document.body.classList.contains('cu-sidebar-open')) || editable(document.activeElement)) return;
+        const delta = chat.scrollTop - previous;
+        if (!delta) return;
+        state.headerTravel = Math.sign(delta) === Math.sign(state.headerTravel || delta) ? (state.headerTravel || 0) + delta : delta;
+        if (chat.scrollTop <= 2 || state.headerTravel < -18) revealHeader();
+        else if (state.headerTravel > 24 && chat.scrollTop > 48) setHeaderHidden(true);
+    }, { capture: true, passive: true });
+    document.addEventListener('focusin', event => { if (event.target.closest?.('.cu-header,#send_textarea')) revealHeader(); });
+    document.addEventListener('keydown', event => { if (event.key === 'Tab') revealHeader(); });
+}
+
 function syncNativePanels() {
+    syncDesktopDocks();
     const panels = [...document.querySelectorAll('#top-settings-holder > .drawer > .drawer-content.openDrawer')];
     const opened = settings().enabled && panels.length > 0;
+    const pages = desktop.matches ? panels.filter(panel => !['left-nav-panel','right-nav-panel'].includes(panel.id)) : panels;
+    state.dropdownOpen = pages.length > 0;
+    if (state.dropdownOpen) revealHeader();
+    document.body.classList.toggle('cu-left-dock-open', settings().enabled && desktop.matches && panels.some(panel => panel.id === 'left-nav-panel'));
+    document.body.classList.toggle('cu-right-dock-open', settings().enabled && desktop.matches && panels.some(panel => panel.id === 'right-nav-panel'));
     document.body.classList.toggle('cu-panel-open', opened);
     const close = document.getElementById('cu-native-close');
     if (close) close.hidden = !opened;
     const title = document.querySelector('.cu-title');
     const panelTitles = { 'left-nav-panel': '预设', WorldInfo: '世界书', 'right-nav-panel': '角色卡' };
-    if (title) title.textContent = opened
-        ? (panelTitles[panels.at(-1).id] || panels.at(-1).parentElement.querySelector('.drawer-icon')?.title || '更多')
+    if (title) title.textContent = pages.length
+        ? (panelTitles[pages.at(-1).id] || pages.at(-1).parentElement.querySelector('.drawer-icon')?.title || '更多')
         : (state.chatTitle || '新建对话');
 }
 
-function closeNativePanels() {
+function closeNativePanels({ keepDocks = false } = {}) {
     document.querySelectorAll('#top-settings-holder > .drawer > .drawer-toggle').forEach(toggle => {
+        if (keepDocks && ['left-nav-panel','right-nav-panel'].includes(toggle.parentElement.querySelector('.drawer-content')?.id)) return;
         if (toggle.querySelector('.openIcon')) toggle.click();
     });
+    syncNativePanels();
 }
 
 function openNative(toggle) {
+    revealHeader();
     quietNavigation();
     closeSheet();
     setSidebar(false);
@@ -192,6 +271,8 @@ function captureEditorAnchor(event) {
 }
 
 function setSidebar(open) {
+    if (desktop.matches) open = settings().enabled && settings().sidebarPinned;
+    if (open) revealHeader();
     if (open) quietNavigation();
     document.body.classList.toggle('cu-sidebar-open', open);
     const nav = document.querySelector('.cu-sidebar');
@@ -201,6 +282,11 @@ function setSidebar(open) {
     if (backdrop) backdrop.hidden = true;
     const opener = document.querySelector('#cu-sidebar-toggle');
     opener?.setAttribute('aria-expanded', String(open));
+    const label = desktop.matches ? (open ? '取消侧边栏常驻' : '固定侧边栏') : '打开侧边栏';
+    opener?.setAttribute('aria-label', label);
+    if (opener) opener.title = label;
+    if (desktop.matches) opener?.setAttribute('aria-pressed', String(open));
+    else opener?.removeAttribute('aria-pressed');
     if (open) document.querySelector('.cu-sidebar-top button')?.focus({ preventScroll: true });
 }
 
@@ -220,6 +306,7 @@ function closeSheet(immediate = false) {
 }
 
 function sheet(title, { anchor } = {}) {
+    revealHeader();
     quietNavigation();
     closeSheet(true);
     state.returnFocus = document.activeElement;
@@ -352,7 +439,7 @@ function showAppearance() {
     const toolbarRow = document.createElement('label');
     toolbarRow.className = 'cu-settings-row';
     const toolbarLabel = document.createElement('span');
-    toolbarLabel.textContent = '原生顶栏常驻';
+    toolbarLabel.textContent = '显示原生菜单栏';
     const toolbarCheck = document.createElement('input');
     toolbarCheck.type = 'checkbox';
     toolbarCheck.checked = settings().nativeToolbar;
@@ -376,7 +463,15 @@ function showAppearance() {
     const qrCheck = document.createElement('input'); qrCheck.type = 'checkbox'; qrCheck.checked = settings().quickRepliesCollapsed;
     qrCheck.addEventListener('change', () => { settings().quickRepliesCollapsed = qrCheck.checked; save(); applyAppearance(); });
     qrRow.append(qrLabel, qrCheck);
-    content.append(row, fontRow, toolbarRow, backgroundRow, qrRow, note, button('SillyTavern 用户设置', 'sliders', () => nativeTarget('#user-settings-button .drawer-icon')),
+    const layoutRows = [];
+    for (const [key, title] of [['compactComposer','输入栏紧凑模式'],['scrollHeader','顶栏滑动隐藏']]) {
+        const option = document.createElement('label'); option.className = 'cu-settings-row';
+        const text = document.createElement('span'); text.textContent = title;
+        const input = document.createElement('input'); input.type = 'checkbox'; input.checked = settings()[key];
+        input.addEventListener('change', () => { settings()[key] = input.checked; save(); applyAppearance(); });
+        option.append(text, input); layoutRows.push(option);
+    }
+    content.append(row, fontRow, toolbarRow, backgroundRow, qrRow, ...layoutRows, note, button('SillyTavern 用户设置', 'sliders', () => nativeTarget('#user-settings-button .drawer-icon')),
         button('停用 Claude Surface', 'close', () => { settings().enabled = false; save(); applyAppearance(); }));
 }
 
@@ -499,7 +594,8 @@ async function openCharacter(entity, file) {
         save();
         closeSheet();
         setSidebar(false);
-        closeNativePanels();
+        closeNativePanels({ keepDocks: desktop.matches });
+        if (desktop.matches && document.getElementById('right-nav-panel')?.classList.contains('openDrawer')) document.getElementById('rm_button_characters')?.click();
         updateContext();
         void refreshRecents();
     } finally { state.selecting = false; }
@@ -595,7 +691,7 @@ function registerExtensionSettings() {
     const themeNote = document.createElement('p');
     themeNote.textContent = '启用时自动切换自带主题；原主题与自定义 CSS 会备份，停用扩展时恢复。';
     options.append(themeNote);
-    for (const [id,key,title] of [['cu-extension-serif','serif','英文回复使用衬线字体'],['cu-extension-toolbar','nativeToolbar','原生顶栏常驻']]) {
+    for (const [id,key,title] of [['cu-extension-serif','serif','英文回复使用衬线字体'],['cu-extension-toolbar','nativeToolbar','显示原生菜单栏'],['cu-extension-compact','compactComposer','输入栏紧凑模式'],['cu-extension-scroll-header','scrollHeader','顶栏滑动隐藏']]) {
         const label = document.createElement('label');
         label.className = 'checkbox_label';
         const input = document.createElement('input');
@@ -613,7 +709,10 @@ function initialize() {
     state.initialized = true;
     const header = document.createElement('header');
     header.className = 'cu-header';
-    const sidebarToggle = button('打开侧边栏', 'sidebar', () => { setSidebar(true); void refreshRecents(); }, 'cu-icon');
+    const sidebarToggle = button('打开侧边栏', 'sidebar', () => {
+        if (desktop.matches) { settings().sidebarPinned = !settings().sidebarPinned; save(); }
+        setSidebar(!document.body.classList.contains('cu-sidebar-open')); void refreshRecents();
+    }, 'cu-icon');
     sidebarToggle.id = 'cu-sidebar-toggle';
     sidebarToggle.setAttribute('aria-controls', 'cu-sidebar');
     sidebarToggle.setAttribute('aria-expanded', 'false');
@@ -641,7 +740,10 @@ function initialize() {
     const wordmark = document.createElement('span');
     wordmark.className = 'cu-wordmark';
     wordmark.textContent = 'Claude';
-    top.append(button('关闭侧边栏', 'sidebar', () => { setSidebar(false); sidebarToggle.focus({ preventScroll: true }); }, 'cu-icon'), wordmark);
+    top.append(button('关闭侧边栏', 'sidebar', () => {
+        if (desktop.matches) { settings().sidebarPinned = false; save(); }
+        setSidebar(false); sidebarToggle.focus({ preventScroll: true });
+    }, 'cu-icon'), wordmark);
     const search = document.createElement('input');
     search.className = 'cu-search';
     search.type = 'search';
@@ -696,7 +798,24 @@ function initialize() {
     document.querySelector('#extensionsMenuButton')?.setAttribute('aria-label', '附件与扩展菜单');
     registerExtensionSettings();
     state.nativeUI = setupNativeUI({ settings, save, button, svg, showCharacters, openCharacter, characterEntities });
+    for (const [id, name] of [['left-nav-panel','预设'],['right-nav-panel','角色卡']]) {
+        const panel = document.getElementById(id);
+        if (!panel) continue;
+        const heading = document.createElement('div'); heading.className = 'cu-dock-heading';
+        const label = document.createElement('span'); label.textContent = name;
+        heading.append(label, button(`关闭${name}`, 'close', () => {
+            if (panel.classList.contains('openDrawer')) panel.parentElement.querySelector('.drawer-toggle')?.click();
+        }, 'cu-icon'));
+        panel.prepend(heading);
+    }
     state.themeUI = setupManagedTheme({ settings, save, report });
+    setupHeaderScroll();
+    // SVG paths and button padding are not .drawer-icon targets. Do not let
+    // the native outside-press closer close a drawer before its toggle click.
+    const nativeBar = document.getElementById('top-settings-holder');
+    for (const type of ['mousedown','touchstart']) nativeBar.addEventListener(type, event => {
+        if (settings().enabled && event.target.closest('.drawer-toggle')) event.stopPropagation();
+    }, { passive: true });
     document.addEventListener('pointerdown', event => {
         if (editable(event.target) || editable(event.target.closest('label')?.control) || event.target.closest('#rm_button_search')) { state.navigationFocusUntil = 0; state.navigationInputIntent = true; }
     }, true);
@@ -741,7 +860,10 @@ function initialize() {
         }
     });
     media.addEventListener('change', () => { if (settings().mode === 'system') applyAppearance(); });
-    desktop.addEventListener('change', () => setSidebar(false));
+    desktop.addEventListener('change', () => {
+        revealHeader(); setSidebar(false); syncNativePanels();
+        if (!desktop.matches) closeNativePanels();
+    });
     // Keep the real composer above mobile keyboards without replacing its input handlers.
     const adjustViewport = () => {
         const viewport = window.visualViewport;
