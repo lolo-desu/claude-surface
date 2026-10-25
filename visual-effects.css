@@ -1,0 +1,64 @@
+/* Independent controls shared by all design families. Only surface colors become translucent. */
+body[data-claude-ui].cu-background-enabled :is(#bg1,#bg_custom) {
+    filter: var(--cu-background-filter,none);
+}
+/* Overscan the image instead of leaving transparent blur fringes at the viewport edges. */
+body[data-claude-ui].cu-background-enabled.cu-background-blurred :is(#bg1,#bg_custom) {
+    position: fixed !important; top: calc(0px - var(--cu-background-spread)) !important; left: calc(0px - var(--cu-background-spread)) !important;
+    width: calc(100vw + var(--cu-background-spread) + var(--cu-background-spread)) !important;
+    height: calc(100dvh + var(--cu-background-spread) + var(--cu-background-spread)) !important;
+    background-attachment: scroll;
+}
+body[data-claude-ui].cu-background-enabled #sheld {
+    background: color-mix(in srgb,var(--cu-bg) var(--cu-reading-opacity,53%),transparent) !important;
+}
+body[data-claude-ui].cu-background-enabled #form_sheld { background: transparent; }
+body[data-claude-ui].cu-background-enabled #chat .mes_text :is(i,em) { color: var(--cu-text); }
+
+/* Filtering #sheld or #top-settings-holder would change fixed-drawer containing blocks. */
+body[data-claude-ui].cu-glass-enabled :is(.cu-header,#extensionTopBar) {
+    background: color-mix(in srgb,var(--cu-bg) var(--cu-ui-opacity,88%),transparent) !important;
+    -webkit-backdrop-filter: var(--cu-ui-backdrop,none) !important; backdrop-filter: var(--cu-ui-backdrop,none) !important;
+}
+body[data-claude-ui].cu-glass-enabled .cu-sidebar {
+    background: color-mix(in srgb,var(--cu-sidebar) var(--cu-ui-opacity,88%),transparent) !important;
+    -webkit-backdrop-filter: var(--cu-ui-backdrop,none) !important; backdrop-filter: var(--cu-ui-backdrop,none) !important;
+}
+body[data-claude-ui].cu-glass-enabled :is(.cu-sheet-panel,.drawer-content,.popup,.floating_panel,.options-content,#extensionsMenu,#select_chat_popup,#dialogue_popup,.list-group,.ui-autocomplete,#quickPersonaMenu,#extensionSideBar,#extensionConnectionProfiles) {
+    background: color-mix(in srgb,var(--cu-surface) var(--cu-ui-opacity,88%),transparent) !important;
+    -webkit-backdrop-filter: var(--cu-ui-backdrop,none) !important; backdrop-filter: var(--cu-ui-backdrop,none) !important;
+}
+body[data-claude-ui].cu-glass-enabled #send_form {
+    background: color-mix(in srgb,var(--cu-input) var(--cu-ui-opacity,88%),transparent) !important;
+    -webkit-backdrop-filter: var(--cu-ui-backdrop,none) !important; backdrop-filter: var(--cu-ui-backdrop,none) !important;
+}
+body[data-claude-ui].cu-glass-enabled.cu-shell-ready #top-settings-holder > .drawer > .drawer-content {
+    background: color-mix(in srgb,var(--cu-surface) var(--cu-ui-opacity,88%),transparent) !important;
+}
+/* Blur just a painted pseudo-element, not the native toolbar's drawer-hosting element. */
+body[data-claude-ui].cu-glass-enabled #top-settings-holder { background: transparent !important; isolation: isolate; }
+body[data-claude-ui].cu-glass-enabled #top-settings-holder::before {
+    content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+    background: color-mix(in srgb,var(--cu-bg) var(--cu-ui-opacity,88%),transparent);
+    -webkit-backdrop-filter: var(--cu-ui-backdrop,none) !important; backdrop-filter: var(--cu-ui-backdrop,none) !important;
+}
+
+body[data-claude-ui] .cu-effects-section { display: block; margin-block: 18px; }
+body[data-claude-ui] .cu-effects-section > .cu-settings-section-title { display: block; font: 600 13px/22px var(--cu-sans); color: var(--cu-muted); margin: 0 0 8px; }
+body[data-claude-ui] .cu-effects-section > .cu-settings-group { display: block; }
+body[data-claude-ui] .cu-effect-slider { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px 12px; }
+body[data-claude-ui] .cu-effect-slider > output { font: 13px/22px var(--cu-sans); font-variant-numeric: tabular-nums; color: var(--cu-muted); }
+body[data-claude-ui] .cu-effect-slider > input[type="range"] { grid-column: 1 / -1; width: 100%; min-width: 0; margin: 0; }
+body[data-claude-ui] .cu-effect-slider:has(input:disabled) { opacity: .55; }
+body[data-claude-ui] .cu-effects-reset { display: flex; justify-content: flex-end; padding: 8px; }
+
+@media (prefers-reduced-transparency: reduce) {
+    body[data-claude-ui].cu-glass-enabled :is(.cu-header,#extensionTopBar) { background: var(--cu-bg) !important; }
+    body[data-claude-ui].cu-glass-enabled .cu-sidebar { background: var(--cu-sidebar) !important; }
+    body[data-claude-ui].cu-glass-enabled :is(.cu-sheet-panel,.drawer-content,.popup,.floating_panel,.options-content,#extensionsMenu,#select_chat_popup,#dialogue_popup,.list-group,.ui-autocomplete,#quickPersonaMenu,#extensionSideBar,#extensionConnectionProfiles),
+    body[data-claude-ui].cu-glass-enabled.cu-shell-ready #top-settings-holder > .drawer > .drawer-content { background: var(--cu-surface) !important; }
+    body[data-claude-ui].cu-glass-enabled #send_form { background: var(--cu-input) !important; }
+    body[data-claude-ui].cu-glass-enabled #top-settings-holder::before { background: var(--cu-bg); }
+    body[data-claude-ui].cu-glass-enabled :is(.cu-header,.cu-sidebar,.cu-sheet-panel,.drawer-content,.popup,.floating_panel,#send_form,#extensionTopBar,.options-content,#extensionsMenu,#select_chat_popup,#dialogue_popup,.list-group,.ui-autocomplete,#quickPersonaMenu,#extensionSideBar,#extensionConnectionProfiles),
+    body[data-claude-ui].cu-glass-enabled #top-settings-holder::before { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+}
