@@ -7,6 +7,7 @@ import { designs, designOf, appearanceMode } from './designs.js';
 import { designBrand } from './design-branding.js';
 import { paletteOptions, selectedPalette } from './palettes.js';
 import { setupExtensionCompatibility } from './extension-compat.js';
+import { visualEffectControls, visualEffectsOf, applyVisualEffects } from './visual-effects.js';
 import { openWorldInfoEditor } from '../../../world-info.js';
 
 const KEY = 'claude_surface';
@@ -30,6 +31,7 @@ const icons = {
     moon: '<path d="M20 14a8 8 0 0 1-10-10 8.5 8.5 0 1 0 10 10Z"/>',
     more: '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
     history: '<path d="M3 11a9 9 0 1 1 2 7M3 4v7h7M12 7v5l3 2"/>',
+    reset: '<path d="M3 10a9 9 0 1 1 2 8M3 3v7h7"/>',
     arrow: '<path d="m7 17 10-10M7 7h10v10"/>',
     home: '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-6v-7h-4v7H4a1 1 0 0 1-1-1Z"/>',
     plug: '<path d="M8 3v5m8-5v5M6 8h12v3a6 6 0 0 1-12 0V8ZM12 17v4"/>',
@@ -107,6 +109,18 @@ function settings() {
 
 function save() { ctx().saveSettingsDebounced(); }
 
+function refreshEffectControls(config = settings()) {
+    const values = visualEffectsOf(config);
+    for (const control of visualEffectControls) {
+        const input = document.getElementById('cu-effect-' + control.key);
+        if (!input) continue;
+        input.value = values[control.key];
+        input.disabled = !!control.backgroundOnly && !config.background;
+        input.style.setProperty('--cu-range-fill', (values[control.key] - control.min) / (control.max - control.min) * 100 + '%');
+        document.getElementById(input.id + '-value').value = values[control.key] + control.unit;
+    }
+}
+
 function refreshPaletteControls(config = settings()) {
     const family = designOf(config.design).id;
     const selected = selectedPalette(config);
@@ -173,6 +187,8 @@ function applyAppearance() {
     else delete document.body.dataset.claudeUi;
     document.body.classList.toggle('cu-shell-ready', config.enabled);
     document.body.classList.toggle('cu-background-enabled', config.enabled && config.background);
+    applyVisualEffects(document.body, config);
+    refreshEffectControls(config);
     document.body.classList.toggle('cu-qr-collapsed', config.enabled && config.quickRepliesCollapsed);
     document.body.classList.toggle('cu-compact-composer', config.enabled && config.compactComposer);
     if (config.enabled) document.body.dataset.cuMessageStyle = ['minimal','avatar','banner'].includes(config.messageStyle) ? config.messageStyle : 'minimal';
@@ -659,6 +675,26 @@ function showAppearance() {
     backgroundCheck.checked = settings().background;
     backgroundCheck.addEventListener('change', () => { settings().background = backgroundCheck.checked; save(); applyAppearance(); });
     backgroundRow.append(backgroundLabel, backgroundCheck);
+    const effectsRows = visualEffectControls.map(control => {
+        const row = document.createElement('label'); row.className = 'cu-settings-row cu-effect-slider';
+        const title = document.createElement('span'); title.textContent = control.label;
+        const input = document.createElement('input'); input.type = 'range'; input.id = 'cu-effect-' + control.key;
+        input.min = control.min; input.max = control.max; input.step = '1';
+        input.setAttribute('aria-label', control.label);
+        const output = document.createElement('output'); output.id = input.id + '-value'; output.setAttribute('for', input.id);
+        input.setAttribute('aria-describedby', output.id);
+        input.addEventListener('input', () => {
+            const config = settings(); config[control.key] = Number(input.value);
+            applyVisualEffects(document.body, config); refreshEffectControls(config); save();
+        });
+        row.append(title, output, input); return row;
+    });
+    const effectsReset = document.createElement('div'); effectsReset.className = 'cu-effects-reset';
+    effectsReset.append(button('重置效果', 'reset', () => {
+        const config = settings();
+        for (const control of visualEffectControls) config[control.key] = control.initial;
+        applyVisualEffects(document.body, config); refreshEffectControls(config); save();
+    }));
     const qrRow = document.createElement('label');
     qrRow.className = 'cu-settings-row cu-mobile-setting';
     const qrLabel = document.createElement('span'); qrLabel.textContent = '快速回复收起';
@@ -739,7 +775,9 @@ function showAppearance() {
         const list = document.createElement('div'); list.className = 'cu-settings-group'; list.append(...rows);
         section.append(heading, list); return section;
     };
-    content.append(designGrid, group('外观', [row, paletteRow, fontRow, backgroundRow]), group('聊天', [messageRow, qrRow, ...layoutRows]), group('布局', [toolbarRow, homeRow, headerRow]), group('品牌', [fixedBrandRow, nameRow, iconRow, uploadRow]), footer);
+    const effectsSection = group('背景与毛玻璃', [backgroundRow, ...effectsRows, effectsReset]); effectsSection.classList.add('cu-effects-section');
+    content.append(designGrid, group('外观', [row, paletteRow, fontRow]), effectsSection, group('聊天', [messageRow, qrRow, ...layoutRows]), group('布局', [toolbarRow, homeRow, headerRow]), group('品牌', [fixedBrandRow, nameRow, iconRow, uploadRow]), footer);
+    refreshEffectControls();
     refreshPaletteControls();
     applyBranding();
     state.compatUI?.refresh();

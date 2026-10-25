@@ -713,14 +713,14 @@ body[data-claude-ui]:not(.cu-baibai-tools) #left-nav-panel #completion_prompt_ma
     body[data-claude-ui]:not(.cu-baibai-tools) #WorldInfo #world_popup_entries_list.cu-wi-layout .cu-wi-title-row .WIEntryTitleAndStatus { display: flex; flex: 1 1 100%; width: 100%; min-width: 0; gap: 6px; }
     body[data-claude-ui]:not(.cu-baibai-tools) #WorldInfo #world_popup_entries_list.cu-wi-layout .cu-wi-title-row .WIEntryTitleAndStatus > .flex-container { flex: 1 1 0; min-width: 0; }
     body[data-claude-ui]:not(.cu-baibai-tools) #WorldInfo #world_popup_entries_list.cu-wi-layout textarea[name="comment"] { width: 100%; min-width: 0; min-height: 32px; height: auto; max-height: 80px; padding: 6px 8px; font-size: 13px; line-height: 20px; margin: 0; border-color: transparent; field-sizing: content; }
-    body[data-claude-ui]:not(.cu-baibai-tools) #WorldInfo #world_popup_entries_list.cu-wi-layout select[name="entryStateSelector"] { flex: 0 0 44px; width: 44px; min-width: 44px; height: 32px; padding: 3px; border-color: transparent; }
+    body[data-claude-ui]:not(.cu-baibai-tools) #WorldInfo #world_popup_entries_list.cu-wi-layout select[name="entryStateSelector"] { flex: 0 0 44px; width: 44px; min-width: 44px; height: 32px; padding: 3px; border-color: transparent; text-align: center; text-align-last: center; }
     body[data-claude-ui]:not(.cu-baibai-tools) #WorldInfo #world_popup_entries_list.cu-wi-layout .cu-wi-position-field { flex: 1 1 120px; width: auto; min-width: 0; }
     body[data-claude-ui]:not(.cu-baibai-tools) #WorldInfo #world_popup_entries_list.cu-wi-layout .cu-wi-depth-field { flex: 0 0 52px; width: 52px; min-width: 0; }
     body[data-claude-ui]:not(.cu-baibai-tools) #WorldInfo #world_popup_entries_list.cu-wi-layout .cu-wi-depth-field:has(input[style*="visibility: hidden"]) { display: none; }
     body[data-claude-ui]:not(.cu-baibai-tools) #WorldInfo #world_popup_entries_list.cu-wi-layout .cu-wi-position-row .killSwitch { position: static; flex: 0 0 24px; align-self: end; padding: 7px 0; font-size: 16px; }
     body[data-claude-ui]:not(.cu-baibai-tools) #WorldInfo #world_popup_entries_list.cu-wi-layout :is(.cu-wi-order-field,.cu-wi-probability-field) { flex: 0 0 42px; width: 42px; min-width: 0; }
     body[data-claude-ui]:not(.cu-baibai-tools) #WorldInfo #world_popup_entries_list.cu-wi-layout .cu-wi-header .world_entry_form_control { margin: 0; gap: 3px; }
-    body[data-claude-ui]:not(.cu-baibai-tools) #WorldInfo #world_popup_entries_list.cu-wi-layout .cu-wi-header .world_entry_form_control :is(input,select) { width: 100% !important; min-width: 0; min-height: 28px; height: 28px; padding: 3px 5px; margin: 0; font-size: 12px; border-color: transparent; }
+    body[data-claude-ui]:not(.cu-baibai-tools) #WorldInfo #world_popup_entries_list.cu-wi-layout .cu-wi-header .world_entry_form_control :is(input,select) { width: 100% !important; min-width: 0; min-height: 28px; height: 28px; padding: 3px 5px; margin: 0; font-size: 12px; border-color: color-mix(in srgb,var(--cu-text) 24%,var(--cu-input)); background: var(--cu-input); box-shadow: none; }
     body[data-claude-ui]:not(.cu-baibai-tools) #WorldInfo #world_popup_entries_list.cu-wi-layout .cu-wi-actions-row > :is(.menu_button,.inline-drawer-toggle) { position: static; flex: 0 0 28px; width: 28px; height: 28px; min-height: 28px; line-height: 18px; padding: 5px; margin: 0; border: 0; border-radius: 7px; background: var(--cu-hover); }
     body[data-claude-ui]:not(.cu-baibai-tools) #WorldInfo #world_popup_entries_list.cu-wi-layout .cu-wi-actions-row .drag-handle { position: static; flex: 0 0 18px; width: 18px; height: 28px; line-height: 28px; margin-left: auto; color: var(--cu-muted); cursor: grab; }
     body[data-claude-ui]:not(.cu-baibai-tools) #WorldInfo #world_popup_entries_list.cu-wi-layout .WIEntryHeaderTitleMobile { display: block; font-size: 10px; color: var(--cu-muted); line-height: 14px; margin: 0; white-space: nowrap; }
@@ -1352,6 +1352,71 @@ body[data-claude-ui] [data-cu-mode="companion"][hidden] { display: none; }
     html.dn-switching:has(body[data-claude-ui]) body *::after { transition: none !important; }
     html:has(body[data-claude-ui])::view-transition-old(root),
     html:has(body[data-claude-ui])::view-transition-new(root) { animation: none !important; }
+}
+
+/* Independent controls shared by all design families. Only surface colors become translucent. */
+body[data-claude-ui].cu-background-enabled :is(#bg1,#bg_custom) {
+    filter: var(--cu-background-filter,none);
+}
+/* Overscan the image instead of leaving transparent blur fringes at the viewport edges. */
+body[data-claude-ui].cu-background-enabled.cu-background-blurred :is(#bg1,#bg_custom) {
+    position: fixed !important; top: calc(0px - var(--cu-background-spread)) !important; left: calc(0px - var(--cu-background-spread)) !important;
+    width: calc(100vw + var(--cu-background-spread) + var(--cu-background-spread)) !important;
+    height: calc(100dvh + var(--cu-background-spread) + var(--cu-background-spread)) !important;
+    background-attachment: scroll;
+}
+body[data-claude-ui].cu-background-enabled #sheld {
+    background: color-mix(in srgb,var(--cu-bg) var(--cu-reading-opacity,53%),transparent) !important;
+}
+body[data-claude-ui].cu-background-enabled #form_sheld { background: transparent; }
+body[data-claude-ui].cu-background-enabled #chat .mes_text :is(i,em) { color: var(--cu-text); }
+
+/* Filtering #sheld or #top-settings-holder would change fixed-drawer containing blocks. */
+body[data-claude-ui].cu-glass-enabled :is(.cu-header,#extensionTopBar) {
+    background: color-mix(in srgb,var(--cu-bg) var(--cu-ui-opacity,88%),transparent) !important;
+    -webkit-backdrop-filter: var(--cu-ui-backdrop,none) !important; backdrop-filter: var(--cu-ui-backdrop,none) !important;
+}
+body[data-claude-ui].cu-glass-enabled .cu-sidebar {
+    background: color-mix(in srgb,var(--cu-sidebar) var(--cu-ui-opacity,88%),transparent) !important;
+    -webkit-backdrop-filter: var(--cu-ui-backdrop,none) !important; backdrop-filter: var(--cu-ui-backdrop,none) !important;
+}
+body[data-claude-ui].cu-glass-enabled :is(.cu-sheet-panel,.drawer-content,.popup,.floating_panel,.options-content,#extensionsMenu,#select_chat_popup,#dialogue_popup,.list-group,.ui-autocomplete,#quickPersonaMenu,#extensionSideBar,#extensionConnectionProfiles) {
+    background: color-mix(in srgb,var(--cu-surface) var(--cu-ui-opacity,88%),transparent) !important;
+    -webkit-backdrop-filter: var(--cu-ui-backdrop,none) !important; backdrop-filter: var(--cu-ui-backdrop,none) !important;
+}
+body[data-claude-ui].cu-glass-enabled #send_form {
+    background: color-mix(in srgb,var(--cu-input) var(--cu-ui-opacity,88%),transparent) !important;
+    -webkit-backdrop-filter: var(--cu-ui-backdrop,none) !important; backdrop-filter: var(--cu-ui-backdrop,none) !important;
+}
+body[data-claude-ui].cu-glass-enabled.cu-shell-ready #top-settings-holder > .drawer > .drawer-content {
+    background: color-mix(in srgb,var(--cu-surface) var(--cu-ui-opacity,88%),transparent) !important;
+}
+/* Blur just a painted pseudo-element, not the native toolbar's drawer-hosting element. */
+body[data-claude-ui].cu-glass-enabled #top-settings-holder { background: transparent !important; isolation: isolate; }
+body[data-claude-ui].cu-glass-enabled #top-settings-holder::before {
+    content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+    background: color-mix(in srgb,var(--cu-bg) var(--cu-ui-opacity,88%),transparent);
+    -webkit-backdrop-filter: var(--cu-ui-backdrop,none) !important; backdrop-filter: var(--cu-ui-backdrop,none) !important;
+}
+
+body[data-claude-ui] .cu-effects-section { display: block; margin-block: 18px; }
+body[data-claude-ui] .cu-effects-section > .cu-settings-section-title { display: block; font: 600 13px/22px var(--cu-sans); color: var(--cu-muted); margin: 0 0 8px; }
+body[data-claude-ui] .cu-effects-section > .cu-settings-group { display: block; }
+body[data-claude-ui] .cu-effect-slider { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px 12px; }
+body[data-claude-ui] .cu-effect-slider > output { font: 13px/22px var(--cu-sans); font-variant-numeric: tabular-nums; color: var(--cu-muted); }
+body[data-claude-ui] .cu-effect-slider > input[type="range"] { grid-column: 1 / -1; width: 100%; min-width: 0; margin: 0; }
+body[data-claude-ui] .cu-effect-slider:has(input:disabled) { opacity: .55; }
+body[data-claude-ui] .cu-effects-reset { display: flex; justify-content: flex-end; padding: 8px; }
+
+@media (prefers-reduced-transparency: reduce) {
+    body[data-claude-ui].cu-glass-enabled :is(.cu-header,#extensionTopBar) { background: var(--cu-bg) !important; }
+    body[data-claude-ui].cu-glass-enabled .cu-sidebar { background: var(--cu-sidebar) !important; }
+    body[data-claude-ui].cu-glass-enabled :is(.cu-sheet-panel,.drawer-content,.popup,.floating_panel,.options-content,#extensionsMenu,#select_chat_popup,#dialogue_popup,.list-group,.ui-autocomplete,#quickPersonaMenu,#extensionSideBar,#extensionConnectionProfiles),
+    body[data-claude-ui].cu-glass-enabled.cu-shell-ready #top-settings-holder > .drawer > .drawer-content { background: var(--cu-surface) !important; }
+    body[data-claude-ui].cu-glass-enabled #send_form { background: var(--cu-input) !important; }
+    body[data-claude-ui].cu-glass-enabled #top-settings-holder::before { background: var(--cu-bg); }
+    body[data-claude-ui].cu-glass-enabled :is(.cu-header,.cu-sidebar,.cu-sheet-panel,.drawer-content,.popup,.floating_panel,#send_form,#extensionTopBar,.options-content,#extensionsMenu,#select_chat_popup,#dialogue_popup,.list-group,.ui-autocomplete,#quickPersonaMenu,#extensionSideBar,#extensionConnectionProfiles),
+    body[data-claude-ui].cu-glass-enabled #top-settings-holder::before { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
 }
 
 /* DESIGNS END */
