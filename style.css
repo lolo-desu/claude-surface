@@ -388,6 +388,8 @@ body[data-claude-ui] :is(input[type="checkbox"],input[type="radio"]) {
     background: var(--cu-input); color: var(--cu-bg);
     border: 1px solid var(--cu-muted); border-radius: 4px; box-shadow: none; cursor: pointer;
 }
+/* Surface draws check marks (or switch thumbs) with ::after. Suppress the native tick. */
+body[data-claude-ui] input[type="checkbox"]::before { content: none; display: none; }
 body[data-claude-ui] input[type="checkbox"]:checked { border-color: var(--cu-text); background: var(--cu-text); }
 body[data-claude-ui] input[type="checkbox"]:checked::after { content: "✓"; position: absolute; inset: 0; display: grid; place-items: center; font: 700 12px/1 Arial,sans-serif; color: var(--cu-bg); }
 body[data-claude-ui] input[type="checkbox"]:indeterminate::after { content: "−"; position: absolute; inset: 0; display: grid; place-items: center; font: 14px/1 Arial,sans-serif; color: var(--cu-text); }
@@ -555,7 +557,8 @@ body[data-claude-ui] #chat .mes[is_user="true"] .ch_name .mesAvatarWrapper { pos
 body[data-claude-ui] #chat .mes[is_user="true"] .ch_name { display: contents; }
 body[data-claude-ui] #chat .mes[is_user="true"] .ch_name > .flex-container.flex1 { order: 0; flex: none; width: auto; max-width: 100%; align-self: stretch; justify-content: flex-end; margin: 0 0 6px; }
 body[data-claude-ui] #chat .mes[is_user="true"] .ch_name .alignItemsBaseline { justify-content: flex-end; }
-body[data-claude-ui] #chat .mes[is_user="true"] .mes_text { order: 1; border-radius: 16px; padding: 12px 16px; }
+body[data-claude-ui] #chat .mes[is_user="true"] .mes_text { order: 1; align-self: flex-end; width: fit-content; min-width: 0; max-width: 100%; text-align: start; border-radius: 16px; padding: 12px 16px; }
+body[data-claude-ui] #chat .mes[is_user="true"] .mes_text:has(.edit_textarea) { align-self: stretch; width: 100%; }
 body[data-claude-ui] #chat .mes[is_user="true"] .mes_reasoning_details { order: 2; }
 body[data-claude-ui] #chat .mes[is_user="true"] .mes_media_wrapper { order: 3; }
 body[data-claude-ui] #chat .mes[is_user="true"] .mes_file_wrapper { order: 4; }
@@ -1037,7 +1040,24 @@ body[data-claude-ui][data-cu-design="material"] .cu-sidebar :is(.cu-button,.cu-r
 body[data-claude-ui][data-cu-design="material"] .cu-header .cu-icon { border-radius: 50%; }
 body[data-claude-ui][data-cu-design="material"] .cu-search { border-radius: 24px !important; background: var(--cu-input) !important; padding: 10px 14px; }
 body[data-claude-ui][data-cu-design="material"] .cu-home-welcome { isolation: isolate; }
-body[data-claude-ui][data-cu-design="material"] .cu-home-welcome::before { content: ""; position: absolute; inset: -40px 0 -80px; z-index: -1; pointer-events: none; background: radial-gradient(ellipse at 50% 55%,color-mix(in srgb,var(--cu-accent) 12%,transparent),transparent 65%); }
+/* Keep the light behind the greeting, independent of the height of the recent-chat area. */
+body[data-claude-ui][data-cu-design="material"] .cu-home-welcome::before,
+body[data-claude-ui][data-cu-design="material"] .cu-home-welcome::after {
+    content: ""; position: absolute; top: -96px; left: 50%; width: min(640px,calc(100% + 48px)); height: 280px;
+    transform: translateX(-50%); pointer-events: none; z-index: -1;
+}
+body[data-claude-ui][data-cu-design="material"] .cu-home-welcome::before {
+    background:
+        radial-gradient(ellipse at 42% 43%,color-mix(in srgb,var(--cu-accent) 8%,transparent) 0%,color-mix(in srgb,var(--cu-accent) 6%,transparent) 18%,color-mix(in srgb,var(--cu-accent) 3%,transparent) 40%,color-mix(in srgb,var(--cu-accent) .8%,transparent) 62%,transparent 82%),
+        radial-gradient(ellipse at 68% 50%,color-mix(in srgb,var(--cu-link) 4%,transparent) 0%,color-mix(in srgb,var(--cu-link) 1.5%,transparent) 36%,transparent 72%);
+}
+/* A static, barely visible dither breaks dark-gradient banding without animated blur layers. */
+body[data-claude-ui][data-cu-design="material"] .cu-home-welcome::after {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' seed='8' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Cpath fill='%23808080' filter='url(%23grain)' d='M0 0h128v128H0z'/%3E%3C/svg%3E");
+    opacity: .025; mix-blend-mode: soft-light;
+    -webkit-mask-image: radial-gradient(ellipse at 50% 45%,#000 0%,#0008 36%,transparent 76%);
+    mask-image: radial-gradient(ellipse at 50% 45%,#000 0%,#0008 36%,transparent 76%);
+}
 body[data-claude-ui][data-cu-design="material"] .cu-home-greeting { font: 500 clamp(28px,4vw,42px)/1.25 var(--cu-sans); letter-spacing: -.04em; }
 body[data-claude-ui][data-cu-design="material"] .cu-home-choose { border-radius: 24px; background: var(--cu-selected); border-color: transparent; padding: 14px 22px; }
 body[data-claude-ui][data-cu-design="material"] #chat .mes:not([is_user="true"]) .mes_text { padding: 0; border: 0; border-radius: 0; background: transparent; line-height: 1.75; }
@@ -1109,6 +1129,8 @@ body[data-claude-ui][data-cu-design="adwaita"] .cu-segment { padding: 3px; borde
 body[data-claude-ui][data-cu-design="adwaita"] .cu-segment .cu-button { min-height: 27px; padding: 2px 8px; font-size: 12px; }
 body[data-claude-ui][data-cu-design="adwaita"] .cu-segment .cu-button[aria-pressed="true"] { color: var(--cu-text); background: var(--cu-input); box-shadow: 0 1px 3px #0002; }
 body[data-claude-ui][data-cu-design="adwaita"] :is(.cu-settings-select,.cu-brand-name-input) { border: 0; background: transparent; border-radius: 5px; padding-block: 4px; font-size: 13px; }
+body[data-claude-ui][data-cu-design="adwaita"] .cu-settings-select { text-align: end; text-align-last: end; padding-inline: 8px 0; }
+body[data-claude-ui][data-cu-design="adwaita"] .cu-settings-select option { text-align: start; }
 body[data-claude-ui][data-cu-design="adwaita"] .cu-appearance-settings input[type="checkbox"] { width: 38px; min-width: 38px; height: 22px; min-height: 22px; flex-basis: 38px; border: 0; border-radius: 12px; background: var(--cu-border); margin: 0; }
 body[data-claude-ui][data-cu-design="adwaita"] .cu-appearance-settings input[type="checkbox"]::after { content: ""; position: absolute; inset: 3px auto 3px 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px #0003; }
 body[data-claude-ui][data-cu-design="adwaita"] .cu-appearance-settings input[type="checkbox"]:checked::after { content: ""; inset-inline-start: 19px; }
