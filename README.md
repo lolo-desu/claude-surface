@@ -1,6 +1,12 @@
-# Claude Surface 0.8.1
+# Claude Surface Legacy 0.8.1（遗产版）
 
-SillyTavern 的 Claude 风格界面扩展，参考 2026-10-24 的 Claude 移动网页版。
+本分支保留原主线 0.8.1 的 Claude 风格界面与行为，作为遗产版本使用。主线与开发版提供四种设计风格及后续功能。
+
+| 分支 | 用途 |
+| --- | --- |
+| `main` | 当前主线版本（0.9.4） |
+| `codex/material-adwaita-swiss` | 后续功能开发与验证 |
+| `codex/legacy` | 原主线 0.8.1 遗产版本 |
 
 ## 安装
 
@@ -9,6 +15,8 @@ SillyTavern 的 Claude 风格界面扩展，参考 2026-10-24 的 Claude 移动�
 ```text
 https://github.com/lolo-desu/claude-surface
 ```
+
+要安装或保留本遗产版，在安装框的“Branch or tag name／分支或标签名”填写 `codex/legacy`。只填写仓库 URL 会安装当前 `main`。已有安装请在扩展管理中切换分支，三个分支不需要同时安装。
 
 安装完成后刷新页面即可使用，后续可通过酒馆的扩展管理更新。仓库根目录直接包含 `manifest.json`、`index.js` 和 `style.css`，无需构建或安装依赖。
 
