@@ -16,9 +16,6 @@ body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"]) {
 }
 body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"]) :is(.cu-header,.cu-sidebar,.cu-sheet,.cu-composer-meta) { font-family: var(--cu-sans); }
 body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"]) #send_but { background: var(--cu-accent); color: var(--cu-on-accent); }
-body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"]) :is(input[type="checkbox"],input[type="radio"]):checked { background-color: var(--cu-accent); border-color: var(--cu-accent); }
-body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"]) input[type="checkbox"]:checked::after { color: var(--cu-on-accent); }
-body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"]) input[type="radio"]:checked::after { background: var(--cu-on-accent); }
 body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"]) :is(.select2-selection,.select2-dropdown) { border-radius: var(--cu-control-radius) !important; }
 body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"]) :is(.drawer-content,.popup,.floating_panel) :is(input.text_pole,input[type="text"],input[type="number"],input[type="search"],input[type="password"],input[type="url"],textarea,select,.menu_button,.menu_button_icon) { border-radius: var(--cu-control-radius) !important; }
 body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"]) :focus-visible { outline-color: var(--cu-accent) !important; }
@@ -142,10 +139,6 @@ body[data-claude-ui][data-cu-design="adwaita"] .cu-segment .cu-button[aria-press
 body[data-claude-ui][data-cu-design="adwaita"] :is(.cu-settings-select,.cu-brand-name-input) { border: 0; background: transparent; border-radius: 5px; padding-block: 4px; font-size: 13px; }
 body[data-claude-ui][data-cu-design="adwaita"] .cu-settings-select { text-align: end; text-align-last: end; padding-inline: 8px 0; }
 body[data-claude-ui][data-cu-design="adwaita"] .cu-settings-select option { text-align: start; }
-body[data-claude-ui][data-cu-design="adwaita"] .cu-appearance-settings input[type="checkbox"] { width: 38px; min-width: 38px; height: 22px; min-height: 22px; flex-basis: 38px; border: 0; border-radius: 12px; background: var(--cu-border); margin: 0; }
-body[data-claude-ui][data-cu-design="adwaita"] .cu-appearance-settings input[type="checkbox"]::after { content: ""; position: absolute; inset: 3px auto 3px 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px #0003; }
-body[data-claude-ui][data-cu-design="adwaita"] .cu-appearance-settings input[type="checkbox"]:checked::after { content: ""; inset-inline-start: 19px; }
-body[data-claude-ui][data-cu-design="adwaita"] .cu-appearance-settings input[type="checkbox"]:disabled { opacity: .45; }
 body[data-claude-ui][data-cu-design="adwaita"] :is(.drawer-content,.popup,.floating_panel) .inline-drawer { margin-block: 12px; border: 1px solid var(--cu-border); border-radius: 9px; background: var(--cu-input); }
 body[data-claude-ui][data-cu-design="adwaita"] :is(.drawer-content,.popup,.floating_panel) .inline-drawer-header { margin: 0; padding: 12px; font-weight: 700; }
 body[data-claude-ui][data-cu-design="adwaita"] :is(.drawer-content,.popup,.floating_panel) .inline-drawer-content { padding: 10px 12px; }

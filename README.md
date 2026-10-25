@@ -1,14 +1,16 @@
-# Claude Surface 0.9.5
+# Claude Surface 0.10.0 开发版
 
 为 SillyTavern 提供 Claude、Material Design、Adwaita 和 FlatDesign 的界面扩展。
 
 | 分支 | 用途 | 当前版本 |
 | --- | --- | --- |
 | [`main`](https://github.com/lolo-desu/claude-surface/tree/main) | 主线，日常安装与更新使用 | 0.9.5 |
-| [`codex/material-adwaita-swiss`](https://github.com/lolo-desu/claude-surface/tree/codex/material-adwaita-swiss) | 开发，后续功能与修复先在这里验证 | 0.9.5 |
+| [`codex/material-adwaita-swiss`](https://github.com/lolo-desu/claude-surface/tree/codex/material-adwaita-swiss) | 开发，后续功能与修复先在这里验证 | 0.10.0 |
 | [`codex/legacy`](https://github.com/lolo-desu/claude-surface/tree/codex/legacy) | 遗产，保留升级前主线的 Claude 风格与行为 | 0.8.1 |
 
 ## 安装
+
+0.10.0 开发版：四种风格分别完善勾选框、半选状态、单选按钮、即时设置开关、滑块、输入框与分段按钮，主题色同步作用于控件。保留原生输入行为、键盘焦点与禁用状态，尊重减少动态效果与强制高对比度偏好。
 
 0.9.5 hotfix：修复 Material 设置分组的首尾圆角方向和单行分组形状，圆角由整个分组统一裁切；隐藏品牌项不再影响末行判断，同时修正 Material、Adwaita 分组底部多余的分隔线。
 
@@ -29,6 +31,8 @@ https://github.com/lolo-desu/claude-surface
 主题设置提供 Claude、Material Design、Adwaita、FlatDesign 四种设计，默认保留 Claude。主题卡片只显示名称与预览。深色、浅色和跟随系统均可选择。
 
 Material 使用分层色调、胶囊输入栏和柔和面板动效；Adwaita 使用居中标题、分组偏好和短促动效；FlatDesign 使用明确字阶、轻边界和快速动效，夜间主体为中性炭灰。所有动效遵循系统减少动态效果偏好，不动画聊天宽度或世界书条目高度。
+
+控件随风格变化：Claude 使用细边勾选框和纤细滑块；Material 使用大圆角开关、粗轨道与竖条滑块把手、连接式分段按钮；Adwaita 使用白色圆形开关把手、凹入输入框与圆形滑块；FlatDesign 使用方形勾选框、方形开关和下划线分段按钮。设置中的即时开关只作用于本扩展的布尔偏好；原生和第三方的选择项保持勾选框，不替换节点、事件或数值。所有外观同样提供未选、选中、半选、禁用、键盘焦点状态；触屏不保留鼠标悬停效果。
 
 Material 首页的静态柔光围绕问候语展开，范围不随页面高度拉长；柔光和细微抖色共用椭圆遮罩，在图层四周提前淡到透明，避免矩形截断。低亮度渐变与细微抖色用于减轻深色背景的色带，不使用持续动画或大面积模糊。
 

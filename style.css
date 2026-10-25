@@ -81,7 +81,7 @@ body[data-claude-ui].cu-background-enabled :is(#sheld,#chat) { background: trans
 body[data-claude-ui] * { text-shadow: none !important; scrollbar-width: thin; scrollbar-color: var(--cu-border) transparent; }
 body[data-claude-ui] button, body[data-claude-ui] input, body[data-claude-ui] textarea, body[data-claude-ui] select { font-family: var(--cu-sans); }
 body[data-claude-ui] :focus-visible { outline: 2px solid var(--cu-muted) !important; outline-offset: -3px; }
-body[data-claude-ui] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),textarea,select):not(#send_textarea):not(#curEditTextarea):is(:focus,:focus-visible) {
+body[data-claude-ui] :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),textarea,select):where(:not(#send_textarea):not(#curEditTextarea)):is(:focus,:focus-visible) {
     outline: none !important; border-color: var(--cu-muted) !important; box-shadow: inset 0 0 0 1px var(--cu-muted) !important;
 }
 body[data-claude-ui] :is(#send_textarea,#curEditTextarea):focus-visible { outline: none !important; box-shadow: none !important; }
@@ -1007,9 +1007,6 @@ body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"]) {
 }
 body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"]) :is(.cu-header,.cu-sidebar,.cu-sheet,.cu-composer-meta) { font-family: var(--cu-sans); }
 body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"]) #send_but { background: var(--cu-accent); color: var(--cu-on-accent); }
-body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"]) :is(input[type="checkbox"],input[type="radio"]):checked { background-color: var(--cu-accent); border-color: var(--cu-accent); }
-body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"]) input[type="checkbox"]:checked::after { color: var(--cu-on-accent); }
-body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"]) input[type="radio"]:checked::after { background: var(--cu-on-accent); }
 body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"]) :is(.select2-selection,.select2-dropdown) { border-radius: var(--cu-control-radius) !important; }
 body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"]) :is(.drawer-content,.popup,.floating_panel) :is(input.text_pole,input[type="text"],input[type="number"],input[type="search"],input[type="password"],input[type="url"],textarea,select,.menu_button,.menu_button_icon) { border-radius: var(--cu-control-radius) !important; }
 body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"]) :focus-visible { outline-color: var(--cu-accent) !important; }
@@ -1133,10 +1130,6 @@ body[data-claude-ui][data-cu-design="adwaita"] .cu-segment .cu-button[aria-press
 body[data-claude-ui][data-cu-design="adwaita"] :is(.cu-settings-select,.cu-brand-name-input) { border: 0; background: transparent; border-radius: 5px; padding-block: 4px; font-size: 13px; }
 body[data-claude-ui][data-cu-design="adwaita"] .cu-settings-select { text-align: end; text-align-last: end; padding-inline: 8px 0; }
 body[data-claude-ui][data-cu-design="adwaita"] .cu-settings-select option { text-align: start; }
-body[data-claude-ui][data-cu-design="adwaita"] .cu-appearance-settings input[type="checkbox"] { width: 38px; min-width: 38px; height: 22px; min-height: 22px; flex-basis: 38px; border: 0; border-radius: 12px; background: var(--cu-border); margin: 0; }
-body[data-claude-ui][data-cu-design="adwaita"] .cu-appearance-settings input[type="checkbox"]::after { content: ""; position: absolute; inset: 3px auto 3px 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px #0003; }
-body[data-claude-ui][data-cu-design="adwaita"] .cu-appearance-settings input[type="checkbox"]:checked::after { content: ""; inset-inline-start: 19px; }
-body[data-claude-ui][data-cu-design="adwaita"] .cu-appearance-settings input[type="checkbox"]:disabled { opacity: .45; }
 body[data-claude-ui][data-cu-design="adwaita"] :is(.drawer-content,.popup,.floating_panel) .inline-drawer { margin-block: 12px; border: 1px solid var(--cu-border); border-radius: 9px; background: var(--cu-input); }
 body[data-claude-ui][data-cu-design="adwaita"] :is(.drawer-content,.popup,.floating_panel) .inline-drawer-header { margin: 0; padding: 12px; font-weight: 700; }
 body[data-claude-ui][data-cu-design="adwaita"] :is(.drawer-content,.popup,.floating_panel) .inline-drawer-content { padding: 10px 12px; }
@@ -1226,6 +1219,186 @@ body[data-claude-ui][data-cu-design="swiss"] :is(.cu-button,.cu-palette-chip,#se
 body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"]) .cu-sheet-closing .cu-sheet-panel { animation: cu-sheet-out 120ms ease both; }
 @media(prefers-reduced-motion: reduce) {
     body[data-claude-ui][data-cu-design] :is(.cu-sidebar,.cu-sheet,.cu-sheet-panel,.openDrawer,.cu-button,.cu-palette-chip,#send_but,.cu-header) { animation: none !important; transition: none !important; }
+}
+
+/* Native inputs keep their labels, events and keyboard interaction. Only
+   first-party immediate preferences opt into role=switch in index.js. */
+body[data-claude-ui] {
+    --cu-choice-size: 17px; --cu-choice-radius: 4px;
+    --cu-choice-fill: var(--cu-text); --cu-choice-ink: var(--cu-bg);
+    --cu-choice-outline: var(--cu-muted); --cu-choice-stroke: 1px;
+    --cu-switch-width: 36px; --cu-switch-height: 22px; --cu-switch-radius: 12px;
+    --cu-switch-knob: 16px; --cu-switch-knob-on: 16px; --cu-switch-inset: 3px;
+    --cu-switch-knob-radius: 50%; --cu-switch-off: var(--cu-border);
+    --cu-range-height: 3px; --cu-range-radius: 3px;
+    --cu-thumb-width: 13px; --cu-thumb-height: 13px; --cu-thumb-radius: 50%;
+    --cu-component-time: 140ms; --cu-component-ease: ease;
+}
+body[data-claude-ui][data-cu-design="material"] {
+    --cu-choice-size: 20px; --cu-choice-radius: 3px; --cu-choice-stroke: 2px;
+    --cu-choice-fill: var(--cu-accent); --cu-choice-ink: var(--cu-on-accent);
+    --cu-switch-width: 52px; --cu-switch-height: 32px; --cu-switch-radius: 18px;
+    --cu-switch-knob: 16px; --cu-switch-knob-on: 24px; --cu-switch-inset: 4px;
+    --cu-switch-off: var(--cu-input); --cu-range-height: 8px; --cu-range-radius: 8px;
+    --cu-thumb-width: 4px; --cu-thumb-height: 28px; --cu-thumb-radius: 3px;
+    --cu-component-time: 220ms; --cu-component-ease: cubic-bezier(.2,0,0,1);
+}
+body[data-claude-ui][data-cu-design="adwaita"] {
+    --cu-choice-size: 18px; --cu-choice-radius: 5px;
+    --cu-choice-fill: var(--cu-accent); --cu-choice-ink: var(--cu-on-accent);
+    --cu-switch-width: 46px; --cu-switch-height: 26px; --cu-switch-radius: 14px;
+    --cu-switch-knob: 20px; --cu-switch-knob-on: 20px; --cu-switch-inset: 3px;
+    --cu-range-height: 4px; --cu-thumb-width: 18px; --cu-thumb-height: 18px;
+    --cu-component-time: 160ms; --cu-component-ease: cubic-bezier(.25,.8,.25,1);
+}
+body[data-claude-ui][data-cu-design="swiss"] {
+    --cu-choice-size: 18px; --cu-choice-radius: 1px;
+    --cu-choice-fill: var(--cu-accent); --cu-choice-ink: var(--cu-on-accent);
+    --cu-switch-width: 40px; --cu-switch-height: 24px; --cu-switch-radius: 2px;
+    --cu-switch-knob: 16px; --cu-switch-knob-on: 16px; --cu-switch-inset: 4px;
+    --cu-switch-knob-radius: 1px; --cu-range-height: 2px; --cu-range-radius: 0px;
+    --cu-thumb-width: 10px; --cu-thumb-height: 20px; --cu-thumb-radius: 1px;
+    --cu-component-time: 90ms; --cu-component-ease: linear;
+}
+
+/* Suppress the host's polygon tick. Check/dash masks share a single paint
+   layer, so switches cannot inherit a second tick or a font-dependent glyph. */
+body[data-claude-ui] :is(input[type="checkbox"],input[type="radio"]) {
+    appearance: none; -webkit-appearance: none; box-sizing: border-box;
+    display: inline-block; position: relative; overflow: visible;
+    width: var(--cu-choice-size); min-width: var(--cu-choice-size);
+    height: var(--cu-choice-size); min-height: var(--cu-choice-size);
+    flex: 0 0 var(--cu-choice-size); margin: 3px 5px 3px 0; padding: 0;
+    border: var(--cu-choice-stroke) solid var(--cu-choice-outline);
+    border-radius: var(--cu-choice-radius); background: var(--cu-input);
+    box-shadow: none; filter: none; transform: none; cursor: pointer;
+    transition: background-color var(--cu-component-time) var(--cu-component-ease), border-color var(--cu-component-time) var(--cu-component-ease);
+}
+body[data-claude-ui] :is(input[type="checkbox"],input[type="radio"])::before { content: none !important; display: none !important; }
+body[data-claude-ui] input[type="checkbox"]::after {
+    content: ""; display: block; position: absolute; inset: 0; margin: auto;
+    width: 100%; height: 100%; border-radius: 0; font-size: 0; line-height: 0;
+    background: var(--cu-choice-ink); opacity: 0; box-shadow: none;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='m4.5 10 3.5 3.5 7.5-7.5' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='m4.5 10 3.5 3.5 7.5-7.5' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+body[data-claude-ui] input[type="checkbox"]:is(:checked,:indeterminate) { background: var(--cu-choice-fill); border-color: var(--cu-choice-fill); }
+body[data-claude-ui] input[type="checkbox"]:is(:checked,:indeterminate)::after { content: ""; display: block; color: transparent; background: var(--cu-choice-ink); opacity: 1; }
+body[data-claude-ui] input[type="checkbox"]:indeterminate::after {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5 10h10' stroke='black' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5 10h10' stroke='black' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+body[data-claude-ui] input[type="radio"] { border-radius: 50%; }
+body[data-claude-ui] input[type="radio"]:checked { background: var(--cu-input); border-color: var(--cu-choice-fill); }
+body[data-claude-ui] input[type="radio"]:checked::after {
+    content: ""; position: absolute; inset: 0; margin: auto; width: 50%; height: 50%;
+    border-radius: 50%; background: var(--cu-choice-fill); box-shadow: none;
+}
+
+body[data-claude-ui] input[type="checkbox"][role="switch"] {
+    width: var(--cu-switch-width); min-width: var(--cu-switch-width);
+    height: var(--cu-switch-height); min-height: var(--cu-switch-height);
+    flex-basis: var(--cu-switch-width); margin: 0;
+    border: 0; border-radius: var(--cu-switch-radius); background: var(--cu-switch-off);
+}
+body[data-claude-ui] input[type="checkbox"][role="switch"]::after {
+    content: ""; display: block; position: absolute; inset: auto; top: 50%;
+    inset-inline-start: var(--cu-switch-inset); margin: 0;
+    width: var(--cu-switch-knob); height: var(--cu-switch-knob);
+    transform: translateY(-50%); border: 0; border-radius: var(--cu-switch-knob-radius);
+    -webkit-mask: none; mask: none; background: var(--cu-muted); opacity: 1;
+    transition: inset-inline-start var(--cu-component-time) var(--cu-component-ease), width var(--cu-component-time) var(--cu-component-ease), height var(--cu-component-time) var(--cu-component-ease), background-color var(--cu-component-time) var(--cu-component-ease);
+}
+body[data-claude-ui] input[type="checkbox"][role="switch"]:checked { background: var(--cu-choice-fill); border-color: var(--cu-choice-fill); }
+body[data-claude-ui] input[type="checkbox"][role="switch"]:checked::after {
+    content: ""; inset: auto; top: 50%;
+    inset-inline-start: calc(100% - var(--cu-switch-knob-on) - var(--cu-switch-inset));
+    width: var(--cu-switch-knob-on); height: var(--cu-switch-knob-on);
+    background: var(--cu-choice-ink); -webkit-mask: none; mask: none;
+}
+body[data-claude-ui][data-cu-design="material"] input[type="checkbox"][role="switch"] { box-shadow: inset 0 0 0 2px var(--cu-muted); }
+body[data-claude-ui][data-cu-design="material"] input[type="checkbox"][role="switch"]:not(:checked)::after { inset-inline-start: 8px; }
+body[data-claude-ui][data-cu-design="material"] input[type="checkbox"][role="switch"]:checked { box-shadow: none; }
+body[data-claude-ui][data-cu-design="adwaita"] input[type="checkbox"][role="switch"]::after { background: #fff; box-shadow: 0 1px 2px #0003; }
+body[data-claude-ui][data-cu-design="adwaita"] input[type="checkbox"]:not([role="switch"]):not(:checked):not(:indeterminate) { box-shadow: inset 0 1px 2px #00000012; }
+body[data-claude-ui][data-cu-design="swiss"] input[type="checkbox"][role="switch"] { box-shadow: inset 0 0 0 1px var(--cu-choice-outline); }
+body[data-claude-ui][data-cu-design="swiss"] input[type="checkbox"][role="switch"]:checked { box-shadow: none; }
+
+/* WebKit and Firefox use separate pseudo-element rules: unsupported ones must
+   not invalidate a combined selector. Existing native range fill stays live. */
+body[data-claude-ui] :is(input[type="range"],input.neo-range-slider) { touch-action: pan-y; }
+body[data-claude-ui] :is(input[type="range"],input.neo-range-slider)::-webkit-slider-runnable-track {
+    height: var(--cu-range-height); border: 0; border-radius: var(--cu-range-radius);
+    background: linear-gradient(to right,var(--cu-choice-fill) var(--cu-range-fill,0%),var(--cu-border) var(--cu-range-fill,0%));
+}
+body[data-claude-ui] :is(input[type="range"],input.neo-range-slider)::-webkit-slider-thumb {
+    appearance: none; -webkit-appearance: none; box-sizing: border-box;
+    width: var(--cu-thumb-width); height: var(--cu-thumb-height);
+    margin-top: calc((var(--cu-range-height) - var(--cu-thumb-height)) / 2);
+    border: 0; border-radius: var(--cu-thumb-radius); background: var(--cu-choice-fill);
+    box-shadow: 0 0 0 2px var(--cu-input);
+}
+body[data-claude-ui] :is(input[type="range"],input.neo-range-slider)::-moz-range-track { height: var(--cu-range-height); border: 0; border-radius: var(--cu-range-radius); background: var(--cu-border); }
+body[data-claude-ui] :is(input[type="range"],input.neo-range-slider)::-moz-range-progress { height: var(--cu-range-height); border: 0; border-radius: var(--cu-range-radius); background: var(--cu-choice-fill); }
+body[data-claude-ui] :is(input[type="range"],input.neo-range-slider)::-moz-range-thumb { width: var(--cu-thumb-width); height: var(--cu-thumb-height); border: 0; border-radius: var(--cu-thumb-radius); background: var(--cu-choice-fill); box-shadow: 0 0 0 2px var(--cu-input); }
+body[data-claude-ui][data-cu-design="adwaita"] :is(input[type="range"],input.neo-range-slider)::-webkit-slider-thumb { background: var(--cu-input); border: 1px solid var(--cu-input-border); box-shadow: 0 1px 3px #0003; }
+body[data-claude-ui][data-cu-design="adwaita"] :is(input[type="range"],input.neo-range-slider)::-moz-range-thumb { background: var(--cu-input); border: 1px solid var(--cu-input-border); box-shadow: 0 1px 3px #0003; }
+body[data-claude-ui][data-cu-design="swiss"] :is(input[type="range"],input.neo-range-slider)::-webkit-slider-thumb { box-shadow: none; }
+body[data-claude-ui][data-cu-design="swiss"] :is(input[type="range"],input.neo-range-slider)::-moz-range-thumb { box-shadow: none; }
+
+/* Settings selects retain native menus and trailing alignment. World-info
+   status selects and compact numeric fields keep their own layout. */
+body[data-claude-ui] .cu-settings-select { text-align: end; text-align-last: end; }
+body[data-claude-ui] .cu-settings-select option { text-align: start; }
+body[data-claude-ui][data-cu-design="material"] :is(.cu-settings-select,.cu-brand-name-input) { background: var(--cu-selected); border: 0; border-bottom: 2px solid var(--cu-input-border); border-radius: 10px 10px 0 0; padding: 8px 10px; }
+body[data-claude-ui][data-cu-design="adwaita"] .cu-brand-name-input { background: var(--cu-bg); border: 1px solid var(--cu-input-border); border-radius: 6px; box-shadow: inset 0 1px 2px #00000012; padding: 6px 8px; }
+body[data-claude-ui][data-cu-design="swiss"] :is(.cu-settings-select,.cu-brand-name-input) { background: transparent; border: 1px solid var(--cu-input-border); border-radius: 2px; box-shadow: none; padding: 6px 8px; }
+body[data-claude-ui][data-cu-design="material"] :is(.drawer-content,.popup,.floating_panel) :is(input[type="text"],input[type="search"],input[type="password"],input[type="url"],textarea):not(.wideMax100px):not(.neo-range-input) { border-radius: 10px 10px 0 0 !important; border-bottom: 2px solid var(--cu-input-border) !important; }
+body[data-claude-ui][data-cu-design="swiss"] :is(.drawer-content,.popup,.floating_panel) :is(input[type="text"],input[type="search"],input[type="password"],input[type="url"],textarea,select) { border-radius: 2px !important; }
+
+/* Connected M3 segments, raised GTK selection, and ruled FlatDesign tabs. */
+body[data-claude-ui][data-cu-design="material"] .cu-segment { gap: 0; padding: 0; border: 1px solid var(--cu-input-border); border-radius: 24px; overflow: clip; }
+body[data-claude-ui][data-cu-design="material"] .cu-segment .cu-button { border: 0; border-radius: 0; min-height: 34px; }
+body[data-claude-ui][data-cu-design="material"] .cu-segment .cu-button + .cu-button { border-inline-start: 1px solid var(--cu-input-border); }
+body[data-claude-ui][data-cu-design="material"] .cu-segment .cu-button[aria-pressed="true"] { background: var(--cu-selected); color: var(--cu-accent); }
+body[data-claude-ui][data-cu-design="swiss"] .cu-segment { gap: 0; padding: 0; border: 0; border-bottom: 1px solid var(--cu-input-border); border-radius: 0; background: transparent; }
+body[data-claude-ui][data-cu-design="swiss"] .cu-segment .cu-button { border: 0; border-radius: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; background: transparent; }
+body[data-claude-ui][data-cu-design="swiss"] .cu-segment .cu-button[aria-pressed="true"] { border-bottom-color: var(--cu-accent); background: transparent; color: var(--cu-accent); }
+body[data-claude-ui] :is(.cu-button,.cu-icon,.cu-design-card) { transition: background-color var(--cu-component-time) var(--cu-component-ease), border-color var(--cu-component-time) var(--cu-component-ease), box-shadow var(--cu-component-time) var(--cu-component-ease); }
+body[data-claude-ui][data-cu-design="adwaita"] .cu-design-card[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--cu-accent); }
+body[data-claude-ui][data-cu-design="swiss"] .cu-design-card { border-radius: 2px; }
+body[data-claude-ui][data-cu-design="swiss"] .cu-design-card[aria-pressed="true"] { border-color: var(--cu-accent); box-shadow: inset 3px 0 var(--cu-accent); }
+
+/* Focus is visible inside clipped groups; disabled controls never get active
+   feedback. Hover only applies to devices which actually have a hover cursor. */
+body[data-claude-ui] :is(input[type="checkbox"],input[type="radio"],input[type="range"],.cu-settings-select,.cu-brand-name-input):focus-visible {
+    outline: 2px solid var(--cu-accent,var(--cu-text)) !important; outline-offset: 3px !important;
+}
+body[data-claude-ui] :is(.drawer-content,.popup,.floating_panel) :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),textarea,select):focus-visible {
+    outline: 2px solid var(--cu-accent,var(--cu-text)) !important; outline-offset: -2px !important;
+    border-color: var(--cu-accent,var(--cu-text)) !important; box-shadow: none !important;
+}
+body[data-claude-ui] .cu-segment .cu-button:focus-visible { outline-offset: -3px !important; }
+body[data-claude-ui] :is(input[type="checkbox"],input[type="radio"],input[type="range"],.cu-settings-select,.cu-brand-name-input):disabled { opacity: .4; cursor: not-allowed !important; }
+body[data-claude-ui] :is(input[type="checkbox"],input[type="radio"])[hidden] { display: none !important; }
+body[data-claude-ui][data-cu-design="material"] :is(.cu-button,.cu-icon):not(:disabled):active { box-shadow: inset 0 0 0 100px color-mix(in srgb,var(--cu-accent) 14%,transparent); }
+body[data-claude-ui][data-cu-design="adwaita"] :is(.cu-button,.cu-icon):not(:disabled):active { box-shadow: inset 0 1px 3px #0002; }
+body[data-claude-ui][data-cu-design="swiss"] .cu-button:not(.cu-danger):not(:disabled):active { background: var(--cu-text); color: var(--cu-bg); }
+@media (hover: hover) and (pointer: fine) {
+    body[data-claude-ui] :is(input[type="checkbox"],input[type="radio"]):not(:disabled):hover { border-color: var(--cu-choice-fill); outline: 3px solid var(--cu-hover); outline-offset: 2px; }
+    body[data-claude-ui][data-cu-design="material"] :is(input[type="checkbox"],input[type="radio"]):not(:disabled):hover { outline: 6px solid color-mix(in srgb,var(--cu-accent) 12%,transparent); outline-offset: 1px; }
+    body[data-claude-ui][data-cu-design="swiss"] .cu-button:not(.cu-danger):not(:disabled):hover { background: var(--cu-hover); box-shadow: inset 0 -1px var(--cu-input-border); }
+}
+@media (prefers-reduced-motion: reduce) {
+    body[data-claude-ui] :is(input,.cu-button,.cu-icon,.cu-design-card),
+    body[data-claude-ui] input::after { transition: none !important; }
+}
+@media (forced-colors: active) {
+    body[data-claude-ui] :is(input[type="checkbox"],input[type="radio"]) { appearance: auto !important; -webkit-appearance: auto !important; width: 20px !important; min-width: 20px !important; height: 20px !important; min-height: 20px !important; flex-basis: 20px !important; background: revert !important; border: revert !important; box-shadow: none !important; }
+    body[data-claude-ui] :is(input[type="checkbox"],input[type="radio"])::after { display: none !important; }
+    body[data-claude-ui] input[type="range"] { appearance: auto !important; -webkit-appearance: auto !important; }
+    body[data-claude-ui] input[type="range"]::-webkit-slider-thumb { appearance: auto !important; -webkit-appearance: auto !important; }
+    body[data-claude-ui] :is(.cu-button,.cu-design-card)[aria-pressed="true"] { outline: 2px solid Highlight !important; outline-offset: -3px; }
 }
 
 /* Prompt Manager supplies its own white labels and drop-shadows. Keep its layout/handlers, including BaiBai's. */

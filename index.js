@@ -650,7 +650,7 @@ function showAppearance() {
     const fontLabel = document.createElement('span');
     fontLabel.textContent = '英文回复使用衬线字体';
     const check = document.createElement('input');
-    check.type = 'checkbox';
+    check.type = 'checkbox'; check.setAttribute('role', 'switch');
     check.checked = settings().serif;
     check.dataset.cuSerif = '';
     check.disabled = designOf(settings().design).id !== 'claude';
@@ -662,7 +662,7 @@ function showAppearance() {
     const toolbarLabel = document.createElement('span');
     toolbarLabel.textContent = '显示原生菜单栏';
     const toolbarCheck = document.createElement('input');
-    toolbarCheck.type = 'checkbox';
+    toolbarCheck.type = 'checkbox'; toolbarCheck.setAttribute('role', 'switch');
     toolbarCheck.checked = settings().nativeToolbar;
     toolbarCheck.addEventListener('change', () => setNativeToolbar(toolbarCheck.checked));
     toolbarRow.append(toolbarLabel, toolbarCheck);
@@ -671,7 +671,7 @@ function showAppearance() {
     const backgroundLabel = document.createElement('span');
     backgroundLabel.textContent = '显示 SillyTavern 背景图片';
     const backgroundCheck = document.createElement('input');
-    backgroundCheck.type = 'checkbox';
+    backgroundCheck.type = 'checkbox'; backgroundCheck.setAttribute('role', 'switch');
     backgroundCheck.checked = settings().background;
     backgroundCheck.addEventListener('change', () => { settings().background = backgroundCheck.checked; save(); applyAppearance(); });
     backgroundRow.append(backgroundLabel, backgroundCheck);
@@ -698,14 +698,14 @@ function showAppearance() {
     const qrRow = document.createElement('label');
     qrRow.className = 'cu-settings-row cu-mobile-setting';
     const qrLabel = document.createElement('span'); qrLabel.textContent = '快速回复收起';
-    const qrCheck = document.createElement('input'); qrCheck.type = 'checkbox'; qrCheck.checked = settings().quickRepliesCollapsed;
+    const qrCheck = document.createElement('input'); qrCheck.type = 'checkbox'; qrCheck.setAttribute('role', 'switch'); qrCheck.checked = settings().quickRepliesCollapsed;
     qrCheck.addEventListener('change', () => { settings().quickRepliesCollapsed = qrCheck.checked; save(); applyAppearance(); });
     qrRow.append(qrLabel, qrCheck);
     const layoutRows = [];
     for (const [key, title] of [['compactComposer','输入栏紧凑模式']]) {
         const option = document.createElement('label'); option.className = 'cu-settings-row';
         const text = document.createElement('span'); text.textContent = title;
-        const input = document.createElement('input'); input.type = 'checkbox'; input.checked = settings()[key];
+        const input = document.createElement('input'); input.type = 'checkbox'; input.setAttribute('role', 'switch'); input.checked = settings()[key];
         input.addEventListener('change', () => { settings()[key] = input.checked; save(); applyAppearance(); });
         option.append(text, input); layoutRows.push(option);
     }
@@ -717,7 +717,7 @@ function showAppearance() {
     headerRow.append(headerLabel, headerSelect);
     const homeRow = document.createElement('label'); homeRow.className = 'cu-settings-row';
     const homeLabel = document.createElement('span'); homeLabel.textContent = '原版首页与最近记录';
-    const homeCheck = document.createElement('input'); homeCheck.type = 'checkbox'; homeCheck.checked = settings().useNativeHome;
+    const homeCheck = document.createElement('input'); homeCheck.type = 'checkbox'; homeCheck.setAttribute('role', 'switch'); homeCheck.checked = settings().useNativeHome;
     homeCheck.addEventListener('change', () => { settings().useNativeHome = homeCheck.checked; save(); applyAppearance(); });
     homeRow.append(homeLabel, homeCheck);
     const messageRow = document.createElement('label'); messageRow.className = 'cu-settings-row';
@@ -1000,7 +1000,7 @@ function registerExtensionSettings() {
     const block = document.createElement('div');
     block.id = 'cu-extension-settings';
     block.className = 'inline-drawer';
-    block.innerHTML = '<div class="inline-drawer-toggle inline-drawer-header"><b>Claude Surface</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div><div class="inline-drawer-content"><label class="checkbox_label"><input id="cu-extension-enabled" type="checkbox"><span>启用 Claude 界面</span></label><label>主题 <select id="cu-extension-mode"><option value="dark">深色</option><option value="light">浅色</option><option value="system">跟随系统</option></select></label></div>';
+    block.innerHTML = '<div class="inline-drawer-toggle inline-drawer-header"><b>Claude Surface</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div><div class="inline-drawer-content"><label class="checkbox_label"><input id="cu-extension-enabled" type="checkbox" role="switch"><span>启用 Claude 界面</span></label><label>主题 <select id="cu-extension-mode"><option value="dark">深色</option><option value="light">浅色</option><option value="system">跟随系统</option></select></label></div>';
     host.append(block);
     const options = block.querySelector('.inline-drawer-content');
     const companionOption = document.createElement('option'); companionOption.value = 'companion'; companionOption.textContent = '跟随主题伴侣';
@@ -1014,7 +1014,7 @@ function registerExtensionSettings() {
         const label = document.createElement('label');
         label.className = 'checkbox_label';
         const input = document.createElement('input');
-        input.type = 'checkbox'; input.id = id;
+        input.type = 'checkbox'; input.setAttribute('role', 'switch'); input.id = id;
         const text = document.createElement('span'); text.textContent = title;
         label.append(input,text); options.append(label);
         input.addEventListener('change', () => { settings()[key] = input.checked; save(); applyAppearance(); });
