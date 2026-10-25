@@ -869,6 +869,12 @@ body[data-claude-ui].cu-compact-composer #send_form { padding: 5px 6px; }
     body[data-claude-ui].cu-sidebar-open { --cu-sidebar-space: var(--cu-sidebar-width); }
     body[data-claude-ui].cu-shell-ready #sheld { left: var(--cu-sidebar-space) !important; right: 0 !important; width: calc(100vw - var(--cu-sidebar-space)) !important; }
     body[data-claude-ui].cu-shell-ready #top-settings-holder { left: var(--cu-sidebar-space) !important; width: calc(100vw - var(--cu-sidebar-space)) !important; max-width: none !important; }
+    /* Center native dialogs in the usable area, clear of the pinned sidebar. */
+    body[data-claude-ui].cu-shell-ready #top-settings-holder > .drawer > .drawer-content {
+        left: calc(var(--cu-sidebar-space) + (100vw - var(--cu-sidebar-space)) / 2) !important;
+        width: min(1040px,calc(100vw - var(--cu-sidebar-space) - 32px)) !important;
+        max-width: calc(100vw - var(--cu-sidebar-space) - 32px) !important;
+    }
     body[data-claude-ui].cu-shell-ready #top-settings-holder > .drawer > :is(#left-nav-panel,#right-nav-panel) { top: var(--cu-chat-top) !important; bottom: 0 !important; translate: none !important; width: var(--cu-dock-width) !important; max-width: var(--cu-dock-width) !important; height: calc(100dvh - var(--cu-chat-top)) !important; max-height: calc(100dvh - var(--cu-chat-top)) !important; padding: 14px !important; border-radius: 0 !important; box-shadow: none; }
     body[data-claude-ui].cu-shell-ready #top-settings-holder > .drawer > #left-nav-panel { left: var(--cu-sidebar-space) !important; right: auto !important; border-width: 0 1px 0 0; }
     body[data-claude-ui].cu-shell-ready #top-settings-holder > .drawer > #right-nav-panel { left: auto !important; right: 0 !important; border-width: 0 0 0 1px; }
@@ -931,7 +937,7 @@ body[data-claude-ui] #rm_extensions_block label[for="extensions_notify_updates"]
     display: flex; align-items: center; justify-content: flex-end; gap: 8px !important;
     margin: 0; padding: 0; min-width: 0; line-height: 20px;
 }
-body[data-claude-ui] #extensions_notify_updates { margin: 0; flex: 0 0 16px; width: 16px; height: 16px; position: static; transform: none; }
+body[data-claude-ui] #extensions_notify_updates { margin: 0; position: relative; transform: none; }
 body[data-claude-ui] #rm_extensions_block :is(#extensions_details,#third_party_extension_button) { margin: 0; min-height: 36px; align-items: center; justify-content: center; }
 /* One fixed hit box aligns every native glyph independently of Font Awesome. */
 body[data-claude-ui].cu-shell-ready.cu-native-open #top-settings-holder { align-items: center; }
@@ -1277,7 +1283,10 @@ body[data-claude-ui] :is(input[type="checkbox"],input[type="radio"]) {
 body[data-claude-ui] :is(input[type="checkbox"],input[type="radio"])::before { content: none !important; display: none !important; }
 body[data-claude-ui] input[type="checkbox"]::after {
     content: ""; display: block; position: absolute; inset: 0; margin: auto;
-    width: 100%; height: 100%; border-radius: 0; font-size: 0; line-height: 0;
+    width: calc(var(--cu-choice-size) - 2 * var(--cu-choice-stroke));
+    height: calc(var(--cu-choice-size) - 2 * var(--cu-choice-stroke));
+    max-width: var(--cu-choice-size); max-height: var(--cu-choice-size);
+    border-radius: 0; font-size: 0; line-height: 0; pointer-events: none;
     background: var(--cu-choice-ink); opacity: 0; box-shadow: none;
     -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='m4.5 10 3.5 3.5 7.5-7.5' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
     mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='m4.5 10 3.5 3.5 7.5-7.5' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
@@ -1291,7 +1300,9 @@ body[data-claude-ui] input[type="checkbox"]:indeterminate::after {
 body[data-claude-ui] input[type="radio"] { border-radius: 50%; }
 body[data-claude-ui] input[type="radio"]:checked { background: var(--cu-input); border-color: var(--cu-choice-fill); }
 body[data-claude-ui] input[type="radio"]:checked::after {
-    content: ""; position: absolute; inset: 0; margin: auto; width: 50%; height: 50%;
+    content: ""; position: absolute; inset: 0; margin: auto;
+    width: calc(var(--cu-choice-size) / 2); height: calc(var(--cu-choice-size) / 2);
+    pointer-events: none;
     border-radius: 50%; background: var(--cu-choice-fill); box-shadow: none;
 }
 
@@ -1305,6 +1316,7 @@ body[data-claude-ui] input[type="checkbox"][role="switch"]::after {
     content: ""; display: block; position: absolute; inset: auto; top: 50%;
     inset-inline-start: var(--cu-switch-inset); margin: 0;
     width: var(--cu-switch-knob); height: var(--cu-switch-knob);
+    max-width: none; max-height: none;
     transform: translateY(-50%); border: 0; border-radius: var(--cu-switch-knob-radius);
     -webkit-mask: none; mask: none; background: var(--cu-muted); opacity: 1;
     transition: inset-inline-start var(--cu-component-time) var(--cu-component-ease), width var(--cu-component-time) var(--cu-component-ease), height var(--cu-component-time) var(--cu-component-ease), background-color var(--cu-component-time) var(--cu-component-ease);

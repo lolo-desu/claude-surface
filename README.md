@@ -1,14 +1,16 @@
-# Claude Surface 0.10.0 开发版
+# Claude Surface 0.10.1 开发版
 
 为 SillyTavern 提供 Claude、Material Design、Adwaita 和 FlatDesign 的界面扩展。
 
 | 分支 | 用途 | 当前版本 |
 | --- | --- | --- |
 | [`main`](https://github.com/lolo-desu/claude-surface/tree/main) | 主线，日常安装与更新使用 | 0.9.5 |
-| [`codex/material-adwaita-swiss`](https://github.com/lolo-desu/claude-surface/tree/codex/material-adwaita-swiss) | 开发，后续功能与修复先在这里验证 | 0.10.0 |
+| [`codex/material-adwaita-swiss`](https://github.com/lolo-desu/claude-surface/tree/codex/material-adwaita-swiss) | 开发，后续功能与修复先在这里验证 | 0.10.1 |
 | [`codex/legacy`](https://github.com/lolo-desu/claude-surface/tree/codex/legacy) | 遗产，保留升级前主线的 Claude 风格与行为 | 0.8.1 |
 
 ## 安装
+
+0.10.1 hotfix：修复扩展页“在扩展程序更新时通知”勾选标记覆盖面板、挡住其他按钮的问题。勾选框恢复自身定位；勾选、半选和单选图形使用控件尺寸，并禁止装饰层拦截点击。桌面原生面板在侧栏以外的可用区域居中，避免常驻侧栏挡住左侧内容。
 
 0.10.0 开发版：四种风格分别完善勾选框、半选状态、单选按钮、即时设置开关、滑块、输入框与分段按钮，主题色同步作用于控件。保留原生输入行为、键盘焦点与禁用状态，尊重减少动态效果与强制高对比度偏好。
 
@@ -108,3 +110,9 @@ powershell -File install-startup.ps1 -SillyTavernPath 'D:\SillyTavern'
 主题覆盖布局与配色；需要原版自由拖动布局时可停用本扩展。第三方扩展内容使用其原有控件，尚未逐个插件验证。
 
 也可下载 [深色主题](themes/Claude%20Surface%20Dark.json) 或 [浅色主题](themes/Claude%20Surface%20Light.json)，通过原版用户设置导入，获得仅 CSS 的外观；完整首页与侧栏需本扩展。两种方式任选其一即可。
+
+## 浏览器回归
+
+`tests/controls.browser.mjs` 使用独立的 Chromium、WebKit 无头浏览器，在四种风格、深浅色和手机／窄桌面／宽桌面窗口下实际点击更新通知、扩展管理、安装按钮和设置折叠项，并检查开关、下拉框、滑块键盘输入以及面板与侧栏的边界。还检查五套原生 CSS 主题的勾选图形边界。测试拦截设置保存、主题保存及扩展变更请求，避免测试写入服务器偏好或安装／更新扩展。
+
+需要本地 SillyTavern 实例和 Playwright 测试依赖及浏览器，运行 `node tests/controls.browser.mjs`；默认地址为 `http://127.0.0.1:8010`，可通过 `CU_TEST_URL` 指定。默认使用仓库的 CSS 验证修复，`CU_SERVER_CSS=1` 可检查实例已安装的样式。可通过 `CU_PLAYWRIGHT_MODULE`、`CU_CHROMIUM_EXECUTABLE`、`CU_WEBKIT_EXECUTABLE` 指定测试依赖和可执行文件。无头 WebKit 回归不等同于 iOS TauriTavern 真机验证。
