@@ -72,7 +72,7 @@ test('Swiss night palettes keep neutral charcoal surfaces across accent choices'
 
 test('generated CSS cannot affect a different design and matches the saved stylesheet', () => {
     const css = paletteStyles();
-    assert.equal(css, fs.readFileSync(new URL('palette-styles.css', root), 'utf8'));
+    assert.equal(css, fs.readFileSync(new URL('palette-styles.css', root), 'utf8').replaceAll('\r\n', '\n'));
     for (const [design, palettes] of Object.entries(palettesByDesign)) {
         for (const palette of palettes) {
             if (!Object.keys(palette.dark).length) continue;
