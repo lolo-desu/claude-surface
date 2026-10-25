@@ -1,14 +1,16 @@
-# Claude Surface 0.9.4
+# Claude Surface 0.9.5
 
-为 SillyTavern 提供 Claude、Material Design、Adwaita 和 FlatDesign 的界面扩展。0.9.4 已合并到主线。
+为 SillyTavern 提供 Claude、Material Design、Adwaita 和 FlatDesign 的界面扩展。
 
 | 分支 | 用途 | 当前版本 |
 | --- | --- | --- |
-| [`main`](https://github.com/lolo-desu/claude-surface/tree/main) | 主线，日常安装与更新使用 | 0.9.4 |
-| [`codex/material-adwaita-swiss`](https://github.com/lolo-desu/claude-surface/tree/codex/material-adwaita-swiss) | 开发，后续功能与修复先在这里验证 | 0.9.4 |
+| [`main`](https://github.com/lolo-desu/claude-surface/tree/main) | 主线，日常安装与更新使用 | 0.9.5 |
+| [`codex/material-adwaita-swiss`](https://github.com/lolo-desu/claude-surface/tree/codex/material-adwaita-swiss) | 开发，后续功能与修复先在这里验证 | 0.9.5 |
 | [`codex/legacy`](https://github.com/lolo-desu/claude-surface/tree/codex/legacy) | 遗产，保留升级前主线的 Claude 风格与行为 | 0.8.1 |
 
 ## 安装
+
+0.9.5 hotfix：修复 Material 设置分组的首尾圆角方向和单行分组形状，圆角由整个分组统一裁切；隐藏品牌项不再影响末行判断，同时修正 Material、Adwaita 分组底部多余的分隔线。
 
 在 SillyTavern 中打开“扩展 → 安装扩展”，粘贴以下仓库 URL：
 

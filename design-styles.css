@@ -78,8 +78,9 @@ body[data-claude-ui][data-cu-design="material"] #send_textarea { padding: 10px 6
 body[data-claude-ui][data-cu-design="material"] :is(#send_but,#leftSendForm .menu_button,#rightSendForm .menu_button) { border-radius: 50%; }
 body[data-claude-ui][data-cu-design="material"] :is(#send_but,.cu-segment .cu-button) { border-radius: 24px; }
 body[data-claude-ui][data-cu-design="material"] :is(.cu-sheet-panel,.popup) { border-radius: 24px; }
-body[data-claude-ui][data-cu-design="material"] .cu-settings-row { padding: 14px 12px; background: var(--cu-input); border-color: var(--cu-border); }
-body[data-claude-ui][data-cu-design="material"] .cu-settings-row:first-of-type { border-radius: 18px 18px 0 0; }
+/* The group owns its outline: mixed div/label rows and hidden brand controls must not create extra top corners. */
+body[data-claude-ui][data-cu-design="material"] .cu-settings-group { display: block; min-width: 0; margin-bottom: 14px; border-radius: 18px; overflow: hidden; overflow: clip; background: var(--cu-input); }
+body[data-claude-ui][data-cu-design="material"] .cu-settings-row { padding: 14px 12px; background: var(--cu-input); border-color: var(--cu-border); border-radius: 0; }
 body[data-claude-ui][data-cu-design="material"] :is(.drawer-content,.popup,.floating_panel) .inline-drawer-header { padding: 14px 12px; background: var(--cu-input) !important; border-radius: 16px; border-bottom: 0 !important; }
 body[data-claude-ui][data-cu-design="material"] :is(.drawer-content,.popup,.floating_panel) .menu_button { min-height: 34px; padding-inline: 12px; background: var(--cu-selected); border-color: transparent; }
 body[data-claude-ui][data-cu-design="material"] .qr--button { border-radius: 20px; }
@@ -194,6 +195,9 @@ body[data-claude-ui][data-cu-design="swiss"] :is(.drawer-content,.popup,.floatin
 body[data-claude-ui][data-cu-design="swiss"] :is(.drawer-content,.popup,.floating_panel) .menu_button { border-color: var(--cu-border); font-weight: 500; }
 body[data-claude-ui][data-cu-design="swiss"] .cu-design-card[aria-pressed="true"] { background: var(--cu-user); border-color: var(--cu-text); box-shadow: none; }
 body[data-claude-ui][data-cu-design="swiss"] .cu-button[aria-pressed="true"] { color: var(--cu-text); }
+
+/* Hidden branding rows must not leave a divider on the visible bottom of a boxed group. */
+body[data-claude-ui]:is([data-cu-design="material"],[data-cu-design="adwaita"]) .cu-settings-group > .cu-settings-row:not([hidden]):not(:has(~ :not([hidden]))) { border-bottom: 0; }
 
 /* Preserve the existing full-page mobile drawers and compact composer. */
 @media (max-width: 899px) {
