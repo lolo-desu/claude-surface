@@ -1,6 +1,6 @@
-# Claude Surface 0.9.0 开发版
+# Claude Surface 0.9.1 开发版
 
-为 SillyTavern 提供 Claude、Material Design、Adwaita 和瑞士风格的界面扩展。本版本仅在 `codex/material-adwaita-swiss` 开发分支，已发布的 `main` 保持不变。
+为 SillyTavern 提供 Claude、Material Design、Adwaita 和 FlatDesign 的界面扩展。本版本仅在 `codex/material-adwaita-swiss` 开发分支，已发布的 `main` 保持不变。
 
 ## 安装
 
@@ -18,15 +18,24 @@ https://github.com/lolo-desu/claude-surface
 
 ## 设计风格
 
-主题设置提供 Claude、Material Design、Adwaita、瑞士风格四种设计，默认保留 Claude。三种新增风格各自采用不同的排版、形状和控件语言。深色、浅色和跟随系统均可选择，其他扩展的专项适配后续单独进行。
+主题设置提供 Claude、Material Design、Adwaita、FlatDesign 四种设计，默认保留 Claude。主题卡片只显示名称与预览。深色、浅色和跟随系统均可选择。
 
-Material 使用分层色调、胶囊输入栏和柔和面板动效；Adwaita 使用居中标题、分组偏好和短促动效；瑞士风格使用明确字阶、轻边界和快速动效，夜间主体为中性炭灰。所有动效遵循系统减少动态效果偏好，不动画聊天宽度或世界书条目高度。
+Material 使用分层色调、胶囊输入栏和柔和面板动效；Adwaita 使用居中标题、分组偏好和短促动效；FlatDesign 使用明确字阶、轻边界和快速动效，夜间主体为中性炭灰。所有动效遵循系统减少动态效果偏好，不动画聊天宽度或世界书条目高度。
 
-深浅色选项下方提供“主题色”，每种设计独立记忆：Claude 三套、Material 四套、Adwaita 四套、瑞士风格三套。三种新增风格的侧栏、首页和可选启动屏统一显示 SillyTavern，采用各自原创几何图标。Claude 风格的自定义名称与图标偏好会保留，切回时恢复。
+深浅色选项下方提供“主题色”，每种设计独立记忆：Claude 三套、Material 四套、Adwaita 四套、FlatDesign 三套。三种新增风格的侧栏、首页和可选启动屏统一显示 SillyTavern，采用各自原创几何图标。Claude 风格的自定义名称与图标偏好会保留，切回时恢复。
 
 所有消息正文均不设置侧向头像列。极简模式的角色头像在底部信息行；头像和横幅模式在正文上方展示；用户头像放在名称与时间行中，不占气泡正文宽度。仅导入 CSS 的原生主题同样采用头像在上、正文另起一整行的布局。
 
-三套标准主题 JSON 位于 `themes/Claude Surface Material.json`、`themes/Claude Surface Adwaita.json` 和 `themes/Claude Surface Swiss.json`，可直接导入原生主题列表。完整首页、侧栏与设置卡片需要扩展。新增风格使用无衬线正文，原有衬线偏好会保留，返回 Claude 后继续生效。
+三套标准主题 JSON 位于 `themes/Claude Surface Material.json`、`themes/Claude Surface Adwaita.json` 和 `themes/Claude Surface Swiss.json`，可直接导入原生主题列表。为兼容旧安装，FlatDesign 沿用原 Swiss 文件路径和设置标识；列表中显示为 SillyTavern FlatDesign，旧配色选择会保留。完整首页、侧栏与设置卡片需要扩展。
+
+## 扩展兼容
+
+- [Theme Companion](https://github.com/liangsheng-sys/SillyTavern-Theme-Companion)：启用后主题设置增加“伴侣”。选择该模式或使用伴侣的昼夜控件后，界面跟随其手动、系统和定时昼夜结果；本扩展手动选择系统、深色或浅色时独立生效。保留伴侣的样式表、主题目录与配置；使用其其他原生主题时让出界面控制权。
+- [Chat Top Info Bar](https://github.com/SillyTavern/Extension-TopInfoBar)：保留搜索、聊天切换与原生按钮；手机两行排布，聊天历史和连接配置覆盖显示，不挤压消息宽度或抬高输入栏。
+- [Quick Persona](https://github.com/SillyTavern/Extension-QuickPersona)：按钮与输入栏对齐，原生 Popper 菜单随主题配色，保留人设选择、默认/当前标记以及头像形状偏好。
+- [Typing Indicator](https://github.com/SillyTavern/Extension-TypingIndicator)：提示保持在聊天区域内，跟随主题颜色与系统减少动态效果设置；显示、流式开关与生命周期由原扩展控制。
+
+停用本界面后，上述样式覆盖停止生效，不修改这些扩展的源文件、配置或主题目录。
 
 ## 手动安装
 

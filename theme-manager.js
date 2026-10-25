@@ -1,8 +1,8 @@
 import * as powerUser from '../../../power-user.js';
-import { designs, designOf, appearanceMode } from './designs.js';
+import { designForTheme, designOf, appearanceMode } from './designs.js';
 
 const baseNames = ['Claude Surface Base Dark', 'Claude Surface Base Light'];
-const ownTheme = name => baseNames.includes(name) || designs.some(item => item.theme === name);
+const ownTheme = name => baseNames.includes(name) || !!designForTheme(name);
 
 // Surface owns its shell and leaves foreign native stylesheets in place.
 // Selecting a foreign native preset hands ownership back to that preset.
@@ -103,7 +103,7 @@ export function setupManagedTheme({ settings, save, report, appearanceChanged })
             const design = designOf(config.design);
             const name = design.theme || baseNames[appearanceMode(config) === 'light' ? 1 : 0];
             if (!registered(name)) {
-                const response = await fetch(new URL('./themes/' + name + '.json', import.meta.url));
+                const response = await fetch(new URL('./themes/' + (design.file || name + '.json'), import.meta.url));
                 if (interrupted()) return;
                 if (!response.ok) throw new Error('无法读取扩展自带主题');
                 const theme = await response.json();
@@ -125,7 +125,7 @@ export function setupManagedTheme({ settings, save, report, appearanceChanged })
         observedName = name;
         if (name === internalTarget || name === appliedName) return;
         const config = settings();
-        const design = designs.find(item => item.theme === currentName());
+        const design = designForTheme(currentName());
         if (design) {
             config.design = design.id;
             config.enabled = true;

@@ -12,10 +12,12 @@ const managerSource = fs.readFileSync(new URL('theme-manager.js', root), 'utf8')
 function harness(patch = {}, mounted = true) {
     const config = { enabled: true, mode: 'dark', design: 'claude', themeManaged: true,
         themeBackup: { name: 'Snapshot', originalName: 'Original', customCSS: '/* unsaved CSS */' }, ...patch };
-    const names = ['Snapshot','Original','Foreign','Claude Surface Base Dark','Claude Surface Base Light','Claude Surface Material','Claude Surface Adwaita','Claude Surface Swiss'];
+    const names = ['Snapshot','Original','Foreign','Claude Surface Base Dark','Claude Surface Base Light','Claude Surface Material','Claude Surface Adwaita','Claude Surface Swiss','SillyTavern FlatDesign'];
     const selector = { options: names.map(value => ({ value })), value: 'Claude Surface Base Dark' };
     const style = { disabled: false };
-    const document = { head: {}, body: {}, documentElement: { classList: new Set() },
+    const rootClasses = new Set(); rootClasses.contains = rootClasses.has;
+    const bodyClasses = new Set(); bodyClasses.contains = bodyClasses.has;
+    const document = { head: {}, body: { classList: bodyClasses }, documentElement: { classList: rootClasses },
         getElementById: id => id === 'custom-style' ? style : !mounted ? null : id === 'themes' ? selector : id === 'ui_preset_import_file' ? {} : null };
     const events = new Map(), observers = [], selected = [], cssWrites = [];
     const context = { powerUserSettings: { theme: selector.value }, getRequestHeaders: () => ({}),
@@ -40,7 +42,7 @@ test('three design presets retain their native CSS stylesheet ownership', async 
         const h = harness({ design });
         await h.manager.sync();
         assert.equal(h.style.disabled, false);
-        assert.match(h.selected.at(-1), /Material|Adwaita|Swiss/);
+        assert.match(h.selected.at(-1), /Material|Adwaita|FlatDesign/);
         assert.equal(h.config.mode, 'dark');
     }
 });
@@ -64,6 +66,18 @@ test('native selection of a Surface design preserves the selected color mode', a
     assert.equal(h.config.mode, 'dark');
     await h.manager.sync();
     assert.equal(h.style.disabled, false);
+});
+
+test('legacy Swiss native selections migrate to FlatDesign without losing appearance preferences', async () => {
+    const h = harness({ design: 'swiss', mode: 'light', designPalettes: { swiss: 'cobalt' } });
+    await h.manager.sync();
+    h.choose('Claude Surface Swiss');
+    assert.equal(h.config.enabled, true);
+    assert.equal(h.config.design, 'swiss');
+    assert.equal(h.config.mode, 'light');
+    assert.equal(h.config.designPalettes.swiss, 'cobalt');
+    await h.manager.sync();
+    assert.equal(h.selector.value, 'SillyTavern FlatDesign');
 });
 test('explicit disable restores the original snapshot and unsaved CSS exactly once', async () => {
     const h = harness({ enabled: false });

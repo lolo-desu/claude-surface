@@ -5,7 +5,8 @@
     if (!config.enabled) return;
     const root = document.documentElement;
     const design = ['material', 'adwaita', 'swiss'].includes(config.design) ? config.design : 'claude';
-    const mode = ['light', 'dark'].includes(config.mode) ? config.mode : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const mode = ['light', 'dark'].includes(config.mode) ? config.mode : config.mode === 'companion' && ['light', 'dark'].includes(config.resolvedMode)
+        ? config.resolvedMode : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     root.setAttribute('data-cu-boot', '');
     root.dataset.cuBootMode = mode;
     root.dataset.cuBootDesign = design;

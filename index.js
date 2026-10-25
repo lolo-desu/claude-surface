@@ -6,6 +6,7 @@ import { setupManagedTheme } from './theme-manager.js';
 import { designs, designOf, appearanceMode } from './designs.js';
 import { designBrand } from './design-branding.js';
 import { paletteOptions, selectedPalette } from './palettes.js';
+import { setupExtensionCompatibility } from './extension-compat.js';
 import { openWorldInfoEditor } from '../../../world-info.js';
 
 const KEY = 'claude_surface';
@@ -219,6 +220,7 @@ function applyAppearance() {
     if (headerModeInput) headerModeInput.value = headerMode();
     syncHeaderVisibility();
     state.nativeUI?.refresh();
+    state.compatUI?.refresh();
     void state.themeUI?.sync().catch(report);
     if (config.enabled) { decorateMessages(); updateContext(); }
     syncNativePanels();
@@ -603,7 +605,7 @@ function showAppearance() {
     label.textContent = '主题';
     const segment = document.createElement('div');
     segment.className = 'cu-segment';
-    for (const [value, title] of [['system','系统'],['light','浅色'],['dark','深色']]) {
+    for (const [value, title] of [['system','系统'],['light','浅色'],['dark','深色'],['companion','伴侣']]) {
         const item = button(title, value === 'dark' ? 'moon' : 'sun', () => { settings().mode = value; save(); applyAppearance(); });
         item.dataset.cuMode = value;
         item.setAttribute('aria-pressed', String(settings().mode === value));
@@ -623,8 +625,7 @@ function showAppearance() {
         const preview = document.createElement('span'); preview.className = 'cu-design-preview'; preview.setAttribute('aria-hidden', 'true');
         preview.innerHTML = '<i></i><i></i><i></i>';
         const title = document.createElement('strong'); title.textContent = design.label;
-        const note = document.createElement('small'); note.textContent = design.note;
-        card.append(preview, title, note);
+        card.append(preview, title);
         card.addEventListener('click', () => { settings().design = design.id; save(); applyAppearance(); });
         designGrid.append(card);
     }
@@ -741,6 +742,7 @@ function showAppearance() {
     content.append(designGrid, group('外观', [row, paletteRow, fontRow, backgroundRow]), group('聊天', [messageRow, qrRow, ...layoutRows]), group('布局', [toolbarRow, homeRow, headerRow]), group('品牌', [fixedBrandRow, nameRow, iconRow, uploadRow]), footer);
     refreshPaletteControls();
     applyBranding();
+    state.compatUI?.refresh();
 }
 
 function showChatActions() {
@@ -963,6 +965,8 @@ function registerExtensionSettings() {
     block.innerHTML = '<div class="inline-drawer-toggle inline-drawer-header"><b>Claude Surface</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div><div class="inline-drawer-content"><label class="checkbox_label"><input id="cu-extension-enabled" type="checkbox"><span>启用 Claude 界面</span></label><label>主题 <select id="cu-extension-mode"><option value="dark">深色</option><option value="light">浅色</option><option value="system">跟随系统</option></select></label></div>';
     host.append(block);
     const options = block.querySelector('.inline-drawer-content');
+    const companionOption = document.createElement('option'); companionOption.value = 'companion'; companionOption.textContent = '跟随主题伴侣';
+    block.querySelector('#cu-extension-mode').append(companionOption);
     const designLabel = document.createElement('label'); designLabel.textContent = '设计风格 ';
     const designSelect = document.createElement('select'); designSelect.id = 'cu-extension-design';
     for (const design of designs) { const option = document.createElement('option'); option.value = design.id; option.textContent = design.label; designSelect.append(option); }
@@ -1098,6 +1102,7 @@ function initialize() {
         }, 'cu-icon'));
         panel.prepend(heading);
     }
+    state.compatUI = setupExtensionCompatibility({ settings, save, appearanceChanged: applyAppearance });
     state.themeUI = setupManagedTheme({ settings, save, report, appearanceChanged: applyAppearance });
     setupHeaderScroll();
     // SVG paths and button padding are not .drawer-icon targets. Do not let
@@ -1149,7 +1154,7 @@ function initialize() {
             setSidebar(false); sidebarToggle.focus({ preventScroll: true });
         }
     });
-    media.addEventListener('change', () => { if (settings().mode === 'system') applyAppearance(); });
+    media.addEventListener('change', () => { if (['system','companion'].includes(settings().mode)) applyAppearance(); });
     desktop.addEventListener('change', () => {
         revealHeader(); setSidebar(false); syncNativePanels();
         if (!desktop.matches) closeNativePanels();

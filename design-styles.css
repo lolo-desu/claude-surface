@@ -2,7 +2,6 @@
 .cu-design-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; margin-bottom: 16px; }
 .cu-design-card { display: flex; flex-direction: column; gap: 5px; min-width: 0; padding: 10px; text-align: left; color: var(--cu-text); background: var(--cu-input); border: 1px solid var(--cu-border); border-radius: 10px; cursor: pointer; }
 .cu-design-card[aria-pressed="true"] { border-color: var(--cu-accent); box-shadow: inset 0 0 0 1px var(--cu-accent); }
-.cu-design-card small { color: var(--cu-muted); font-size: 11px; line-height: 1.5; }
 .cu-design-preview { display: grid; grid-template-columns: 20% 1fr; grid-template-rows: 20px 12px; gap: 5px; width: 100%; height: 48px; padding: 5px; background: #f7f5f1; color: #d77757; border: 1px solid #8884; border-radius: 6px; }
 .cu-design-preview i { background: currentColor; opacity: .22; border-radius: 3px; }
 .cu-design-preview i:first-child { grid-row: span 2; }

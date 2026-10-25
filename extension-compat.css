@@ -1,0 +1,129 @@
+/* Prompt Manager supplies its own white labels and drop-shadows. Keep its layout/handlers, including BaiBai's. */
+body[data-claude-ui] #completion_prompt_manager,
+body[data-claude-ui] #completion_prompt_manager * { text-shadow: none !important; filter: none !important; }
+body[data-claude-ui] #completion_prompt_manager .completion_prompt_manager_header { color: var(--cu-muted) !important; }
+body[data-claude-ui] #completion_prompt_manager .completion_prompt_manager_header_advanced { color: var(--cu-text); }
+body[data-claude-ui] #completion_prompt_manager .prompt_manager_prompt_controls span { opacity: .8; }
+body[data-claude-ui] #completion_prompt_manager .completion_prompt_manager_prompt_name .fa-solid { color: var(--cu-muted) !important; }
+body[data-claude-ui] #completion_prompt_manager .completion_prompt_manager_prompt_name .prompt-manager-overridden { color: var(--cu-link) !important; }
+body[data-claude-ui] #completion_prompt_manager .completion_prompt_manager_prompt_disabled :is(.completion_prompt_manager_prompt_name,.prompt-manager-inspect-action) { color: var(--cu-muted) !important; }
+
+/* Chat Top Info Bar stays in the native chat column. Its profile dropdown and history overlay don't resize messages. */
+body[data-claude-ui] #sheld { --cu-addon-bar-height: 44px; }
+body[data-claude-ui] #extensionTopBar {
+    display: flex; flex: 0 0 auto; flex-wrap: nowrap; align-items: center; gap: 4px;
+    width: 100%; height: var(--cu-addon-bar-height); min-height: var(--cu-addon-bar-height);
+    padding: 6px 12px; margin: 0; border: 0; border-bottom: 1px solid var(--cu-border); border-radius: 0;
+    color: var(--cu-text); background: var(--cu-bg); backdrop-filter: none; box-shadow: none;
+    font: 13px/20px var(--cu-sans);
+}
+body[data-claude-ui] #extensionTopBar .right_menu_button {
+    display: grid; place-items: center; flex: 0 0 32px; width: 32px; height: 32px; min-width: 32px;
+    padding: 6px; margin: 0; color: var(--cu-muted); border-radius: var(--cu-control-radius,8px); filter: none; text-shadow: none;
+}
+body[data-claude-ui] #extensionTopBar .right_menu_button:hover,
+body[data-claude-ui] #extensionTopBar .right_menu_button.active { color: var(--cu-text); background: var(--cu-selected); filter: none; }
+body[data-claude-ui] #extensionTopBarChatName {
+    flex: 1 1 120px; min-width: 80px; max-width: 100%; width: 100%; height: 32px;
+    margin: 0; padding: 4px 20px 4px 8px; color: var(--cu-text); opacity: 1;
+    border: 0; border-radius: var(--cu-control-radius,8px); background-color: transparent;
+}
+body[data-claude-ui] #extensionTopBarSearchInput {
+    flex: 0 1 180px; width: 180px; min-width: 80px; max-width: 220px; height: 32px;
+    margin: 0; padding: 4px 8px; font: 13px/20px var(--cu-sans); color: var(--cu-text); opacity: 1;
+    background: var(--cu-input); border: 1px solid var(--cu-border); border-radius: var(--cu-control-radius,8px);
+}
+body[data-claude-ui] #extensionTopBarSearchInput::placeholder { color: var(--cu-muted); font-style: normal; opacity: 1; }
+body[data-claude-ui] #extensionConnectionProfiles {
+    position: absolute; top: var(--cu-addon-bar-height); left: 12px; right: 12px; width: auto;
+    height: auto; min-height: 44px; max-height: 50dvh; overflow: auto; z-index: 4;
+    padding: 8px 12px; gap: 8px; margin: 0; color: var(--cu-text); background: var(--cu-surface);
+    border: 1px solid var(--cu-border); border-radius: 0 0 var(--cu-control-radius,8px) var(--cu-control-radius,8px); backdrop-filter: none;
+}
+body[data-claude-ui] #extensionConnectionProfilesSelect { min-width: 100px; height: 32px; color: var(--cu-text); opacity: 1; }
+body[data-claude-ui] #extensionConnectionProfilesStatus { min-width: 0; color: var(--cu-muted); }
+body[data-claude-ui] #extensionSideBar {
+    position: fixed !important; left: 12px !important; right: auto !important; top: calc(var(--cu-chat-top) + 8px) !important;
+    bottom: 12px !important; width: min(340px,calc(100vw - 24px)) !important; height: calc(100dvh - var(--cu-chat-top) - 20px) !important; max-height: none !important;
+    padding: 12px; margin: 0 !important; transform: none !important; z-index: 1025;
+    color: var(--cu-text); background: var(--cu-surface); border: 1px solid var(--cu-border); border-radius: var(--cu-control-radius,10px);
+    box-shadow: 0 8px 24px #0002; backdrop-filter: none;
+}
+body[data-claude-ui] #extensionSideBar #extensionSideBarContainer { padding: 0; gap: 4px; min-height: 0; }
+body[data-claude-ui] #extensionSideBar #extensionSideBarContainer .sideBarItem {
+    padding: 10px; border: 0; border-radius: var(--cu-control-radius,8px); transition: background-color 120ms ease;
+}
+body[data-claude-ui] #extensionSideBar #extensionSideBarContainer .sideBarItem.selected { background: var(--cu-selected); }
+body[data-claude-ui] #extensionSideBar #extensionSideBarContainer .sideBarItem:hover { background: var(--cu-hover); }
+body[data-claude-ui].cu-home :is(#extensionTopBar,#extensionConnectionProfiles,#extensionSideBar) { display: none !important; }
+
+/* Quick Persona retains its anchor, Popper instance and native avatar selection. */
+body[data-claude-ui] #quickPersona {
+    flex: 0 0 32px; width: 32px; min-width: 32px; height: 32px; min-height: 32px; margin: 0 3px; padding: 3px;
+    border-radius: var(--cu-control-radius,8px);
+}
+body[data-claude-ui] #quickPersonaImg { display: block; width: 100%; height: 100%; border: 0; outline: 0; box-shadow: none; }
+body[data-claude-ui] #quickPersonaCaret {
+    display: grid; place-items: center; width: 12px; height: 12px; top: 0; right: -2px;
+    background: var(--cu-surface); color: var(--cu-muted); border: 1px solid var(--cu-border); border-radius: 50%;
+    font-size: 8px; line-height: 1; text-shadow: none; pointer-events: none;
+}
+body[data-claude-ui] #quickPersonaMenu {
+    max-width: calc(100vw - 24px); color: var(--cu-text); background: var(--cu-surface);
+    border: 1px solid var(--cu-border); border-radius: var(--cu-control-radius,10px); box-shadow: 0 6px 24px #0002; backdrop-filter: none;
+}
+body[data-claude-ui] #quickPersonaMenu ul {
+    display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); width: min(320px,calc(100vw - 26px)); max-width: 100%;
+    padding: 10px; gap: 8px; margin: 0; max-height: min(60dvh,420px); overflow-y: auto; border: 0; background: transparent; box-shadow: none;
+}
+body[data-claude-ui] #quickPersonaMenu li { width: 100%; min-width: 0; height: auto; aspect-ratio: 1; padding: 0; border: 0; }
+body[data-claude-ui].big-avatars #quickPersonaMenu li { aspect-ratio: 2 / 3; }
+body[data-claude-ui] #quickPersonaMenu .quickPersonaMenuImg { display: block; width: 100%; height: 100%; box-shadow: none; outline: 2px solid transparent; outline-offset: 2px; }
+body[data-claude-ui] #quickPersonaMenu .quickPersonaMenuImg.default { outline-style: dashed; outline-color: var(--cu-muted); }
+body[data-claude-ui] #quickPersonaMenu .quickPersonaMenuImg.selected { outline-style: solid; outline-color: var(--cu-accent); }
+
+/* The indicator remains inside #chat, controlled only by the upstream generation events. */
+body[data-claude-ui] #chat .typing_indicator {
+    position: sticky; bottom: 8px; flex: 0 0 auto; align-self: flex-start; width: fit-content; max-width: 100%;
+    margin: 8px 0; padding: 6px 10px; color: var(--cu-muted); background: var(--cu-surface);
+    border: 1px solid var(--cu-border); border-radius: var(--cu-control-radius,8px);
+    font: 13px/22px var(--cu-sans); opacity: 1; text-shadow: none; filter: none; z-index: 1;
+}
+body[data-claude-ui] .typing_indicator .svg_dots svg { fill: currentColor; }
+body[data-claude-ui][data-cu-design="material"] .typing_indicator { border-radius: 20px; border-color: transparent; background: var(--cu-input); }
+
+/* Theme Companion keeps ownership of its stylesheet, theme catalog and day/night controls. */
+html:has(body[data-claude-ui]) { --dn-support: 1; }
+body[data-claude-ui] .daynight-settings { color: var(--cu-text); font-family: var(--cu-sans); }
+body[data-claude-ui] .daynight-settings :is(.dn-row,.dn-theme) { gap: 8px; min-width: 0; }
+body[data-claude-ui] .daynight-settings :is(.dn-theme,.dn-theme-act) { flex-wrap: wrap; }
+body[data-claude-ui] .daynight-settings .dn-note { color: var(--cu-muted); opacity: 1; overflow-wrap: anywhere; }
+body[data-claude-ui] .daynight-settings .dn-label { flex: 0 1 8em; min-width: 0; }
+body[data-claude-ui] .daynight-settings :is(select,input.text_pole) { color: var(--cu-text); min-width: 0; max-width: 100%; }
+body[data-claude-ui] .daynight-settings .menu_button { border-radius: var(--cu-control-radius,8px); color: var(--cu-text); background-color: var(--cu-input); }
+body[data-claude-ui] .daynight-settings .dn-seg .menu_button.dn-on { color: var(--cu-on-accent,var(--cu-bg)); background: var(--cu-accent); border-color: var(--cu-accent); }
+body[data-claude-ui] .cu-segment { flex-wrap: wrap; max-width: 100%; }
+body[data-claude-ui] [data-cu-mode="companion"][hidden] { display: none; }
+
+@media (min-width: 900px) {
+    body[data-claude-ui].cu-sidebar-open #extensionSideBar { left: calc(var(--cu-sidebar-width) + 12px) !important; }
+}
+@media (max-width: 899px) {
+    body[data-claude-ui] #sheld { --cu-addon-bar-height: 84px; }
+    body[data-claude-ui] #extensionTopBar { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); grid-template-rows: 32px 32px; padding: 8px; }
+    body[data-claude-ui] #extensionTopBarChatName { grid-column: 1 / 5; grid-row: 1; min-width: 0; }
+    body[data-claude-ui] #extensionTopBarSearchInput { grid-column: 5 / -1; grid-row: 1; width: 100%; max-width: 100%; min-width: 0; }
+    body[data-claude-ui] #extensionTopBar .right_menu_button { grid-row: 2; justify-self: center; }
+    body[data-claude-ui] #extensionSideBar { inset: var(--cu-chat-top) 0 0 !important; width: 100% !important; height: calc(100dvh - var(--cu-chat-top)) !important; border-radius: 0; }
+    body[data-claude-ui] .daynight-settings .dn-row:has(input[type="time"]) { flex-wrap: wrap; }
+    body[data-claude-ui] .daynight-settings .dn-check small { padding-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+    body[data-claude-ui] .typing_indicator :is(svg,circle) { animation: none !important; }
+    html.dn-switching:has(body[data-claude-ui]) body,
+    html.dn-switching:has(body[data-claude-ui]) body *,
+    html.dn-switching:has(body[data-claude-ui]) body *::before,
+    html.dn-switching:has(body[data-claude-ui]) body *::after { transition: none !important; }
+    html:has(body[data-claude-ui])::view-transition-old(root),
+    html:has(body[data-claude-ui])::view-transition-new(root) { animation: none !important; }
+}
