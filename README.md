@@ -1,6 +1,12 @@
-# Claude Surface 0.9.4 开发版
+# Claude Surface 0.9.4
 
-为 SillyTavern 提供 Claude、Material Design、Adwaita 和 FlatDesign 的界面扩展。本版本仅在 `codex/material-adwaita-swiss` 开发分支，已发布的 `main` 保持不变。
+为 SillyTavern 提供 Claude、Material Design、Adwaita 和 FlatDesign 的界面扩展。0.9.4 已合并到主线。
+
+| 分支 | 用途 | 当前版本 |
+| --- | --- | --- |
+| [`main`](https://github.com/lolo-desu/claude-surface/tree/main) | 主线，日常安装与更新使用 | 0.9.4 |
+| [`codex/material-adwaita-swiss`](https://github.com/lolo-desu/claude-surface/tree/codex/material-adwaita-swiss) | 开发，后续功能与修复先在这里验证 | 0.9.4 |
+| [`codex/legacy`](https://github.com/lolo-desu/claude-surface/tree/codex/legacy) | 遗产，保留升级前主线的 Claude 风格与行为 | 0.8.1 |
 
 ## 安装
 
@@ -10,7 +16,7 @@
 https://github.com/lolo-desu/claude-surface
 ```
 
-在安装框的“Branch or tag name／分支或标签名”填写 `codex/material-adwaita-swiss`。已有安装可在扩展管理中切换到这个分支，再刷新页面。仅填写仓库 URL 会安装 `main` 上的稳定版。
+直接填写仓库 URL 会安装 `main` 主线。需要开发版或遗产版时，在安装框的“Branch or tag name／分支或标签名”分别填写 `codex/material-adwaita-swiss` 或 `codex/legacy`。已有安装可在扩展管理中切换分支，再刷新页面。三个分支是同一扩展的不同版本，选择一个使用即可。
 
 安装完成后刷新页面即可使用，后续可通过酒馆的扩展管理更新。仓库根目录直接包含 `manifest.json`、`index.js` 和 `style.css`，无需构建或安装依赖。
 
