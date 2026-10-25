@@ -1,4 +1,4 @@
-# Claude Surface 0.9.2 开发版
+# Claude Surface 0.9.3 开发版
 
 为 SillyTavern 提供 Claude、Material Design、Adwaita 和 FlatDesign 的界面扩展。本版本仅在 `codex/material-adwaita-swiss` 开发分支，已发布的 `main` 保持不变。
 
@@ -22,7 +22,7 @@ https://github.com/lolo-desu/claude-surface
 
 Material 使用分层色调、胶囊输入栏和柔和面板动效；Adwaita 使用居中标题、分组偏好和短促动效；FlatDesign 使用明确字阶、轻边界和快速动效，夜间主体为中性炭灰。所有动效遵循系统减少动态效果偏好，不动画聊天宽度或世界书条目高度。
 
-Material 首页的静态柔光围绕问候语展开，范围不随页面高度拉长；低亮度渐变与细微抖色用于减轻深色背景的色带，不使用持续动画或大面积模糊。
+Material 首页的静态柔光围绕问候语展开，范围不随页面高度拉长；柔光和细微抖色共用椭圆遮罩，在图层四周提前淡到透明，避免矩形截断。低亮度渐变与细微抖色用于减轻深色背景的色带，不使用持续动画或大面积模糊。
 
 深浅色选项下方提供“主题色”，每种设计独立记忆：Claude 三套、Material 四套、Adwaita 四套、FlatDesign 三套。三种新增风格的侧栏、首页和可选启动屏统一显示 SillyTavern，采用各自原创几何图标。Claude 风格的自定义名称与图标偏好会保留，切回时恢复。
 

@@ -54,6 +54,9 @@ body[data-claude-ui][data-cu-design="material"] .cu-home-welcome::before,
 body[data-claude-ui][data-cu-design="material"] .cu-home-welcome::after {
     content: ""; position: absolute; top: -96px; left: 50%; width: min(640px,calc(100% + 48px)); height: 280px;
     transform: translateX(-50%); pointer-events: none; z-index: -1;
+    /* Explicit radii fade both layers to zero before any edge of their paint box. */
+    -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%,#000 28%,transparent 96%);
+    mask-image: radial-gradient(ellipse 50% 50% at 50% 50%,#000 28%,transparent 96%);
 }
 body[data-claude-ui][data-cu-design="material"] .cu-home-welcome::before {
     background:
@@ -64,8 +67,6 @@ body[data-claude-ui][data-cu-design="material"] .cu-home-welcome::before {
 body[data-claude-ui][data-cu-design="material"] .cu-home-welcome::after {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' seed='8' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Cpath fill='%23808080' filter='url(%23grain)' d='M0 0h128v128H0z'/%3E%3C/svg%3E");
     opacity: .025; mix-blend-mode: soft-light;
-    -webkit-mask-image: radial-gradient(ellipse at 50% 45%,#000 0%,#0008 36%,transparent 76%);
-    mask-image: radial-gradient(ellipse at 50% 45%,#000 0%,#0008 36%,transparent 76%);
 }
 body[data-claude-ui][data-cu-design="material"] .cu-home-greeting { font: 500 clamp(28px,4vw,42px)/1.25 var(--cu-sans); letter-spacing: -.04em; }
 body[data-claude-ui][data-cu-design="material"] .cu-home-choose { border-radius: 24px; background: var(--cu-selected); border-color: transparent; padding: 14px 22px; }
