@@ -43,7 +43,7 @@ for(const [name,engine] of [['chromium',chromium],['webkit',webkit]]) {
   await context.route(/\/api\/(settings|themes)\/save/,r=>r.fulfill({json:{result:'ok'}}));
   await context.route(/\/api\/worldinfo\/(edit|delete|import)/,r=>r.fulfill({json:{result:'ok'}}));
   await context.route('**/api/extensions/version',r=>r.fulfill({json:{isUpToDate:true}}));
-  if(!process.env.CU_SERVER_CSS) for(const file of ['style.css','world-info-ui.js']) {
+  if(!process.env.CU_SERVER_CSS) for(const file of ['style.css','index.js','native-ui.js','world-info-ui.js']) {
    const body=await fs.readFile(path.join(source,file),'utf8');
    await context.route(`**/scripts/extensions/third-party/claude-surface/${file}*`,r=>r.fulfill({contentType:file.endsWith('.css')?'text/css':'text/javascript',body}));
   }
@@ -57,7 +57,7 @@ for(const [name,engine] of [['chromium',chromium],['webkit',webkit]]) {
    Object.defineProperty(window,'visualViewport',{value:viewport,configurable:true});
    window.__cuTestViewport=value=>{mock=value;viewport.dispatchEvent(new Event('resize'));};
   });
-  const page=await context.newPage(); page.setDefaultTimeout(6000);
+  const page=await context.newPage(); page.setDefaultTimeout(6000); page.setDefaultNavigationTimeout(30000);
   await page.goto(origin,{waitUntil:'networkidle'});
   for(const family of ['claude','material','adwaita','swiss']) {
    for(const mode of ['dark','light']) {

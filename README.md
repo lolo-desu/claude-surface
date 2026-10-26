@@ -1,14 +1,16 @@
-# Claude Surface 0.10.2 开发版
+# Claude Surface 0.10.3 开发版
 
 为 SillyTavern 提供 Claude、Material Design、Adwaita 和 FlatDesign 的界面扩展。
 
 | 分支 | 用途 | 当前版本 |
 | --- | --- | --- |
 | [`main`](https://github.com/lolo-desu/claude-surface/tree/main) | 主线，日常安装与更新使用 | 0.9.5 |
-| [`codex/material-adwaita-swiss`](https://github.com/lolo-desu/claude-surface/tree/codex/material-adwaita-swiss) | 开发，后续功能与修复先在这里验证 | 0.10.2 |
+| [`codex/material-adwaita-swiss`](https://github.com/lolo-desu/claude-surface/tree/codex/material-adwaita-swiss) | 开发，后续功能与修复先在这里验证 | 0.10.3 |
 | [`codex/legacy`](https://github.com/lolo-desu/claude-surface/tree/codex/legacy) | 遗产，保留升级前主线的 Claude 风格与行为 | 0.8.1 |
 
 ## 安装
+
+0.10.3 hotfix：修复预设提示词编辑器展开后只剩顶部细条的问题。编辑器使用明确的可视区域高度，表单在面板内滚动，手机输入字号保持 16px；桌面编辑器避开常驻侧栏。保留原生保存、取消和重置处理，同时修复点击外部关闭后无法正常重开的状态，支持 Escape 和顶栏关闭操作。提示词与世界书编辑器共用移动可视区域和下拉框保护逻辑。
 
 0.10.2 hotfix：修复手机世界书页面能整体上下左右移动的问题。面板贴合导航栏下方的可视区域，消除内部容器外边距造成的横向溢出；打开时锁定页面根滚动并解除影响固定定位的根节点 3D 效果，条目在内部滚动。输入控件使用 16px 字号以避免 iOS 聚焦自动放大，可视区域缩小时面板跟随调整；保留手动缩放，关闭面板或回到桌面时恢复原行为。同时修复点击世界书下拉搜索框被原生逻辑误判为外部点击、导致面板关闭的问题，保留下拉框自身的选择和输入事件。
 
@@ -120,3 +122,5 @@ powershell -File install-startup.ps1 -SillyTavernPath 'D:\SillyTavern'
 需要本地 SillyTavern 实例和 Playwright 测试依赖及浏览器，运行 `node tests/controls.browser.mjs`；默认地址为 `http://127.0.0.1:8010`，可通过 `CU_TEST_URL` 指定。默认使用仓库的 CSS 验证修复，`CU_SERVER_CSS=1` 可检查实例已安装的样式。可通过 `CU_PLAYWRIGHT_MODULE`、`CU_CHROMIUM_EXECUTABLE`、`CU_WEBKIT_EXECUTABLE` 指定测试依赖和可执行文件。无头 WebKit 回归不等同于 iOS TauriTavern 真机验证。
 
 `tests/world-info.browser.mjs` 在触摸手机上下文中检查四种风格、深浅色、320/393/430px 竖屏和 844px 横屏的世界书宽高、横向溢出、输入聚焦和内部滚动，并检查旧浮动坐标不会移动面板。Chromium 额外使用真实触摸事件滑动；Playwright 的移动 WebKit 不提供滚轮注入，内部滚动通过键盘事件检查。键盘收起／弹出通过模拟 VisualViewport 变化检查布局计算，另测手动缩放不会重排面板以及关闭／桌面切换后的清理。这些检查不等于 iOS 原生键盘和真机边缘回弹验证。运行方式和 Playwright 环境变量与控件回归相同。
+
+`tests/prompt-editor.browser.mjs` 在 Chromium、WebKit 的四种风格与深浅色下，以 320/412/844/1440px 窗口验证真实铅笔按钮打开、正文输入、取消不改动原值、保存后重开、Escape、外部点击后重开及顶栏关闭。保存测试仅修改测试浏览器的内存，并恢复原文；服务器设置／主题／预设保存和生成请求被拦截。另模拟可视区域缩小检查编辑器高度。默认运行仓库候选 CSS 与界面模块；`CU_SERVER_CSS=1` 验证实例已安装的文件。上述浏览器检查不等于 iOS 真机软键盘测试。

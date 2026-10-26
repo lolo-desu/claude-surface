@@ -55,10 +55,14 @@ for (const [name,engine] of [['chromium',chromium],['webkit',webkit]]) {
         await context.route('**/api/extensions/version',r=>r.fulfill({json:{isUpToDate:true,currentBranchName:'test',remoteUrl:''}}));
         await context.route(/\/api\/extensions\/(install|update|delete|move|switch)(\?|$)/,r=>r.abort('blockedbyclient'));
         if (!process.env.CU_SERVER_CSS) {
-            await context.route('**/scripts/extensions/third-party/claude-surface/style.css*',r=>r.fulfill({contentType:'text/css',body:styles}));
+            for (const file of ['style.css','index.js','native-ui.js','world-info-ui.js']) {
+                const body=file==='style.css'?styles:await fs.readFile(path.join(source,file),'utf8');
+                await context.route(`**/scripts/extensions/third-party/claude-surface/${file}*`,r=>r.fulfill({contentType:file.endsWith('.css')?'text/css':'text/javascript',body}));
+            }
         }
         const page=await context.newPage();
         page.setDefaultTimeout(5000);
+        page.setDefaultNavigationTimeout(30000);
         await page.goto(origin,{waitUntil:'networkidle'});
         await page.locator('body[data-claude-ui]').waitFor();
         const extensionMarkup=await page.locator('#rm_extensions_block').evaluate(el=>el.outerHTML);

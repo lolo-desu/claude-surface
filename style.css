@@ -638,6 +638,26 @@ body[data-claude-ui]:not(.cu-baibai-tools) #completion_prompt_manager_footer_app
 body[data-claude-ui]:not(.cu-baibai-tools) #completion_prompt_manager_popup .completion_prompt_manager_popup_entry_form > .flex-container { flex-wrap: wrap; gap: 12px; }
 body[data-claude-ui]:not(.cu-baibai-tools) #completion_prompt_manager_popup .completion_prompt_manager_popup_entry_form_control { min-width: 120px; margin-bottom: 12px; }
 body[data-claude-ui]:not(.cu-baibai-tools) #completion_prompt_manager_popup textarea { min-height: 200px; }
+/* This body-mounted editor is not a top-bar drawer. Its legacy percentage
+   height can resolve against a zero-height parent when the app body is fixed. */
+body[data-claude-ui] #completion_prompt_manager_popup {
+    height: var(--cu-panel-max-height) !important; max-height: var(--cu-panel-max-height) !important;
+    box-sizing: border-box; overflow-x: hidden !important; overflow-y: auto !important;
+    overscroll-behavior: contain; min-height: 0 !important;
+}
+body[data-claude-ui] #completion_prompt_manager_popup.openDrawer { display: flex !important; }
+body[data-claude-ui] #completion_prompt_manager_popup:not(.openDrawer) { display: none !important; }
+body[data-claude-ui] #completion_prompt_manager_popup > :is(#completion_prompt_manager_popup_edit,#completion_prompt_manager_popup_inspect) { height: auto; min-height: 100%; min-width: 0; flex: 1 0 auto; }
+body[data-claude-ui] #completion_prompt_manager_popup .completion_prompt_manager_popup_entry { min-width: 0; }
+body[data-claude-ui] #completion_prompt_manager_popup .completion_prompt_manager_popup_entry_form { height: auto; min-height: 100%; min-width: 0; }
+body[data-claude-ui] #completion_prompt_manager_popup #completion_prompt_manager_popup_entry_form_prompt { flex: none; height: clamp(200px,35dvh,460px); resize: vertical; }
+@media (min-width: 900px) {
+    body[data-claude-ui].cu-shell-ready #completion_prompt_manager_popup {
+        left: calc(var(--cu-sidebar-space) + (100vw - var(--cu-sidebar-space)) / 2) !important; right: auto !important; translate: -50% 0;
+        width: min(760px,calc(100vw - var(--cu-sidebar-space) - 32px)) !important;
+        max-width: calc(100vw - var(--cu-sidebar-space) - 32px) !important;
+    }
+}
 /* These editors inject more specific legacy rules after extension loading. */
 body[data-claude-ui]:not(.cu-baibai-tools) #left-nav-panel #completion_prompt_manager #completion_prompt_manager_list > li {
     background: transparent !important; border: 0 !important; border-bottom: 1px solid var(--cu-border) !important;
@@ -893,11 +913,11 @@ body[data-claude-ui].cu-compact-composer #send_form { padding: 5px 6px; }
 /* The world editor owns a bounded mobile viewport; only its inner holder scrolls.
    Native html transforms otherwise make fixed background overscan scroll the page. */
 @media (max-width: 899px) {
-    html:has(body[data-claude-ui] #WorldInfo.openDrawer:not(.closedDrawer)) {
+    html:has(body[data-claude-ui] :is(#WorldInfo,#completion_prompt_manager_popup).openDrawer:not(.closedDrawer)) {
         height: 100%; overflow: hidden; overflow: clip; overscroll-behavior: none;
         -webkit-transform: none; transform: none; -webkit-perspective: none; perspective: none;
     }
-    body[data-claude-ui]:has(#WorldInfo.openDrawer:not(.closedDrawer)) {
+    body[data-claude-ui]:has(:is(#WorldInfo,#completion_prompt_manager_popup).openDrawer:not(.closedDrawer)) {
         inset: 0; width: 100%; max-width: 100%; height: 100dvh;
         overflow: hidden; overscroll-behavior: none; touch-action: auto;
     }
@@ -915,6 +935,16 @@ body[data-claude-ui].cu-compact-composer #send_form { padding: 5px 6px; }
         padding-right: max(16px,env(safe-area-inset-right)) !important;
     }
     body[data-claude-ui] #WorldInfoheader { display: none !important; }
+    body[data-claude-ui].cu-shell-ready #completion_prompt_manager_popup {
+        --cu-prompt-panel-top: max(var(--cu-panel-top),var(--cu-prompt-view-top,0px));
+        left: var(--cu-prompt-view-left,0px) !important; right: auto !important; top: var(--cu-prompt-panel-top) !important;
+        width: var(--cu-prompt-view-width,100vw) !important; max-width: var(--cu-prompt-view-width,100vw) !important;
+        height: max(0px,calc(var(--cu-prompt-view-height,100dvh) + var(--cu-prompt-view-top,0px) - var(--cu-prompt-panel-top))) !important;
+        max-height: max(0px,calc(var(--cu-prompt-view-height,100dvh) + var(--cu-prompt-view-top,0px) - var(--cu-prompt-panel-top))) !important;
+        translate: none !important; border-radius: 0; border: 0; padding-bottom: max(16px,env(safe-area-inset-bottom)) !important;
+    }
+    body[data-claude-ui] #completion_prompt_manager_popup :is(input:not([type="checkbox"]):not([type="radio"]),textarea,select) { font-size: 16px !important; }
+    body[data-claude-ui]:has(#completion_prompt_manager_popup.openDrawer) .select2-dropdown input { font-size: 16px !important; }
     body[data-claude-ui] #WorldInfo #wi-holder {
         margin: 0; width: 100%; max-width: 100%; min-width: 0; min-height: 0;
         box-sizing: border-box; overscroll-behavior: none; scrollbar-gutter: auto;

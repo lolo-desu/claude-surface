@@ -1,4 +1,4 @@
-import { setupMobileWorldInfo } from './world-info-ui.js';
+import { setupMobileWorldInfo, setupMobilePanelViewport } from './world-info-ui.js';
 import { toggleDrawer } from '../../../utils.js';
 import { extensionNames } from '../../../extensions.js';
 /* Adapt native elements in place: their IDs, values and event handlers stay intact. */
@@ -9,6 +9,19 @@ export function setupNativeUI({ settings, svg, showCharacters, openCharacter, ch
             || !!document.querySelector('style[id^="bai_bai_toolkit_"],[data-bai-bai-world-info-mobile-header-layout="true"]');
     };
     const mobileWorld = setupMobileWorldInfo(settings, { toggleDrawer, externalLayout: hasBaiBaiTools });
+    const promptEditor = document.getElementById('completion_prompt_manager_popup');
+    if (promptEditor) new MutationObserver(() => {
+        // The host outside closer adds closedDrawer, while PromptManager only
+        // adds openDrawer on reopening. Do not leave both classes on the editor.
+        if (settings().enabled && promptEditor.classList.contains('openDrawer') && promptEditor.classList.contains('closedDrawer')) promptEditor.classList.remove('closedDrawer');
+    }).observe(promptEditor, { attributes: true, attributeFilter: ['class'] });
+    const refreshPromptViewport = setupMobilePanelViewport(settings, promptEditor, 'prompt');
+    promptEditor?.addEventListener('keydown', event => {
+        if (settings().enabled && event.key === 'Escape' && !document.querySelector('.select2-container--open')) {
+            event.preventDefault(); event.stopPropagation();
+            promptEditor.querySelector('#completion_prompt_manager_popup_entry_form_close')?.click();
+        }
+    });
     const compactViewport = matchMedia('(max-width: 899px)');
     const presetIcon = document.getElementById('leftNavDrawerIcon');
     const originalPresetTitle = presetIcon?.title;
@@ -85,5 +98,5 @@ export function setupNativeUI({ settings, svg, showCharacters, openCharacter, ch
     }, true);
     const context = SillyTavern.getContext();
     for (const name of ['SETTINGS_UPDATED','MAIN_API_CHANGED']) if (context.eventTypes[name]) context.eventSource.on(context.eventTypes[name], () => { decorate(); });
-    return { refresh: () => { refreshTitle(); mobileWorld.refresh(); } };
+    return { refresh: () => { refreshTitle(); mobileWorld.refresh(); refreshPromptViewport(); } };
 }

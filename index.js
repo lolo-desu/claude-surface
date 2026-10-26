@@ -384,6 +384,8 @@ function syncNativePanels() {
 }
 
 function closeNativePanels({ keepDocks = false } = {}) {
+    const promptEditor = document.getElementById('completion_prompt_manager_popup');
+    if (promptEditor?.classList.contains('openDrawer')) promptEditor.querySelector('#completion_prompt_manager_popup_entry_form_close')?.click();
     document.querySelectorAll('#top-settings-holder > .drawer > .drawer-toggle').forEach(toggle => {
         if (keepDocks && ['left-nav-panel','right-nav-panel'].includes(toggle.parentElement.querySelector('.drawer-content')?.id)) return;
         if (toggle.querySelector('.openIcon')) toggle.click();

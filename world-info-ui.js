@@ -1,11 +1,9 @@
-/* Adapt semantic fields once. Keep native nodes, editor instances and events. */
-export function setupMobileWorldInfo(settings, { toggleDrawer, externalLayout = () => false } = {}) {
+/* Fixed native editors share normal-scale visible-viewport bounds. */
+export function setupMobilePanelViewport(settings, panel, prefix) {
+    if (!panel) return () => {};
     const mobile = matchMedia('(max-width: 899px)');
-    const panel = document.getElementById('WorldInfo');
-    const list = document.getElementById('world_popup_entries_list');
-    const headers = new Map(), editors = new Map();
-    let frame, viewportFrame, viewportActive = false;
-    const viewportProperties = ['--cu-world-view-width','--cu-world-view-height','--cu-world-view-top','--cu-world-view-left'];
+    let viewportFrame, viewportActive = false;
+    const viewportProperties = ['width','height','top','left'].map(name => `--cu-${prefix}-view-${name}`);
     function refreshViewport() {
         const active = settings().enabled && mobile.matches && panel?.classList.contains('openDrawer') && !panel.classList.contains('closedDrawer');
         const viewport = window.visualViewport;
@@ -21,6 +19,33 @@ export function setupMobileWorldInfo(settings, { toggleDrawer, externalLayout = 
         viewportActive = !!active;
     }
     const queueViewport = () => { cancelAnimationFrame(viewportFrame); viewportFrame = requestAnimationFrame(refreshViewport); };
+    const guardedPortals = new WeakSet();
+    jQuery(document).on(`select2:open.claudeSurface${prefix}Viewport`, event => {
+        if (!settings().enabled || !mobile.matches || !panel.contains(event.target)) return;
+        const portal = document.querySelector('.select2-container--open .select2-dropdown');
+        if (!portal || guardedPortals.has(portal)) return;
+        guardedPortals.add(portal);
+        for (const type of ['mousedown','touchstart']) portal.addEventListener(type, press => {
+            if (settings().enabled && mobile.matches && panel.classList.contains('openDrawer')) press.stopPropagation();
+        }, { passive: true });
+    });
+    new MutationObserver(queueViewport).observe(panel, { attributes: true, attributeFilter: ['class'] });
+    window.addEventListener('resize', queueViewport);
+    window.visualViewport?.addEventListener('resize', queueViewport);
+    window.visualViewport?.addEventListener('scroll', queueViewport);
+    mobile.addEventListener('change', queueViewport);
+    refreshViewport();
+    return refreshViewport;
+}
+
+/* Adapt semantic fields once. Keep native nodes, editor instances and events. */
+export function setupMobileWorldInfo(settings, { toggleDrawer, externalLayout = () => false } = {}) {
+    const mobile = matchMedia('(max-width: 899px)');
+    const panel = document.getElementById('WorldInfo');
+    const list = document.getElementById('world_popup_entries_list');
+    const headers = new Map(), editors = new Map();
+    const refreshViewport = setupMobilePanelViewport(settings, panel, 'world');
+    let frame;
     const observe = () => observer.observe(list, { childList: true, subtree: true });
     function move(node, destination, record, className) {
         if (!node) return;
@@ -113,22 +138,6 @@ export function setupMobileWorldInfo(settings, { toggleDrawer, externalLayout = 
         cancelAnimationFrame(frame); frame = requestAnimationFrame(refresh);
     });
     if (!list) return { refresh() {} };
-    // Select2 mounts its dropdown under body. It still belongs to this editor:
-    // let its inputs/options handle the gesture before the host outside closer.
-    const guardedPortals = new WeakSet();
-    jQuery(document).on('select2:open.claudeSurfaceWorldViewport', event => {
-        if (!settings().enabled || !mobile.matches || !panel?.contains(event.target)) return;
-        const portal = document.querySelector('.select2-container--open .select2-dropdown');
-        if (!portal || guardedPortals.has(portal)) return;
-        guardedPortals.add(portal);
-        for (const type of ['mousedown','touchstart']) portal.addEventListener(type, press => {
-            if (settings().enabled && mobile.matches && panel.classList.contains('openDrawer')) press.stopPropagation();
-        }, { passive: true });
-    });
-    if (panel) new MutationObserver(queueViewport).observe(panel, { attributes: true, attributeFilter: ['class'] });
-    window.addEventListener('resize', queueViewport);
-    window.visualViewport?.addEventListener('resize', queueViewport);
-    window.visualViewport?.addEventListener('scroll', queueViewport);
     observe();
     list.addEventListener('click', event => {
         if (!settings().enabled || !mobile.matches || externalLayout() || !toggleDrawer) return;
