@@ -8,7 +8,13 @@ export function setupNativeUI({ settings, svg, showCharacters, openCharacter, ch
         return extensionNames.some(name => /(?:^|\/)ST-BaiBai-Tools(?:$|[-_])/i.test(name) && !disabled.includes(name))
             || !!document.querySelector('style[id^="bai_bai_toolkit_"],[data-bai-bai-world-info-mobile-header-layout="true"]');
     };
-    const mobileWorld = setupMobileWorldInfo(settings, { toggleDrawer, externalLayout: hasBaiBaiTools });
+    const hasBaiWorldLayout = () => hasBaiBaiTools() && SillyTavern.getContext().extensionSettings.baiBaiToolkit?.worldInfoListOptimizationEnabled !== false;
+    const mobileWorld = setupMobileWorldInfo(settings, { toggleDrawer, externalLayout: hasBaiWorldLayout });
+    // Bai's input handler immediately reads/rebuilds the existing list. Restore
+    // native field positions before it takes ownership on a live enable.
+    document.addEventListener('input', event => {
+        if (event.target.id === 'bai_bai_toolkit_world_info_list_optimization_enabled' && event.target.checked) mobileWorld.release?.();
+    }, true);
     const promptEditor = document.getElementById('completion_prompt_manager_popup');
     if (promptEditor) new MutationObserver(() => {
         // The host outside closer adds closedDrawer, while PromptManager only

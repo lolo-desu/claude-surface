@@ -59,6 +59,16 @@ export function setupMobileWorldInfo(settings, { toggleDrawer, externalLayout = 
         for (const { node, className } of record.classes) node.classList.remove(className);
         for (const wrapper of record.wrappers) wrapper.remove();
     }
+    function release() {
+        list?.classList.remove('cu-wi-layout');
+        observer.disconnect();
+        try {
+            for (const map of [headers, editors]) {
+                for (const [element, record] of map) if (element.isConnected) restore(record);
+                map.clear();
+            }
+        } finally { observe(); }
+    }
     function adaptHeader(header) {
         if (headers.has(header) || header.closest('[data-bai-bai-world-info-mobile-header-layout="true"]')) return;
         const title = header.querySelector('.WIEntryTitleAndStatus');
@@ -69,16 +79,19 @@ export function setupMobileWorldInfo(settings, { toggleDrawer, externalLayout = 
             const row = document.createElement('div'); row.className = `cu-wi-${name}-row`;
             record.wrappers.push(row); return row;
         });
+        const numbers = document.createElement('div'); numbers.className = 'cu-wi-numbers';
+        const actions = document.createElement('div'); actions.className = 'cu-wi-buttons';
+        rows[2].append(numbers, actions); record.wrappers.push(numbers, actions);
         header.prepend(...rows);
         const field = name => header.querySelector(`[name="${name}"]`)?.closest('.world_entry_form_control');
         move(title, rows[0], record);
         move(field('position'), rows[1], record, 'cu-wi-position-field');
         move(field('depth'), rows[1], record, 'cu-wi-depth-field');
         move(header.querySelector('.killSwitch'), rows[1], record);
-        move(field('order'), rows[2], record, 'cu-wi-order-field');
-        move(field('probability'), rows[2], record, 'cu-wi-probability-field');
+        move(field('order'), numbers, record, 'cu-wi-order-field');
+        move(field('probability'), numbers, record, 'cu-wi-probability-field');
         for (const selector of ['.move_entry_button','.duplicate_entry_button','.delete_entry_button','.drag-handle','.inline-drawer-toggle']) {
-            move(header.querySelector(selector), rows[2], record);
+            move(header.querySelector(selector), actions, record);
         }
         for (const node of header.querySelectorAll('.world_entry_thin_controls')) {
             if (!node.textContent.trim() && !node.querySelector('input,textarea,select,button,.menu_button,[role="button"]')) {
@@ -118,6 +131,8 @@ export function setupMobileWorldInfo(settings, { toggleDrawer, externalLayout = 
     }
     function refresh() {
         refreshViewport();
+        panel?.classList.toggle('cu-world-surface', settings().enabled && mobile.matches);
+        list.dataset.cuEmptyMessage = document.getElementById('world_editor_select')?.value ? '没有匹配的条目' : '选择世界书后，在这里查看和编辑条目';
         observer.disconnect();
         try {
             const enabled = settings().enabled && mobile.matches && !externalLayout();
@@ -138,7 +153,12 @@ export function setupMobileWorldInfo(settings, { toggleDrawer, externalLayout = 
         cancelAnimationFrame(frame); frame = requestAnimationFrame(refresh);
     });
     if (!list) return { refresh() {} };
+    if (panel) new MutationObserver(records => {
+        if (!records.some(record => [...record.addedNodes].some(node => node.nodeType === 1 && node.matches('.bai-bai-wi-popup-header')))) return;
+        cancelAnimationFrame(frame); frame = requestAnimationFrame(refresh);
+    }).observe(panel, { childList: true, subtree: true });
     observe();
+    document.getElementById('world_editor_select')?.addEventListener('change', () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(refresh); });
     list.addEventListener('click', event => {
         if (!settings().enabled || !mobile.matches || externalLayout() || !toggleDrawer) return;
         const toggle = event.target.closest('.world_entry .inline-drawer-toggle');
@@ -163,5 +183,5 @@ export function setupMobileWorldInfo(settings, { toggleDrawer, externalLayout = 
     });
     mobile.addEventListener('change', refresh);
     refresh();
-    return { refresh };
+    return { refresh, release };
 }

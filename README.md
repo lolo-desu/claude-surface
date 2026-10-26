@@ -1,14 +1,16 @@
-# Claude Surface 0.10.3 开发版
+# Claude Surface 0.10.4 开发版
 
 为 SillyTavern 提供 Claude、Material Design、Adwaita 和 FlatDesign 的界面扩展。
 
 | 分支 | 用途 | 当前版本 |
 | --- | --- | --- |
 | [`main`](https://github.com/lolo-desu/claude-surface/tree/main) | 主线，日常安装与更新使用 | 0.9.5 |
-| [`codex/material-adwaita-swiss`](https://github.com/lolo-desu/claude-surface/tree/codex/material-adwaita-swiss) | 开发，后续功能与修复先在这里验证 | 0.10.3 |
+| [`codex/material-adwaita-swiss`](https://github.com/lolo-desu/claude-surface/tree/codex/material-adwaita-swiss) | 开发，后续功能与修复先在这里验证 | 0.10.4 |
 | [`codex/legacy`](https://github.com/lolo-desu/claude-surface/tree/codex/legacy) | 遗产，保留升级前主线的 Claude 风格与行为 | 0.8.1 |
 
 ## 安装
+
+0.10.4 开发版：重新整理手机世界书的选择器、工具栏、搜索、分页与条目卡片，统一标题、字段标签和输入字号，为输入框保留可辨认的边界。修复未选择世界书时的多余高度、柏宝隐藏选择器引起的横向溢出，以及安装柏宝但关闭世界书优化时无法恢复 Surface 排版的问题。兼容 ST-BaiBai-Tools 1.1.5 的实际条目布局，保留其列表、事件和高级编辑行为。原生与柏宝三种状态均有浏览器回归，覆盖四种风格及日夜模式。
 
 0.10.3 hotfix：修复预设提示词编辑器展开后只剩顶部细条的问题。编辑器使用明确的可视区域高度，表单在面板内滚动，手机输入字号保持 16px；桌面编辑器避开常驻侧栏。保留原生保存、取消和重置处理，同时修复点击外部关闭后无法正常重开的状态，支持 Escape 和顶栏关闭操作。提示词与世界书编辑器共用移动可视区域和下拉框保护逻辑。
 
