@@ -890,6 +890,40 @@ body[data-claude-ui].cu-compact-composer #send_form { padding: 5px 6px; }
 }
 @media (prefers-reduced-motion: reduce) { body[data-claude-ui] .cu-header { transition: none; } }
 
+/* The world editor owns a bounded mobile viewport; only its inner holder scrolls.
+   Native html transforms otherwise make fixed background overscan scroll the page. */
+@media (max-width: 899px) {
+    html:has(body[data-claude-ui] #WorldInfo.openDrawer:not(.closedDrawer)) {
+        height: 100%; overflow: hidden; overflow: clip; overscroll-behavior: none;
+        -webkit-transform: none; transform: none; -webkit-perspective: none; perspective: none;
+    }
+    body[data-claude-ui]:has(#WorldInfo.openDrawer:not(.closedDrawer)) {
+        inset: 0; width: 100%; max-width: 100%; height: 100dvh;
+        overflow: hidden; overscroll-behavior: none; touch-action: auto;
+    }
+    body[data-claude-ui].cu-shell-ready #top-settings-holder > .drawer > #WorldInfo {
+        --cu-world-panel-top: max(var(--cu-panel-top),var(--cu-world-view-top,0px));
+        left: var(--cu-world-view-left,0px) !important; right: auto !important;
+        top: var(--cu-world-panel-top) !important;
+        width: var(--cu-world-view-width,100vw) !important; max-width: var(--cu-world-view-width,100vw) !important;
+        height: max(0px,calc(var(--cu-world-view-height,100dvh) + var(--cu-world-view-top,0px) - var(--cu-world-panel-top))) !important;
+        max-height: max(0px,calc(var(--cu-world-view-height,100dvh) + var(--cu-world-view-top,0px) - var(--cu-world-panel-top))) !important;
+        min-height: 0 !important; box-sizing: border-box; overflow: hidden !important;
+        overscroll-behavior: none; resize: none !important; transform: none !important; translate: none !important;
+        padding-bottom: max(16px,env(safe-area-inset-bottom)) !important;
+        padding-left: max(16px,env(safe-area-inset-left)) !important;
+        padding-right: max(16px,env(safe-area-inset-right)) !important;
+    }
+    body[data-claude-ui] #WorldInfoheader { display: none !important; }
+    body[data-claude-ui] #WorldInfo #wi-holder {
+        margin: 0; width: 100%; max-width: 100%; min-width: 0; min-height: 0;
+        box-sizing: border-box; overscroll-behavior: none; scrollbar-gutter: auto;
+    }
+    /* iOS text-field focus must not introduce an automatic page zoom/pan. */
+    body[data-claude-ui] #WorldInfo :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),textarea,select,.cm-content,.CodeMirror) { font-size: 16px !important; }
+    body[data-claude-ui]:has(#WorldInfo.openDrawer:not(.closedDrawer)) :is(.select2-dropdown,.popup) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),textarea,select) { font-size: 16px !important; }
+}
+
 /* Hero portraits stay above the reading column and never consume its width. */
 body[data-claude-ui] #chat .mes > .cu-message-hero {
     position: static; width: 100%; height: auto; min-height: 0; flex: none;

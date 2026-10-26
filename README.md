@@ -1,14 +1,16 @@
-# Claude Surface 0.10.1 开发版
+# Claude Surface 0.10.2 开发版
 
 为 SillyTavern 提供 Claude、Material Design、Adwaita 和 FlatDesign 的界面扩展。
 
 | 分支 | 用途 | 当前版本 |
 | --- | --- | --- |
 | [`main`](https://github.com/lolo-desu/claude-surface/tree/main) | 主线，日常安装与更新使用 | 0.9.5 |
-| [`codex/material-adwaita-swiss`](https://github.com/lolo-desu/claude-surface/tree/codex/material-adwaita-swiss) | 开发，后续功能与修复先在这里验证 | 0.10.1 |
+| [`codex/material-adwaita-swiss`](https://github.com/lolo-desu/claude-surface/tree/codex/material-adwaita-swiss) | 开发，后续功能与修复先在这里验证 | 0.10.2 |
 | [`codex/legacy`](https://github.com/lolo-desu/claude-surface/tree/codex/legacy) | 遗产，保留升级前主线的 Claude 风格与行为 | 0.8.1 |
 
 ## 安装
+
+0.10.2 hotfix：修复手机世界书页面能整体上下左右移动的问题。面板贴合导航栏下方的可视区域，消除内部容器外边距造成的横向溢出；打开时锁定页面根滚动并解除影响固定定位的根节点 3D 效果，条目在内部滚动。输入控件使用 16px 字号以避免 iOS 聚焦自动放大，可视区域缩小时面板跟随调整；保留手动缩放，关闭面板或回到桌面时恢复原行为。同时修复点击世界书下拉搜索框被原生逻辑误判为外部点击、导致面板关闭的问题，保留下拉框自身的选择和输入事件。
 
 0.10.1 hotfix：修复扩展页“在扩展程序更新时通知”勾选标记覆盖面板、挡住其他按钮的问题。勾选框恢复自身定位；勾选、半选和单选图形使用控件尺寸，并禁止装饰层拦截点击。桌面原生面板在侧栏以外的可用区域居中，避免常驻侧栏挡住左侧内容。
 
@@ -116,3 +118,5 @@ powershell -File install-startup.ps1 -SillyTavernPath 'D:\SillyTavern'
 `tests/controls.browser.mjs` 使用独立的 Chromium、WebKit 无头浏览器，在四种风格、深浅色和手机／窄桌面／宽桌面窗口下实际点击更新通知、扩展管理、安装按钮和设置折叠项，并检查开关、下拉框、滑块键盘输入以及面板与侧栏的边界。还检查五套原生 CSS 主题的勾选图形边界。测试拦截设置保存、主题保存及扩展变更请求，避免测试写入服务器偏好或安装／更新扩展。
 
 需要本地 SillyTavern 实例和 Playwright 测试依赖及浏览器，运行 `node tests/controls.browser.mjs`；默认地址为 `http://127.0.0.1:8010`，可通过 `CU_TEST_URL` 指定。默认使用仓库的 CSS 验证修复，`CU_SERVER_CSS=1` 可检查实例已安装的样式。可通过 `CU_PLAYWRIGHT_MODULE`、`CU_CHROMIUM_EXECUTABLE`、`CU_WEBKIT_EXECUTABLE` 指定测试依赖和可执行文件。无头 WebKit 回归不等同于 iOS TauriTavern 真机验证。
+
+`tests/world-info.browser.mjs` 在触摸手机上下文中检查四种风格、深浅色、320/393/430px 竖屏和 844px 横屏的世界书宽高、横向溢出、输入聚焦和内部滚动，并检查旧浮动坐标不会移动面板。Chromium 额外使用真实触摸事件滑动；Playwright 的移动 WebKit 不提供滚轮注入，内部滚动通过键盘事件检查。键盘收起／弹出通过模拟 VisualViewport 变化检查布局计算，另测手动缩放不会重排面板以及关闭／桌面切换后的清理。这些检查不等于 iOS 原生键盘和真机边缘回弹验证。运行方式和 Playwright 环境变量与控件回归相同。

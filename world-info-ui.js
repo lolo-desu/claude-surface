@@ -1,9 +1,26 @@
 /* Adapt semantic fields once. Keep native nodes, editor instances and events. */
 export function setupMobileWorldInfo(settings, { toggleDrawer, externalLayout = () => false } = {}) {
     const mobile = matchMedia('(max-width: 899px)');
+    const panel = document.getElementById('WorldInfo');
     const list = document.getElementById('world_popup_entries_list');
     const headers = new Map(), editors = new Map();
-    let frame;
+    let frame, viewportFrame, viewportActive = false;
+    const viewportProperties = ['--cu-world-view-width','--cu-world-view-height','--cu-world-view-top','--cu-world-view-left'];
+    function refreshViewport() {
+        const active = settings().enabled && mobile.matches && panel?.classList.contains('openDrawer') && !panel.classList.contains('closedDrawer');
+        const viewport = window.visualViewport;
+        // Follow keyboard/address-bar changes at normal scale. Pinch zoom keeps
+        // the layout viewport, rather than shrinking the editor under the user.
+        if (!active || (viewport && Math.abs(viewport.scale - 1) > .02)) {
+            for (const property of viewportProperties) document.body.style.removeProperty(property);
+        } else {
+            if (!viewportActive) window.scrollTo(0, 0);
+            const values = [viewport?.width || window.innerWidth, viewport?.height || window.innerHeight, viewport?.offsetTop || 0, viewport?.offsetLeft || 0];
+            viewportProperties.forEach((property,index) => document.body.style.setProperty(property, `${Math.round(values[index] * 100) / 100}px`));
+        }
+        viewportActive = !!active;
+    }
+    const queueViewport = () => { cancelAnimationFrame(viewportFrame); viewportFrame = requestAnimationFrame(refreshViewport); };
     const observe = () => observer.observe(list, { childList: true, subtree: true });
     function move(node, destination, record, className) {
         if (!node) return;
@@ -75,6 +92,7 @@ export function setupMobileWorldInfo(settings, { toggleDrawer, externalLayout = 
         }
     }
     function refresh() {
+        refreshViewport();
         observer.disconnect();
         try {
             const enabled = settings().enabled && mobile.matches && !externalLayout();
@@ -95,6 +113,22 @@ export function setupMobileWorldInfo(settings, { toggleDrawer, externalLayout = 
         cancelAnimationFrame(frame); frame = requestAnimationFrame(refresh);
     });
     if (!list) return { refresh() {} };
+    // Select2 mounts its dropdown under body. It still belongs to this editor:
+    // let its inputs/options handle the gesture before the host outside closer.
+    const guardedPortals = new WeakSet();
+    jQuery(document).on('select2:open.claudeSurfaceWorldViewport', event => {
+        if (!settings().enabled || !mobile.matches || !panel?.contains(event.target)) return;
+        const portal = document.querySelector('.select2-container--open .select2-dropdown');
+        if (!portal || guardedPortals.has(portal)) return;
+        guardedPortals.add(portal);
+        for (const type of ['mousedown','touchstart']) portal.addEventListener(type, press => {
+            if (settings().enabled && mobile.matches && panel.classList.contains('openDrawer')) press.stopPropagation();
+        }, { passive: true });
+    });
+    if (panel) new MutationObserver(queueViewport).observe(panel, { attributes: true, attributeFilter: ['class'] });
+    window.addEventListener('resize', queueViewport);
+    window.visualViewport?.addEventListener('resize', queueViewport);
+    window.visualViewport?.addEventListener('scroll', queueViewport);
     observe();
     list.addEventListener('click', event => {
         if (!settings().enabled || !mobile.matches || externalLayout() || !toggleDrawer) return;
