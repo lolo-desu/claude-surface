@@ -42,7 +42,7 @@ body[data-claude-ui][data-cu-design="swiss"] {
    layer, so switches cannot inherit a second tick or a font-dependent glyph. */
 body[data-claude-ui] :is(input[type="checkbox"],input[type="radio"]) {
     appearance: none; -webkit-appearance: none; box-sizing: border-box;
-    display: inline-block; position: relative; overflow: visible;
+    position: relative; overflow: visible;
     width: var(--cu-choice-size); min-width: var(--cu-choice-size);
     height: var(--cu-choice-size); min-height: var(--cu-choice-size);
     flex: 0 0 var(--cu-choice-size); margin: 3px 5px 3px 0; padding: 0;
@@ -133,10 +133,19 @@ body[data-claude-ui][data-cu-design="swiss"] :is(input[type="range"],input.neo-r
    status selects and compact numeric fields keep their own layout. */
 body[data-claude-ui] .cu-settings-select { text-align: end; text-align-last: end; }
 body[data-claude-ui] .cu-settings-select option { text-align: start; }
-body[data-claude-ui][data-cu-design="material"] :is(.cu-settings-select,.cu-brand-name-input) { background: var(--cu-selected); border: 0; border-bottom: 2px solid var(--cu-input-border); border-radius: 10px 10px 0 0; padding: 8px 10px; }
+body[data-claude-ui][data-cu-design="material"] :is(.cu-settings-select,.cu-brand-name-input) { background: var(--cu-selected); border: 1px solid var(--cu-input-border); border-radius: 999px; padding: 8px 14px; }
 body[data-claude-ui][data-cu-design="adwaita"] .cu-brand-name-input { background: var(--cu-bg); border: 1px solid var(--cu-input-border); border-radius: 6px; box-shadow: inset 0 1px 2px #00000012; padding: 6px 8px; }
 body[data-claude-ui][data-cu-design="swiss"] :is(.cu-settings-select,.cu-brand-name-input) { background: transparent; border: 1px solid var(--cu-input-border); border-radius: 2px; box-shadow: none; padding: 6px 8px; }
-body[data-claude-ui][data-cu-design="material"] :is(.drawer-content,.popup,.floating_panel) :is(input[type="text"],input[type="search"],input[type="password"],input[type="url"],textarea):not(.wideMax100px):not(.neo-range-input) { border-radius: 10px 10px 0 0 !important; border-bottom: 2px solid var(--cu-input-border) !important; }
+/* Independent M3 fields have a complete outline. Short fields are capsules;
+   multiline editors retain four equal corners without a filled-field underline. */
+body[data-claude-ui][data-cu-design="material"] :is(.drawer-content,.popup,.floating_panel) textarea:not(.wideMax100px):not(.neo-range-input):not(.select2-search__field) { border-radius: 14px !important; border: 1px solid var(--cu-input-border); }
+body[data-claude-ui][data-cu-design="material"] :is(.drawer-content,.popup,.floating_panel) :is(input[type="text"],input[type="search"],input[type="password"],input[type="url"],input[type="email"],input[type="number"],select):not(.select2-hidden-accessible) { border-radius: 999px !important; }
+body[data-claude-ui][data-cu-design="material"] :is(.drawer-content,.popup,.floating_panel) textarea[rows="1"]:not([name="comment"]):not(.select2-search__field) { border-radius: 20px !important; }
+body[data-claude-ui][data-cu-design="material"] .select2-selection--single { border-radius: 999px !important; }
+body[data-claude-ui][data-cu-design="material"] .select2-selection--multiple { border-radius: 20px !important; }
+body[data-claude-ui] .select2-container .select2-selection { background: var(--cu-input) !important; color: var(--cu-text); border: 1px solid var(--cu-input-border); min-height: 36px; }
+body[data-claude-ui] .select2-container .select2-selection--multiple { padding: 6px 10px; }
+body[data-claude-ui] .select2-selection .select2-search__field { border: 0 !important; border-radius: 0 !important; box-shadow: none !important; background: transparent !important; padding: 0 !important; margin: 0 !important; height: 22px !important; min-height: 22px !important; line-height: 22px !important; }
 body[data-claude-ui][data-cu-design="swiss"] :is(.drawer-content,.popup,.floating_panel) :is(input[type="text"],input[type="search"],input[type="password"],input[type="url"],textarea,select) { border-radius: 2px !important; }
 
 /* Connected M3 segments, raised GTK selection, and ruled FlatDesign tabs. */

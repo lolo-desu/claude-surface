@@ -1,14 +1,16 @@
-# Claude Surface 0.10.4 开发版
+# Claude Surface 0.10.5 开发版
 
 为 SillyTavern 提供 Claude、Material Design、Adwaita 和 FlatDesign 的界面扩展。
 
 | 分支 | 用途 | 当前版本 |
 | --- | --- | --- |
 | [`main`](https://github.com/lolo-desu/claude-surface/tree/main) | 主线，日常安装与更新使用 | 0.9.5 |
-| [`codex/material-adwaita-swiss`](https://github.com/lolo-desu/claude-surface/tree/codex/material-adwaita-swiss) | 开发，后续功能与修复先在这里验证 | 0.10.4 |
+| [`codex/material-adwaita-swiss`](https://github.com/lolo-desu/claude-surface/tree/codex/material-adwaita-swiss) | 开发，后续功能与修复先在这里验证 | 0.10.5 |
 | [`codex/legacy`](https://github.com/lolo-desu/claude-surface/tree/codex/legacy) | 遗产，保留升级前主线的 Claude 风格与行为 | 0.8.1 |
 
 ## 安装
+
+0.10.5 开发版：Material Design 的独立单行输入、短关键词输入、数值框和选择器统一使用胶囊轮廓，移除上圆下直的形状及加粗底线；多行正文保留四角一致的圆角。四种风格的紧凑输入栏统一文字、按钮与头像高度，支持内容增高和长内容编辑，隐藏滚动条。手机提示词表单改为合理的两列与整行组合，隐藏字段不再占位，操作按钮保留在可见底部；多选框移除嵌套边框与错误背景。补齐桌面设置列间距，并修复普通聊天意外显示删除勾选框的问题。同步更新独立 CSS 主题。
 
 0.10.4 开发版：重新整理手机世界书的选择器、工具栏、搜索、分页与条目卡片，统一标题、字段标签和输入字号，为输入框保留可辨认的边界。修复未选择世界书时的多余高度、柏宝隐藏选择器引起的横向溢出，以及安装柏宝但关闭世界书优化时无法恢复 Surface 排版的问题。兼容 ST-BaiBai-Tools 1.1.5 的实际条目布局，保留其列表、事件和高级编辑行为。原生与柏宝三种状态均有浏览器回归，覆盖四种风格及日夜模式。
 

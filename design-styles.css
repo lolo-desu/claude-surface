@@ -16,8 +16,8 @@ body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"]) {
 }
 body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"]) :is(.cu-header,.cu-sidebar,.cu-sheet,.cu-composer-meta) { font-family: var(--cu-sans); }
 body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"]) #send_but { background: var(--cu-accent); color: var(--cu-on-accent); }
-body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"]) :is(.select2-selection,.select2-dropdown) { border-radius: var(--cu-control-radius) !important; }
-body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"]) :is(.drawer-content,.popup,.floating_panel) :is(input.text_pole,input[type="text"],input[type="number"],input[type="search"],input[type="password"],input[type="url"],textarea,select,.menu_button,.menu_button_icon) { border-radius: var(--cu-control-radius) !important; }
+:where(body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"])) :is(.select2-selection,.select2-dropdown) { border-radius: var(--cu-control-radius) !important; }
+:where(body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"])) :is(.drawer-content,.popup,.floating_panel) :is(input.text_pole,input[type="text"],input[type="number"],input[type="search"],input[type="password"],input[type="url"],textarea,select,.menu_button,.menu_button_icon) { border-radius: var(--cu-control-radius) !important; }
 body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"]) :focus-visible { outline-color: var(--cu-accent) !important; }
 body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"]) .cu-button[aria-pressed="true"] { background: var(--cu-selected); color: var(--cu-accent); }
 

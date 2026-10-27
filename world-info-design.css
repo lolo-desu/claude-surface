@@ -12,6 +12,7 @@
     body[data-claude-ui] #WorldInfo.cu-world-surface #wiTopBlock .select2-container { width: 100% !important; min-width: 0; }
     body[data-claude-ui] #WorldInfo.cu-world-surface #WIMultiSelector .range-block-range:has(> .bai-bai-wi-global-selector-display) > .select2-container { display: none !important; }
     body[data-claude-ui] #WorldInfo.cu-world-surface :is(.select2-selection,.bai-bai-wi-global-selector-display) { min-height: 40px !important; border: 1px solid var(--cu-input-border) !important; border-radius: var(--cu-wi-radius) !important; background: var(--cu-input) !important; color: var(--cu-text); box-sizing: border-box; }
+    body[data-claude-ui][data-cu-design="material"] #WorldInfo.cu-world-surface :is(.select2-selection--single,.bai-bai-wi-global-selector-display) { border-radius: 999px !important; }
     body[data-claude-ui] #WorldInfo.cu-world-surface .bai-bai-wi-global-selector-display { padding: 8px 10px; gap: 6px; }
     body[data-claude-ui] #WorldInfo.cu-world-surface :is(.select2-selection__rendered,.select2-selection__placeholder,.bai-bai-wi-global-selector-placeholder,.bai-bai-wi-global-selector-chip-label) { font: 400 14px/22px var(--cu-sans) !important; color: var(--cu-text); }
     body[data-claude-ui] #WorldInfo.cu-world-surface :is(.select2-selection__placeholder,.bai-bai-wi-global-selector-placeholder) { white-space: normal !important; overflow-wrap: anywhere; }
@@ -71,6 +72,7 @@
     body[data-claude-ui] #WorldInfo.cu-world-surface #world_popup_entries_list :is(.world_entry_edit,.world_entry_form_control,.cm-editor,.CodeMirror) { min-width: 0; max-width: 100%; }
     body[data-claude-ui] #WorldInfo.cu-world-surface #world_popup_entries_list .world_entry_edit { padding-top: 14px; }
     body[data-claude-ui] #WorldInfo.cu-world-surface #world_popup_entries_list .world_entry_edit .world_entry_form_control > label { text-align: start !important; align-self: stretch; }
+    body[data-claude-ui] #WorldInfo.cu-world-surface #world_popup_entries_list .world_entry_edit .world_entry_form_control > small { margin: 0 0 4px !important; text-align: start !important; }
     body[data-claude-ui] #WorldInfo.cu-world-surface #world_popup_entries_list .world_entry_edit :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select) { min-height: 40px; font: 400 16px/24px var(--cu-sans) !important; }
     body[data-claude-ui] #WorldInfo.cu-world-surface #world_popup_entries_list .world_entry_edit textarea { font: 400 16px/24px var(--cu-sans) !important; padding: 8px !important; border: 1px solid var(--cu-input-border); border-radius: var(--cu-wi-radius); }
     body[data-claude-ui] #WorldInfo.cu-world-surface #world_popup_entries_list textarea[name="content"] { min-height: 216px; height: 240px; }
