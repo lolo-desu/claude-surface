@@ -1,14 +1,16 @@
-# Claude Surface 0.10.7 开发版
+# Claude Surface 0.10.8 开发版
 
 为 SillyTavern 提供 Claude、Material Design、Adwaita 和 FlatDesign 的界面扩展。
 
 | 分支 | 用途 | 当前版本 |
 | --- | --- | --- |
 | [`main`](https://github.com/lolo-desu/claude-surface/tree/main) | 主线，日常安装与更新使用 | 0.9.5 |
-| [`codex/material-adwaita-swiss`](https://github.com/lolo-desu/claude-surface/tree/codex/material-adwaita-swiss) | 开发，后续功能与修复先在这里验证 | 0.10.7 |
+| [`codex/material-adwaita-swiss`](https://github.com/lolo-desu/claude-surface/tree/codex/material-adwaita-swiss) | 开发，后续功能与修复先在这里验证 | 0.10.8 |
 | [`codex/legacy`](https://github.com/lolo-desu/claude-surface/tree/codex/legacy) | 遗产，保留升级前主线的 Claude 风格与行为 | 0.8.1 |
 
 ## 安装
+
+0.10.8 开发版：世界书主要关键字、逻辑、可选过滤器及内容标签统一使用相同字号、行高和文字颜色；递归选项用同一网格排列，勾选框对齐文字首行，长标签不再挤乱下一行。为 TauriTavern CodeMirror 编辑器增加完整边框、独立底色及工具栏分隔线，统一工具按钮尺寸，Adwaita 的编辑区可以明确辨认，FlatDesign 保留直角。修复预设顶部链接按钮偏宽、图标偏移的问题，保留原开关行为。四种设计逐一截图验收，覆盖原生／柏宝布局、原生文本框／真实 Tauri 编辑器以及日夜模式。
 
 0.10.7 开发版：停止创建带时间戳的 Backup 主题。启用前的外观、未保存的颜色与自定义 CSS 保存在扩展设置内，停用时直接恢复；反复启停、切换风格和刷新均不向原生主题列表添加备份，也不覆盖原主题文件。兼容读取旧版恢复快照，已有历史备份文件保留。包含 0.10.6 的手机与桌面世界书排列修正。
 

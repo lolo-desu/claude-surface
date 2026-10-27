@@ -38,6 +38,13 @@ body[data-claude-ui][data-cu-design="swiss"] {
     --cu-component-time: 90ms; --cu-component-ease: linear;
 }
 
+/* The preset binding control is a label around a hidden checkbox. It needs
+   the same icon box as its neighboring actions, without input spacing. */
+body[data-claude-ui] #openai_api-presets .title_restorable > .flex-container { gap: 6px; }
+body[data-claude-ui] #openai_api-presets .title_restorable > .flex-container > .menu_button { display: inline-grid; place-items: center; flex: 0 0 36px; box-sizing: border-box; width: 36px; min-width: 36px; max-width: 36px; height: 36px; min-height: 36px; padding: 0 !important; margin: 0; }
+body[data-claude-ui] label[for="bind_preset_to_connection"] > input { display: none !important; }
+body[data-claude-ui] label[for="bind_preset_to_connection"] > i { grid-area: 1 / 1; margin: 0; }
+
 /* Suppress the host's polygon tick. Check/dash masks share a single paint
    layer, so switches cannot inherit a second tick or a font-dependent glyph. */
 body[data-claude-ui] :is(input[type="checkbox"],input[type="radio"]) {
