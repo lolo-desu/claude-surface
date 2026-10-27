@@ -44,6 +44,13 @@ export function setupMobileWorldInfo(settings, { toggleDrawer, externalLayout = 
     const panel = document.getElementById('WorldInfo');
     const list = document.getElementById('world_popup_entries_list');
     const headers = new Map(), editors = new Map();
+    const toolbarLabels = new Map();
+    const managementLabels = {
+        world_import_button: '导入', world_popup_export: '导出', world_popup_name_button: '重命名',
+        world_duplicate: '复制', world_popup_delete: '删除', OpenAllWIEntries: '展开全部',
+        CloseAllWIEntries: '收起全部', world_backfill_memos: '填充标题', world_apply_current_sorting: '应用排序',
+    };
+    let toolsButton;
     const refreshViewport = setupMobilePanelViewport(settings, panel, 'world');
     let frame;
     const observe = () => observer.observe(list, { childList: true, subtree: true });
@@ -69,6 +76,43 @@ export function setupMobileWorldInfo(settings, { toggleDrawer, externalLayout = 
             }
         } finally { observe(); }
     }
+    function refreshToolbar(active) {
+        if (!active) {
+            toolsButton?.remove(); toolsButton = null;
+            panel?.classList.remove('cu-wi-tools-open');
+            for (const [node, old] of toolbarLabels) {
+                for (const [key, value] of Object.entries(old)) {
+                    if (value === undefined) delete node.dataset[key]; else node.dataset[key] = value;
+                }
+            }
+            toolbarLabels.clear();
+            return;
+        }
+        const root = panel.querySelector('.bai-bai-wi-popup-header') || document.getElementById('world_popup');
+        if (!root) return;
+        for (const [node] of toolbarLabels) if (!node.isConnected) toolbarLabels.delete(node);
+        for (const [id, label] of Object.entries({ ...managementLabels, world_popup_new: '新条目' })) {
+            const node = document.getElementById(id);
+            if (!node) continue;
+            if (!toolbarLabels.has(node)) toolbarLabels.set(node, { cuWiLabel: node.dataset.cuWiLabel, cuWiTool: node.dataset.cuWiTool });
+            node.dataset.cuWiLabel = label;
+            if (id in managementLabels) node.dataset.cuWiTool = 'true';
+        }
+        if (!toolsButton) {
+            toolsButton = document.createElement('button'); toolsButton.type = 'button';
+            toolsButton.className = 'cu-wi-tools-toggle';
+            toolsButton.setAttribute('aria-label', '更多世界书操作');
+            toolsButton.setAttribute('aria-controls', 'world_popup');
+            const icon = document.createElement('i'); icon.className = 'fa-solid fa-ellipsis'; icon.setAttribute('aria-hidden', 'true');
+            const text = document.createElement('span'); text.textContent = '更多'; toolsButton.append(icon, text);
+            toolsButton.addEventListener('click', () => {
+                const expanded = panel.classList.toggle('cu-wi-tools-open');
+                toolsButton.setAttribute('aria-expanded', String(expanded));
+            });
+        }
+        if (toolsButton.parentElement !== root) root.append(toolsButton);
+        toolsButton.setAttribute('aria-expanded', String(panel.classList.contains('cu-wi-tools-open')));
+    }
     function adaptHeader(header) {
         if (headers.has(header) || header.closest('[data-bai-bai-world-info-mobile-header-layout="true"]')) return;
         const title = header.querySelector('.WIEntryTitleAndStatus');
@@ -85,12 +129,13 @@ export function setupMobileWorldInfo(settings, { toggleDrawer, externalLayout = 
         header.prepend(...rows);
         const field = name => header.querySelector(`[name="${name}"]`)?.closest('.world_entry_form_control');
         move(title, rows[0], record);
+        move(header.querySelector('.drag-handle'), rows[0], record);
         move(field('position'), rows[1], record, 'cu-wi-position-field');
         move(field('depth'), rows[1], record, 'cu-wi-depth-field');
         move(header.querySelector('.killSwitch'), rows[1], record);
         move(field('order'), numbers, record, 'cu-wi-order-field');
         move(field('probability'), numbers, record, 'cu-wi-probability-field');
-        for (const selector of ['.move_entry_button','.duplicate_entry_button','.delete_entry_button','.drag-handle','.inline-drawer-toggle']) {
+        for (const selector of ['.move_entry_button','.duplicate_entry_button','.delete_entry_button','.inline-drawer-toggle']) {
             move(header.querySelector(selector), actions, record);
         }
         for (const node of header.querySelectorAll('.world_entry_thin_controls')) {
@@ -132,6 +177,7 @@ export function setupMobileWorldInfo(settings, { toggleDrawer, externalLayout = 
     function refresh() {
         refreshViewport();
         panel?.classList.toggle('cu-world-surface', settings().enabled && mobile.matches);
+        refreshToolbar(settings().enabled && mobile.matches);
         list.dataset.cuEmptyMessage = document.getElementById('world_editor_select')?.value ? '没有匹配的条目' : '选择世界书后，在这里查看和编辑条目';
         observer.disconnect();
         try {
@@ -154,7 +200,7 @@ export function setupMobileWorldInfo(settings, { toggleDrawer, externalLayout = 
     });
     if (!list) return { refresh() {} };
     if (panel) new MutationObserver(records => {
-        if (!records.some(record => [...record.addedNodes].some(node => node.nodeType === 1 && node.matches('.bai-bai-wi-popup-header')))) return;
+        if (!records.some(record => [...record.addedNodes,...record.removedNodes].some(node => node.nodeType === 1 && node.matches('.bai-bai-wi-popup-header')))) return;
         cancelAnimationFrame(frame); frame = requestAnimationFrame(refresh);
     }).observe(panel, { childList: true, subtree: true });
     observe();

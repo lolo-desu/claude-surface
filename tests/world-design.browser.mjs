@@ -53,6 +53,16 @@ for(const [engineName,engine] of [['chromium',chromium],['webkit',webkit]]){
     const selector=page.locator('#world_editor_select');await selector.selectOption('');
     const prefix=`${engineName}-${plugin}-${family}-${mode}`;
     await fits(page,prefix+' empty');
+    const more=page.getByRole('button',{name:'更多世界书操作',exact:true});
+    await more.waitFor({state:'visible'});
+    const primary=await page.locator('#world_create_button,#world_popup_new,.cu-wi-tools-toggle').evaluateAll(xs=>xs.map(x=>x.getBoundingClientRect().toJSON()));
+    assert(primary.length===3&&primary.every(x=>x.height===40&&Math.abs(x.top-primary[0].top)<1&&Math.abs(x.width-primary[0].width)<1),JSON.stringify(primary));
+    assert.equal(await page.locator('#world_popup [data-cu-wi-tool]:visible').count(),0,'Low-frequency tools should begin collapsed');
+    await more.click();assert.equal(await more.getAttribute('aria-expanded'),'true');
+    assert.equal(await page.locator('#world_popup [data-cu-wi-tool]:visible').count(),9);
+    const toolBoxes=await page.locator('#world_popup [data-cu-wi-tool]').evaluateAll(xs=>xs.map(x=>({label:x.dataset.cuWiLabel,...x.getBoundingClientRect().toJSON()})));
+    assert(toolBoxes.every(x=>x.label&&x.height===36&&x.width>60),JSON.stringify(toolBoxes));
+    await more.click();assert.equal(await more.getAttribute('aria-expanded'),'false');
     assert(await page.locator('#world_popup_entries_list').evaluate(el=>el.getBoundingClientRect().height<150),'Empty list reserves a screen of blank space');
     const world=await selector.locator('option').evaluateAll(xs=>xs.find(x=>x.value)?.value);
     assert(world,'A local sample world is required.');await selector.selectOption(world);
@@ -78,10 +88,20 @@ for(const [engineName,engine] of [['chromium',chromium],['webkit',webkit]]){
      console.log('CHECK',prefix,width);
      await page.setViewportSize({width,height:width===844?390:915});
      await fits(page,prefix+'/'+width);
+     await more.waitFor({state:'visible'});
      const metrics=await entry.evaluate(el=>['position','order','probability'].map(name=>{
       const x=el.querySelector(`[name="${name}"]`),s=getComputedStyle(x),r=x.getBoundingClientRect();return{name,font:parseFloat(s.fontSize),height:r.height,width:r.width};
      }));
      assert(metrics.every(x=>x.font>=16&&x.height>=34&&x.width>=40),JSON.stringify({prefix,width,metrics}));
+     if(plugin!=='enabled'||width<=600){
+      const aligned=await entry.evaluate(el=>{
+       const order=el.querySelector('[name="order"]').getBoundingClientRect(),prob=el.querySelector('[name="probability"]').getBoundingClientRect();
+       const controls=[...el.querySelectorAll('.cu-wi-buttons .menu_button,.cu-wi-buttons .inline-drawer-toggle,.bai-bai-wi-mobile-action-group .menu_button,.bai-bai-wi-mobile-expand-slot .inline-drawer-toggle')].map(x=>x.getBoundingClientRect().toJSON());
+       return{order:order.toJSON(),prob:prob.toJSON(),controls};
+      });
+      assert(Math.abs(aligned.order.top-aligned.prob.top)<1&&Math.abs(aligned.order.width-aligned.prob.width)<1&&aligned.order.height===40,JSON.stringify(aligned));
+      assert(aligned.controls.length===4&&aligned.controls.every(x=>x.width===36&&x.height===36&&Math.abs(x.top-aligned.controls[0].top)<1),JSON.stringify(aligned));
+     }
      const content=entry.locator('textarea[name="content"]');
      if(!await content.isVisible())await entry.locator('.inline-drawer-toggle').first().click();
      await content.waitFor({state:'visible'});await content.scrollIntoViewIfNeeded();
@@ -93,6 +113,7 @@ for(const [engineName,engine] of [['chromium',chromium],['webkit',webkit]]){
     }
     await page.setViewportSize({width:412,height:915});
     await fits(page,prefix+' restored portrait');
+    await more.waitFor({state:'visible'});
     await page.locator('#wi-holder').evaluate(el=>{el.scrollTop=0;});
     await page.screenshot({path:path.join(output,prefix+'-list.png')});
     await page.locator('.cu-header button[aria-label="关闭原生面板"]').click();
