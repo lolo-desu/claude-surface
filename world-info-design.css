@@ -1,5 +1,28 @@
 /* Shared visual system for the native editor and real ST-BaiBai-Tools layout.
    The plugin keeps its nodes, Vue list, lazy fields and event handlers. */
+@media (min-width:900px) {
+    body[data-claude-ui] #WorldInfo #world_popup > .flex-container { gap: 8px; }
+    body[data-claude-ui] #WorldInfo #world_popup > .flex-container > .menu_button { flex: 0 0 auto; width: auto; min-width: 36px; height: 36px; padding: 4px 10px; margin: 0; }
+    body[data-claude-ui] #WorldInfo #world_popup > .flex-container:has(#world_editor_select) > .select2-container { flex: 1 1 180px; width: auto !important; min-width: 150px; }
+    body[data-claude-ui] #WorldInfo #world_info_search { flex: 1 1 150px; width: auto; min-width: 120px; height: 36px; }
+    body[data-claude-ui] #WorldInfo #world_info_sort_order { flex: 0 1 160px; width: auto; min-width: 100px; height: 36px; }
+    body[data-claude-ui] #WorldInfo #WIEntryHeaderTitlesPC { display: none; }
+    body[data-claude-ui] #WorldInfo #world_popup_entries_list .wi-card-entry > .inline-drawer { margin: 0 !important; border: 0 !important; background: transparent; box-shadow: none; }
+    body[data-claude-ui] #WorldInfo #world_popup_entries_list .inline-drawer-header { border: 0 !important; align-items: center; gap: 8px; }
+    body[data-claude-ui] #WorldInfo #world_popup_entries_list .world_entry_thin_controls { min-width: 0; }
+    body[data-claude-ui] #WorldInfo #world_popup_entries_list .world_entry_thin_controls > .flex-container { gap: 10px; }
+    body[data-claude-ui] #WorldInfo #world_popup_entries_list .WIEntryTitleAndStatus { flex: 1 1 200px; min-width: 0; }
+    body[data-claude-ui] #WorldInfo #world_popup_entries_list .WIEnteryHeaderControls { flex: 1 1 300px; gap: 8px; align-items: end; }
+    body[data-claude-ui] #WorldInfo #world_popup_entries_list .WIEnteryHeaderControls > .world_entry_form_control { display: flex; flex-direction: column; align-items: stretch; margin: 0; gap: 4px; }
+    body[data-claude-ui] #WorldInfo #world_popup_entries_list .WIEnteryHeaderControls > [name="PositionBlock"] { flex: 1 1 150px; min-width: 120px; }
+    body[data-claude-ui] #WorldInfo #world_popup_entries_list .WIEnteryHeaderControls > .world_entry_form_control:has(input[style*="visibility: hidden"]) { display: none; }
+    body[data-claude-ui] #WorldInfo #world_popup_entries_list .WIEntryHeaderTitleMobile { display: block; font: 500 12px/18px var(--cu-sans); color: var(--cu-muted); margin: 0; text-align: start; }
+    body[data-claude-ui] #WorldInfo #world_popup_entries_list :is(input[name="order"],input[name="probability"],input[name="depth"]) { width: 64px !important; min-width: 64px; max-width: 64px; height: 36px; padding: 4px 8px !important; font: 400 14px/22px var(--cu-sans); text-align: center; font-variant-numeric: tabular-nums; }
+    body[data-claude-ui] #WorldInfo #world_popup_entries_list select[name="position"] { width: 100% !important; min-width: 0; height: 36px; padding: 4px 8px !important; font-size: 14px; }
+    body[data-claude-ui] #WorldInfo #world_popup_entries_list textarea[name="comment"] { height: auto !important; field-sizing: content; min-height: 36px !important; max-height: 112px; padding: 6px 8px !important; font: 400 14px/22px var(--cu-sans); margin: 0; resize: none; }
+    body[data-claude-ui] #WorldInfo #world_popup_entries_list select[name="entryStateSelector"] { width: 36px !important; min-width: 36px; height: 36px; padding: 0 !important; text-align: center; text-align-last: center; }
+    body[data-claude-ui] #WorldInfo #world_popup_entries_list .inline-drawer-header > .menu_button { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 36px; width: 36px; height: 36px; min-height: 36px; padding: 0 !important; margin: 0; }
+}
 @media (max-width:899px) {
     body[data-claude-ui]:has(#WorldInfo.cu-world-surface.openDrawer) #sheld { visibility: hidden; }
     body[data-claude-ui] #WorldInfo.cu-world-surface { --cu-wi-radius: var(--cu-control-radius,10px); font: 14px/1.45 var(--cu-sans); }

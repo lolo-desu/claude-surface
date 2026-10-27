@@ -89,6 +89,8 @@ for(const [engineName,engine] of [['chromium',chromium],['webkit',webkit]]){
      await page.setViewportSize({width,height:width===844?390:915});
      await fits(page,prefix+'/'+width);
      await more.waitFor({state:'visible'});
+     await entry.scrollIntoViewIfNeeded();
+     await page.waitForFunction(()=>document.querySelector('#world_popup_entries_list .world_entry [name="position"]')?.getBoundingClientRect().width>0);
      const metrics=await entry.evaluate(el=>['position','order','probability'].map(name=>{
       const x=el.querySelector(`[name="${name}"]`),s=getComputedStyle(x),r=x.getBoundingClientRect();return{name,font:parseFloat(s.fontSize),height:r.height,width:r.width};
      }));
@@ -111,14 +113,27 @@ for(const [engineName,engine] of [['chromium',chromium],['webkit',webkit]]){
      await entry.locator('.inline-drawer-toggle').first().click();
      await content.waitFor({state:'hidden'});
     }
+    for(const width of [1024,1440]){
+     await page.setViewportSize({width,height:1000});
+     await page.waitForFunction(()=>!document.querySelector('#WorldInfo').classList.contains('cu-world-surface'));
+     await entry.scrollIntoViewIfNeeded();
+     const desktop=await entry.evaluate(el=>{
+      const panel=document.querySelector('#WorldInfo'),r=el.getBoundingClientRect();
+      return{left:r.left,right:r.right,panelRight:panel.getBoundingClientRect().right,overflow:panel.scrollWidth-panel.clientWidth,outside:[...panel.querySelectorAll('*')].filter(x=>x.getBoundingClientRect().right>panel.getBoundingClientRect().right).slice(0,5).map(x=>({id:x.id,cl:x.className,right:x.getBoundingClientRect().right})),fields:['order','probability'].map(name=>{const x=el.querySelector(`[name="${name}"]`),s=getComputedStyle(x),r=x.getBoundingClientRect();return{width:r.width,height:r.height,available:x.clientWidth-parseFloat(s.paddingLeft)-parseFloat(s.paddingRight)};})};
+     });
+     assert(desktop.right<=desktop.panelRight+1&&desktop.outside.length===0&&desktop.fields.every(x=>x.width>=64&&x.height>=36&&x.available>=40),JSON.stringify({prefix,width,desktop}));
+    }
     await page.setViewportSize({width:412,height:915});
+    await page.locator('.cu-header button[aria-label="更多"]').click();
+    await page.locator('.cu-tool-grid').getByRole('button',{name:'世界书',exact:true}).click();
+    await page.locator('.cu-sheet').waitFor({state:'hidden'});
     await fits(page,prefix+' restored portrait');
     await more.waitFor({state:'visible'});
     await page.locator('#wi-holder').evaluate(el=>{el.scrollTop=0;});
     await page.screenshot({path:path.join(output,prefix+'-list.png')});
     await page.locator('.cu-header button[aria-label="关闭原生面板"]').click();
     assert(await page.locator('#sheld').evaluate(el=>getComputedStyle(el).visibility==='visible'));
-    report.cases.push({engine:engineName,plugin,family,mode,widths:[320,412,844],longTitle:titleSize});
+    report.cases.push({engine:engineName,plugin,family,mode,widths:[320,412,844,1024,1440],longTitle:titleSize});
    }
    assert.equal(errors.length,0,errors.join('\n'));
   }catch(error){const p=context.pages()[0];await p?.screenshot({path:path.join(output,`${engineName}-${plugin}-failure.png`)});console.log('FAILURE DOM',await p?.evaluate(()=>({search:document.querySelector('#world_info_search')?.value,cards:[...document.querySelectorAll('#world_popup_entries_list .world_entry')].map(x=>({height:x.getBoundingClientRect().height,title:x.querySelector('[name="comment"]')?.value})),panel:document.querySelector('#WorldInfo')?.className})));throw error;}finally{await context.close();}
