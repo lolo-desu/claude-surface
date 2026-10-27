@@ -1,14 +1,16 @@
-# Claude Surface 0.10.6 开发版
+# Claude Surface 0.10.7 开发版
 
 为 SillyTavern 提供 Claude、Material Design、Adwaita 和 FlatDesign 的界面扩展。
 
 | 分支 | 用途 | 当前版本 |
 | --- | --- | --- |
 | [`main`](https://github.com/lolo-desu/claude-surface/tree/main) | 主线，日常安装与更新使用 | 0.9.5 |
-| [`codex/material-adwaita-swiss`](https://github.com/lolo-desu/claude-surface/tree/codex/material-adwaita-swiss) | 开发，后续功能与修复先在这里验证 | 0.10.6 |
+| [`codex/material-adwaita-swiss`](https://github.com/lolo-desu/claude-surface/tree/codex/material-adwaita-swiss) | 开发，后续功能与修复先在这里验证 | 0.10.7 |
 | [`codex/legacy`](https://github.com/lolo-desu/claude-surface/tree/codex/legacy) | 遗产，保留升级前主线的 Claude 风格与行为 | 0.8.1 |
 
 ## 安装
+
+0.10.7 开发版：停止创建带时间戳的 Backup 主题。启用前的外观、未保存的颜色与自定义 CSS 保存在扩展设置内，停用时直接恢复；反复启停、切换风格和刷新均不向原生主题列表添加备份，也不覆盖原主题文件。兼容读取旧版恢复快照，已有历史备份文件保留。包含 0.10.6 的手机与桌面世界书排列修正。
 
 0.10.6 开发版：重排世界书控件。顶部保留等宽的“创建／新条目／更多”，导入、导出等低频操作收进带文字的展开区；搜索、排序、刷新保持同高。条目依次排列标题与状态、位置与深度、等宽的顺序与概率字段，以及独立的底部操作行。统一标签基线、输入框高度和图标按钮尺寸，移除重复折叠边框、无意义分隔线与标题调整手柄。桌面数值框扩大到可完整显示三至四位数的宽度，字段标签跟随对应输入框，不再依赖错位的远端列名；桌面工具按钮保留合适尺寸。原生和柏宝世界书新布局均适用，保留原控件、事件及编辑功能；四种风格、日夜模式和响应式切换均已回归。
 
@@ -36,7 +38,7 @@ https://github.com/lolo-desu/claude-surface
 
 安装完成后刷新页面即可使用，后续可通过酒馆的扩展管理更新。仓库根目录直接包含 `manifest.json`、`index.js` 和 `style.css`，无需构建或安装依赖。
 
-启用时会导入并切换到所选风格的原生主题。切换前通过酒馆原生主题导入保存当前外观快照，包含尚未另存的自定义 CSS，不覆盖原主题。停用时恢复快照。选择其他原生主题时会自动停用 Surface 壳层，让所选主题接管；重新启用时会备份当前主题。只有旧版 Claude Base 的空 CSS 表会暂停生效，其他原生主题样式表保持启用。卸载前请先停用界面。
+启用时会导入并切换到所选风格的原生主题。切换前在扩展设置内部保存当前外观快照，包含尚未另存的颜色、字号与自定义 CSS；不创建备份主题、不覆盖原主题文件。停用时直接恢复快照。旧版备份按需读取迁移，已有历史文件保留。选择其他原生主题时会自动停用 Surface 壳层，让所选主题接管；重新启用时会备份当前主题。只有旧版 Claude Base 的空 CSS 表会暂停生效，其他原生主题样式表保持启用。卸载前请先停用界面。
 
 ## 设计风格
 

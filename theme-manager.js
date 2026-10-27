@@ -56,6 +56,41 @@ export function setupManagedTheme({ settings, save, report, appearanceChanged })
         } finally { internalTarget = null; }
     }
 
+    function restoreSnapshot(backup) {
+        // Only restore native appearance keys. Never reload prompts, connection
+        // settings, or register a temporary preset just to apply a snapshot.
+        const snapshot = backup.snapshot;
+        const allowed = Object.keys(powerUser.getThemeObject('')).filter(key => key !== 'name');
+        const values = Object.fromEntries(allowed.filter(key => Object.hasOwn(snapshot, key)).map(key => [key, snapshot[key]]));
+        const name = backup.originalName || snapshot.name || '';
+        const aliases = { custom_css: 'customCSS', chat_width: 'chat_width_slider', noShadows: 'noShadowsmode',
+            hotswap_enabled: 'hotswapEnabled', timer_enabled: 'messageTimerEnabled', timestamps_enabled: 'messageTimestampsEnabled',
+            timestamp_model_icon: 'messageModelIconEnabled', mesIDDisplay_enabled: 'mesIDDisplayEnabled', hideChatAvatars_enabled: 'hideChatAvatarsEnabled' };
+        const colors = { main_text_color: 'main-text', italics_text_color: 'italics', underline_text_color: 'underline', quote_text_color: 'quote',
+            blur_tint_color: 'blur-tint', chat_tint_color: 'chat-tint', user_mes_blur_tint_color: 'user-mes-blur-tint', bot_mes_blur_tint_color: 'bot-mes-blur-tint', shadow_color: 'shadow', border_color: 'border' };
+        internalTarget = name;
+        observedName = name;
+        try {
+            Object.assign(context.powerUserSettings, values, { theme: name });
+            controls();
+            jQuery(themeSelect).val(registered(name) ? name : null);
+            for (const [key, value] of Object.entries(values)) {
+                const control = jQuery('#' + (aliases[key] || key));
+                if (colors[key]) jQuery('#' + colors[key] + '-color-picker').attr('color', value);
+                else if (typeof value === 'boolean') control.prop('checked', value);
+                else control.val(value);
+            }
+            powerUser.applyPowerUserSettings();
+            // These native handlers apply appearance options not covered by the
+            // public appearance refresh, and keep their normal host behavior.
+            const events = { waifuMode: 'change', chat_display: 'change', toastr_position: 'change',
+                enableZenSliders: 'input', enableLabMode: 'input', reduced_motion: 'input', compact_input_area: 'input',
+                bogus_folders: 'input', zoomed_avatar_magnification: 'input' };
+            for (const [key, event] of Object.entries(events)) if (Object.hasOwn(values, key)) jQuery('#' + key).trigger(event, { fromInit: true });
+            if (typeof values.custom_css === 'string') jQuery('#customCSS').trigger('input');
+        } finally { internalTarget = null; }
+    }
+
     async function reconcile() {
         const config = settings();
         const revision = nativeRevision;
@@ -69,9 +104,22 @@ export function setupManagedTheme({ settings, save, report, appearanceChanged })
         try {
             if (!config.enabled) {
                 if (config.themeManaged && config.themeBackup) {
-                    const restoreName = registered(config.themeBackup.name) ? config.themeBackup.name : config.themeBackup.originalName;
-                    if (registered(restoreName)) select(restoreName);
-                    if (typeof config.themeBackup.customCSS === 'string') jQuery('#customCSS').val(config.themeBackup.customCSS).trigger('input');
+                    let backup = config.themeBackup;
+                    if (!backup.snapshot && backup.name) {
+                        // Read old saved snapshots without importing or creating
+                        // another theme. Existing files remain user-owned.
+                        const response = await fetch('/api/settings/get', { method: 'POST', headers: context.getRequestHeaders() });
+                        if (!response.ok) throw new Error('无法读取旧版主题恢复数据，请重试停用界面');
+                        const data = await response.json();
+                        if (interrupted()) return;
+                        const snapshot = data.themes?.find(theme => theme.name === backup.name);
+                        if (snapshot) config.themeBackup = backup = { version: 2, originalName: backup.originalName, snapshot: { ...snapshot, custom_css: backup.customCSS ?? snapshot.custom_css } };
+                    }
+                    if (backup.snapshot) restoreSnapshot(backup);
+                    else {
+                        if (registered(backup.originalName)) select(backup.originalName);
+                        if (typeof backup.customCSS === 'string') jQuery('#customCSS').val(backup.customCSS).trigger('input');
+                    }
                     config.themeManaged = false;
                     save();
                 }
@@ -80,23 +128,11 @@ export function setupManagedTheme({ settings, save, report, appearanceChanged })
                 return;
             }
             if (!config.themeManaged) {
+                controls();
+                if (!themeSelect || !importInput) return;
                 const originalName = currentName();
-                const name = 'Claude Surface Backup ' + new Date().toISOString().replace(/[:.]/g, '-');
-                const snapshot = powerUser.getThemeObject(name);
-                try {
-                    if (!await register({ ...snapshot, custom_css: '' }) || interrupted()) return;
-                    const response = await fetch('/api/themes/save', {
-                        method: 'POST', headers: context.getRequestHeaders(), body: JSON.stringify(snapshot),
-                    });
-                    if (!response.ok) throw new Error('无法保存原主题快照');
-                    if (interrupted()) return;
-                } catch (error) {
-                    if (interrupted()) return;
-                    if (registered(originalName)) select(originalName);
-                    jQuery('#customCSS').val(snapshot.custom_css || '').trigger('input');
-                    throw error;
-                }
-                config.themeBackup = { name, originalName, customCSS: snapshot.custom_css || '' };
+                const snapshot = powerUser.getThemeObject(originalName);
+                config.themeBackup = { version: 2, originalName, snapshot: { ...snapshot } };
                 config.themeManaged = true;
                 save();
             }
