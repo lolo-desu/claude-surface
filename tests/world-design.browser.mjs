@@ -115,7 +115,9 @@ for(const [engineName,engine] of [['chromium',chromium],['webkit',webkit]]){
     }
     for(const width of [1024,1440]){
      await page.setViewportSize({width,height:1000});
-     await page.waitForFunction(()=>!document.querySelector('#WorldInfo').classList.contains('cu-world-surface'));
+     // This context has a coarse pointer: 1024px retains the touch layout,
+     // while 1440px returns to desktop field positions.
+     await page.waitForFunction(width=>document.querySelector('#WorldInfo').classList.contains('cu-world-surface')===(width<=1100),width);
      await entry.scrollIntoViewIfNeeded();
      const desktop=await entry.evaluate(el=>{
       const panel=document.querySelector('#WorldInfo'),r=el.getBoundingClientRect();

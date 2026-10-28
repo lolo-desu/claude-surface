@@ -199,3 +199,15 @@ body[data-claude-ui][data-cu-design="swiss"] .cu-button:not(.cu-danger):not(:dis
     body[data-claude-ui] input[type="range"]::-webkit-slider-thumb { appearance: auto !important; -webkit-appearance: auto !important; }
     body[data-claude-ui] :is(.cu-button,.cu-design-card)[aria-pressed="true"] { outline: 2px solid Highlight !important; outline-offset: -3px; }
 }
+
+/* Touch hit areas grow independently of checkbox marks and range tracks. */
+@media (pointer: coarse) {
+    body[data-claude-ui] :is(.drawer-content,.popup):where(:not(#WorldInfo)) :is(.menu_button,.right_menu_button,button:not(.switch_input_type_icon)) { min-width: 44px !important; min-height: 44px !important; }
+    body[data-claude-ui] :is(.drawer-content,.popup):where(:not(#WorldInfo)) :is(select,input[type="text"],input[type="number"],input[type="search"],input[type="range"]) { min-width: 44px; min-height: 44px !important; font-size: 16px !important; }
+    body[data-claude-ui] #WorldInfo .tt-codemirror-editor .cm-editor-tools button { width: 44px !important; min-width: 44px !important; height: 44px !important; min-height: 44px !important; max-height: 44px !important; }
+}
+
+@media (pointer: coarse) {
+    body[data-claude-ui] #WorldInfo :is(.keyprimary,.keysecondary) { padding-inline-end: 48px; }
+    body[data-claude-ui] #WorldInfo .switch_input_type_icon { width: 40px; height: 40px; }
+}

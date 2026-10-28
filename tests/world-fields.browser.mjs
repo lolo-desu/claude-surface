@@ -49,7 +49,7 @@ for(const [name,engine]of[['chromium',chromium],['webkit',webkit]]){
     await entry.locator('.world_entry_edit').evaluate(x=>x.scrollIntoView({block:'start'}));await page.screenshot({path:path.join(output,label+'-plain.png')});
     await editor(page,true);const wrapper=entry.locator('.tt-codemirror-editor');await wrapper.waitFor({state:'visible'});await wrapper.scrollIntoViewIfNeeded();
     const frame=await wrapper.evaluate(x=>{const s=getComputedStyle(x),p=x.querySelector('.cm-panels-top');return{width:x.getBoundingClientRect().width,height:x.getBoundingClientRect().height,border:s.borderTopWidth,style:s.borderTopStyle,color:s.borderTopColor,radius:s.borderRadius,bg:s.backgroundColor,toolbarBorder:getComputedStyle(p).borderBottomWidth,toolbarButtons:[...x.querySelectorAll('.cm-editor-tools button')].map(b=>({w:b.getBoundingClientRect().width,h:b.getBoundingClientRect().height}))};});
-    assert(frame.border==='1px'&&frame.style==='solid'&&frame.toolbarBorder==='1px'&&frame.height>=216&&frame.toolbarButtons.every(x=>x.w===28&&x.h===28),JSON.stringify({label,frame}));
+    assert(frame.border==='1px'&&frame.style==='solid'&&frame.toolbarBorder==='1px'&&frame.height>=216&&frame.toolbarButtons.every(x=>x.w===44&&x.h===44),JSON.stringify({label,frame}));
     assert.equal(frame.radius==='0px',family==='swiss','FlatDesign keeps square editor corners');
     const original=await entry.locator('textarea[name="content"]').inputValue();const editable=wrapper.locator('.cm-content');await editable.fill('世界书编辑测试 qa-0108');await page.waitForFunction(()=>document.querySelector('#world_popup_entries_list .world_entry textarea[name="content"]').value.includes('qa-0108'));
     await wrapper.getByRole('button',{name:/Undo|撤[销消]/}).click();await page.waitForFunction(text=>document.querySelector('#world_popup_entries_list .world_entry textarea[name="content"]').value===text,original);
@@ -58,7 +58,7 @@ for(const [name,engine]of[['chromium',chromium],['webkit',webkit]]){
     await entry.locator('.world_entry_edit').evaluate(x=>x.scrollIntoView({block:'start'}));await page.screenshot({path:path.join(output,label+'-codemirror.png')});await editor(page,false);
     await page.locator('.cu-header button[aria-label="关闭原生面板"]').click();await tools(page,'预设');
     const link=page.locator('label[for="bind_preset_to_connection"]');await link.scrollIntoViewIfNeeded();
-    const boxes=await page.locator('#openai_api-presets .title_restorable > .flex-container > .menu_button').evaluateAll(xs=>xs.map(x=>x.getBoundingClientRect().toJSON()));assert(boxes.length===4&&boxes.every(x=>x.width===36&&x.height===36),JSON.stringify({label,boxes}));
+    const boxes=await page.locator('#openai_api-presets .title_restorable > .flex-container > .menu_button').evaluateAll(xs=>xs.map(x=>x.getBoundingClientRect().toJSON()));assert(boxes.length===4&&boxes.every(x=>x.width===44&&x.height===44),JSON.stringify({label,boxes}));
     const checkbox=page.locator('#bind_preset_to_connection'),checked=await checkbox.isChecked();await link.click();assert.equal(await checkbox.isChecked(),!checked);
     const icons=await link.locator('i:visible').count();assert.equal(icons,1);
     const centered=await link.evaluate(x=>{const r=x.getBoundingClientRect(),i=[...x.querySelectorAll('i')].find(n=>getComputedStyle(n).display!=='none').getBoundingClientRect();return[Math.abs((r.left+r.right-i.left-i.right)/2),Math.abs((r.top+r.bottom-i.top-i.bottom)/2)];});assert(centered.every(x=>x<1),JSON.stringify(centered));

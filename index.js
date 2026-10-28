@@ -8,12 +8,16 @@ import { designBrand } from './design-branding.js';
 import { paletteOptions, selectedPalette } from './palettes.js';
 import { setupExtensionCompatibility } from './extension-compat.js';
 import { visualEffectControls, visualEffectsOf, applyVisualEffects } from './visual-effects.js';
+import { createLocalizer } from './localization.js';
+import { getCurrentLocale, translate } from '../../../i18n.js';
 import { openWorldInfoEditor } from '../../../world-info.js';
 
+const ui = createLocalizer(getCurrentLocale(), translate);
 const KEY = 'claude_surface';
 const ctx = () => SillyTavern.getContext();
 const media = matchMedia('(prefers-color-scheme: dark)');
-const desktop = matchMedia('(min-width: 900px)');
+const desktop = matchMedia('(min-width: 900px) and (pointer: fine), (min-width: 1101px)');
+const shortViewport = matchMedia('(max-height: 500px) and (pointer: coarse)');
 const mediaReduced = matchMedia('(prefers-reduced-motion: reduce)');
 const defaults = { enabled: true, mode: 'dark', serif: true, background: false, nativeToolbar: false, quickRepliesCollapsed: false, compactComposer: false, headerMode: 'always', sidebarPinned: false, useNativeHome: false, messageStyle: 'minimal', brandName: 'Claude', brandIcon: 'claude', customBrandIcon: '', recentCharacters: [] };
 const state = { initialized: false, recents: [], sheet: null, returnFocus: null, refreshing: false };
@@ -62,13 +66,13 @@ function applyBranding() {
     const custom = /^data:image\/(?:png|jpeg|webp|gif);base64,/.test(config.customBrandIcon) ? config.customBrandIcon : '';
     document.querySelectorAll('.cu-brand-name').forEach(name => { name.textContent = fixed?.name || config.brandName.trim().slice(0,40) || 'Claude'; });
     document.querySelectorAll('.cu-home-action').forEach(control => {
-        const label = (control.dataset.cuHomePrefix || '') + (fixed ? 'SillyTavern 首页' : 'Claude 首页');
+        const label = (control.dataset.cuHomePrefix || '') + (fixed ? ui('SillyTavern 首页') : ui('Claude 首页'));
         control.title = label; control.setAttribute('aria-label', label);
         const text = control.querySelector(':scope > span'); if (text) text.textContent = label;
     });
     document.querySelectorAll('[data-cu-brand-custom]').forEach(control => { control.hidden = !!fixed || (control.classList.contains('cu-brand-upload') && kind !== 'custom'); });
     document.querySelectorAll('[data-cu-brand-fixed]').forEach(control => { control.hidden = !fixed; });
-    document.querySelectorAll('.cu-disable-action').forEach(control => { const label = fixed ? '停用界面' : '停用 Claude Surface'; control.title = label; control.setAttribute('aria-label',label); control.querySelector('span').textContent = label; });
+    document.querySelectorAll('.cu-disable-action').forEach(control => { const label = fixed ? ui('停用界面') : ui('停用 Claude Surface'); control.title = label; control.setAttribute('aria-label',label); control.querySelector('span').textContent = label; });
     const clear = document.getElementById('cu-clear-brand-icon');
     if (clear) clear.disabled = !custom;
     document.querySelectorAll('.cu-brand-mark').forEach(mark => {
@@ -85,7 +89,7 @@ function applyBranding() {
 }
 
 async function storeBrandImage(file) {
-    if (!file || !file.type.startsWith('image/') || file.size > 20 * 1024 * 1024) throw new Error('请选择小于 20 MB 的图片。');
+    if (!file || !file.type.startsWith('image/') || file.size > 20 * 1024 * 1024) throw new Error(ui('请选择小于 20 MB 的图片。'));
     const url = URL.createObjectURL(file);
     try {
         const image = new Image(); image.src = url; await image.decode();
@@ -130,7 +134,7 @@ function refreshPaletteControls(config = settings()) {
             for (const option of paletteOptions(family)) {
                 const control = document.createElement('button'); control.type = 'button'; control.className = 'cu-palette-chip'; control.dataset.palette = option.id;
                 const swatch = document.createElement('i'); swatch.style.setProperty('--cu-swatch', option.swatch); swatch.setAttribute('aria-hidden','true');
-                const label = document.createElement('span'); label.textContent = option.label; control.append(swatch,label);
+                const label = document.createElement('span'); label.textContent = ui(option.label); control.append(swatch,label);
                 control.addEventListener('click', () => { settings().designPalettes[family] = option.id; save(); applyAppearance(); });
                 host.append(control);
             }
@@ -140,7 +144,7 @@ function refreshPaletteControls(config = settings()) {
 }
 
 function homeAction({ prefix = '', force = false, className = '' } = {}) {
-    const label = prefix + (designBrand(settings()) ? 'SillyTavern 首页' : 'Claude 首页');
+    const label = prefix + (designBrand(settings()) ? ui('SillyTavern 首页') : ui('Claude 首页'));
     const control = button(label, 'home', () => goHome(force), className + ' cu-home-action');
     control.dataset.cuHomePrefix = prefix; return control;
 }
@@ -163,7 +167,7 @@ function button(label, icon, action, className = '') {
 
 function report(error) {
     console.error('[Claude Surface]', error);
-    toastr.error('操作未完成，请通过原生工具栏重试。', designBrand(settings()) ? 'SillyTavern' : 'Claude Surface');
+    toastr.error(ui('操作未完成，请关闭当前面板后重试。'), designBrand(settings()) ? 'SillyTavern' : 'Claude Surface');
 }
 
 const editable = element => element?.matches('input:not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]),textarea,[contenteditable="true"],[role="textbox"]');
@@ -174,8 +178,24 @@ function quietNavigation() {
     if (editable(document.activeElement)) document.activeElement.blur();
 }
 
+function syncBackgroundLayer(enabled) {
+    state.backgroundLayers ??= new Map();
+    if (enabled) for (const image of document.querySelectorAll('#bg1,#bg_custom')) {
+        if (state.backgroundLayers.has(image)) continue;
+        const marker = document.createComment('Surface background position');
+        const layer = document.createElement('div'); layer.className = 'cu-background-layer';
+        image.before(marker,layer); layer.append(image);
+        state.backgroundLayers.set(image,{marker,layer});
+    }
+    else for (const [image,{marker,layer}] of state.backgroundLayers) {
+        if (marker.isConnected) marker.replaceWith(image);
+        layer.remove(); state.backgroundLayers.delete(image);
+    }
+}
+
 function applyAppearance() {
     const config = settings();
+    syncBackgroundLayer(config.enabled);
     applyBranding();
     const mode = appearanceMode(config);
     if (config.enabled) document.body.dataset.cuDesign = designOf(config.design).id;
@@ -190,7 +210,7 @@ function applyAppearance() {
     applyVisualEffects(document.body, config);
     refreshEffectControls(config);
     document.body.classList.toggle('cu-qr-collapsed', config.enabled && config.quickRepliesCollapsed);
-    document.body.classList.toggle('cu-compact-composer', config.enabled && config.compactComposer);
+    document.body.classList.toggle('cu-compact-composer', config.enabled && (config.compactComposer || shortViewport.matches));
     if (config.enabled) document.body.dataset.cuMessageStyle = ['minimal','avatar','banner'].includes(config.messageStyle) ? config.messageStyle : 'minimal';
     else delete document.body.dataset.cuMessageStyle;
     const appearance = getComputedStyle(document.body);
@@ -226,7 +246,7 @@ function applyAppearance() {
     if (designInput) designInput.value = designOf(config.design).id;
     document.querySelectorAll('[data-cu-serif],#cu-extension-serif').forEach(control => {
         control.disabled = designOf(config.design).id !== 'claude';
-        control.title = control.disabled ? '此偏好用于 Claude 风格，切回后继续生效。' : '';
+        control.title = control.disabled ? ui('此偏好用于 Claude 风格，切回后继续生效。') : '';
     });
     for (const [id, key] of [['cu-extension-serif','serif'],['cu-extension-toolbar','nativeToolbar'],['cu-extension-compact','compactComposer']]) {
         const control = document.getElementById(id);
@@ -282,7 +302,7 @@ function setHeaderHidden(hidden) {
     state.headerTravel = 0;
 }
 
-const headerModes = [['always','完全显示'],['scroll','滑动隐藏'],['tap','点击显示'],['hidden','完全隐藏']];
+const headerModes = [['always',ui('完全显示')],['scroll',ui('滑动隐藏')],['tap',ui('点击显示')],['hidden',ui('完全隐藏')]];
 function headerMode() { return headerModes.some(([mode]) => mode === settings().headerMode) ? settings().headerMode : 'always'; }
 function nativePanelOpen() { return !!document.querySelector('#top-settings-holder > .drawer > .drawer-content.openDrawer'); }
 
@@ -377,10 +397,10 @@ function syncNativePanels() {
     const title = document.querySelector('.cu-title');
     const headerAvatar = document.querySelector('.cu-header-avatar');
     if (headerAvatar) headerAvatar.hidden = !state.headerEntity || pages.length > 0;
-    const panelTitles = { 'left-nav-panel': '预设', WorldInfo: '世界书', 'right-nav-panel': '角色卡' };
+    const panelTitles = { 'left-nav-panel': ui('预设'), WorldInfo: ui('世界书'), 'right-nav-panel': ui('角色卡') };
     if (title) title.textContent = pages.length
-        ? (panelTitles[pages.at(-1).id] || pages.at(-1).parentElement.querySelector('.drawer-icon')?.title || '更多')
-        : (state.chatTitle || '新建对话');
+        ? (panelTitles[pages.at(-1).id] || pages.at(-1).parentElement.querySelector('.drawer-icon')?.title || ui('更多'))
+        : (state.chatTitle || ui('新建对话'));
 }
 
 function closeNativePanels({ keepDocks = false } = {}) {
@@ -403,6 +423,7 @@ function openNative(toggle) {
 }
 
 function decorateMessages(enabled = settings().enabled) {
+    state.nativeUI?.refreshActions();
     document.querySelectorAll('#chat > .mes').forEach(message => {
         const avatar = message.querySelector('.mesAvatarWrapper');
         const block = message.querySelector('.mes_block');
@@ -485,19 +506,20 @@ function setSidebar(open) {
     if (backdrop) backdrop.hidden = true;
     const opener = document.querySelector('#cu-sidebar-toggle');
     opener?.setAttribute('aria-expanded', String(open));
-    const label = desktop.matches ? (open ? '取消侧边栏常驻' : '固定侧边栏') : '打开侧边栏';
+    const label = desktop.matches ? (open ? ui('取消侧边栏常驻') : ui('固定侧边栏')) : ui('打开侧边栏');
     opener?.setAttribute('aria-label', label);
     if (opener) opener.title = label;
     if (desktop.matches) opener?.setAttribute('aria-pressed', String(open));
     else opener?.removeAttribute('aria-pressed');
     syncHeaderVisibility();
-    if (open) document.querySelector('.cu-sidebar-top button')?.focus({ preventScroll: true });
+    if (open && !state.sheet) document.querySelector('.cu-sidebar-top button')?.focus({ preventScroll: true });
 }
 
 function closeSheet(immediate = false) {
     if (!state.sheet) return;
     const previous = state.sheet;
     previous.dispatchEvent(new Event('cu-sheet-remove'));
+    previous.setAttribute('aria-hidden','true');
     if (immediate === true || mediaReduced.matches) previous.remove();
     else {
         previous.classList.add('cu-sheet-closing');
@@ -524,7 +546,7 @@ function sheet(title, { anchor, closeButton = true } = {}) {
     panel.setAttribute('role', 'dialog');
     panel.setAttribute('aria-modal', 'true');
     panel.setAttribute('aria-label', title);
-    const handle = button('下拉关闭面板', 'chevron', closeSheet, 'cu-sheet-handle');
+    const handle = button(ui('关闭面板（也可向下拖动）'), 'chevron', closeSheet, 'cu-sheet-handle');
     let drag;
     handle.addEventListener('pointerdown', event => {
         drag = { y: event.clientY, distance: 0 };
@@ -551,7 +573,7 @@ function sheet(title, { anchor, closeButton = true } = {}) {
     const label = document.createElement('span');
     label.textContent = title;
     heading.append(label);
-    if (closeButton) heading.append(button('关闭', 'close', closeSheet, 'cu-icon'));
+    if (closeButton) heading.append(button(ui('关闭'), 'close', closeSheet, 'cu-icon'));
     const content = document.createElement('div');
     content.className = 'cu-sheet-body';
     panel.append(handle, heading, content);
@@ -574,15 +596,19 @@ function sheet(title, { anchor, closeButton = true } = {}) {
         root.addEventListener('cu-sheet-remove', () => window.removeEventListener('resize', positionPanel), { once: true });
     }
     root.addEventListener('click', event => { if (event.target === root) closeSheet(); });
-    root.addEventListener('keydown', event => {
-        if (event.key === 'Escape') { event.preventDefault(); closeSheet(); }
+    const onKey = event => {
+        if (state.sheet !== root) return;
+        if (event.key === 'Escape') { event.preventDefault(); event.stopImmediatePropagation(); closeSheet(); }
         if (event.key === 'Tab') {
-            const focusable = [...panel.querySelectorAll('button,input,select,[tabindex="0"]')].filter(el => !el.disabled && el.getClientRects().length);
+            const focusable = [...panel.querySelectorAll('button,input,select,textarea,a[href],[tabindex="0"]')].filter(el => !el.disabled && !el.closest('[inert]') && el.getClientRects().length);
             const first = focusable[0], last = focusable.at(-1);
-            if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus({ preventScroll: true }); }
+            if (!panel.contains(document.activeElement) || document.activeElement === panel || !first) { event.preventDefault(); (event.shiftKey ? last : first)?.focus({ preventScroll: true }); }
+            else if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus({ preventScroll: true }); }
             else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus({ preventScroll: true }); }
         }
-    });
+    };
+    document.addEventListener('keydown', onKey, true);
+    root.addEventListener('cu-sheet-remove', () => document.removeEventListener('keydown', onKey, true), { once: true });
     document.body.append(root);
     state.sheet = root;
     syncHeaderVisibility();
@@ -598,10 +624,10 @@ function nativeTarget(selector) {
 }
 
 function showTools() {
-    const content = sheet('更多', { anchor: state.invoker });
+    const content = sheet(ui('更多'), { anchor: state.invoker });
     const grid = document.createElement('div');
     grid.className = 'cu-tool-grid';
-    const names = ['预设', 'API 连接', '回复格式', '世界书', '用户设置', '背景', '扩展程序', '用户设定', '角色卡'];
+    const names = [ui('预设'), ui('API 连接'), ui('回复格式'), ui('世界书'), ui('用户设置'), ui('背景'), ui('扩展程序'), ui('用户设定'), ui('角色卡')];
     const glyphs = ['sliders','plug','type','book','sliders','image','puzzle','user','people'];
     document.querySelectorAll('#top-settings-holder > .drawer > .drawer-toggle').forEach((toggle, index) => {
         const original = toggle.querySelector('.drawer-icon');
@@ -610,20 +636,20 @@ function showTools() {
         grid.append(item);
     });
     const footer = document.createElement('div'); footer.className = 'cu-tools-footer';
-    footer.append(button('主题设置', 'sun', showAppearance));
+    footer.append(button(ui('主题设置'), 'sun', showAppearance));
     content.append(grid, footer);
 }
 
 function showAppearance() {
-    const content = sheet('主题设置', { closeButton: false });
+    const content = sheet(ui('主题设置'));
     content.classList.add('cu-appearance-settings');
     const row = document.createElement('div');
     row.className = 'cu-settings-row';
     const label = document.createElement('span');
-    label.textContent = '主题';
+    label.textContent = ui('主题');
     const segment = document.createElement('div');
     segment.className = 'cu-segment';
-    for (const [value, title] of [['system','系统'],['light','浅色'],['dark','深色'],['companion','伴侣']]) {
+    for (const [value, title] of [['system',ui('系统')],['light',ui('浅色')],['dark',ui('深色')],['companion',ui('伴侣')]]) {
         const item = button(title, value === 'dark' ? 'moon' : 'sun', () => { settings().mode = value; save(); applyAppearance(); });
         item.dataset.cuMode = value;
         item.setAttribute('aria-pressed', String(settings().mode === value));
@@ -631,11 +657,11 @@ function showAppearance() {
     }
     row.append(label, segment);
     const paletteRow = document.createElement('div'); paletteRow.className = 'cu-settings-row cu-palette-row';
-    const paletteLabel = document.createElement('span'); paletteLabel.textContent = '主题色';
-    const paletteChoices = document.createElement('div'); paletteChoices.className = 'cu-palette-options'; paletteChoices.setAttribute('role','group'); paletteChoices.setAttribute('aria-label','主题色');
+    const paletteLabel = document.createElement('span'); paletteLabel.textContent = ui('主题色');
+    const paletteChoices = document.createElement('div'); paletteChoices.className = 'cu-palette-options'; paletteChoices.setAttribute('role','group'); paletteChoices.setAttribute('aria-label',ui('主题色'));
     paletteRow.append(paletteLabel,paletteChoices);
     const designGrid = document.createElement('div'); designGrid.className = 'cu-design-grid';
-    designGrid.setAttribute('role', 'group'); designGrid.setAttribute('aria-label', '设计风格');
+    designGrid.setAttribute('role', 'group'); designGrid.setAttribute('aria-label', ui('设计风格'));
     for (const design of designs) {
         const card = document.createElement('button'); card.type = 'button'; card.className = 'cu-design-card';
         card.dataset.cuDesignChoice = design.id;
@@ -650,19 +676,19 @@ function showAppearance() {
     const fontRow = document.createElement('label');
     fontRow.className = 'cu-settings-row';
     const fontLabel = document.createElement('span');
-    fontLabel.textContent = '英文回复使用衬线字体';
+    fontLabel.textContent = ui('英文回复使用衬线字体');
     const check = document.createElement('input');
     check.type = 'checkbox'; check.setAttribute('role', 'switch');
     check.checked = settings().serif;
     check.dataset.cuSerif = '';
     check.disabled = designOf(settings().design).id !== 'claude';
-    check.title = check.disabled ? '此偏好用于 Claude 风格，切回后继续生效。' : '';
+    check.title = check.disabled ? ui('此偏好用于 Claude 风格，切回后继续生效。') : '';
     check.addEventListener('change', () => { settings().serif = check.checked; save(); applyAppearance(); });
     fontRow.append(fontLabel, check);
     const toolbarRow = document.createElement('label');
     toolbarRow.className = 'cu-settings-row';
     const toolbarLabel = document.createElement('span');
-    toolbarLabel.textContent = '显示原生菜单栏';
+    toolbarLabel.textContent = ui('显示原生菜单栏');
     const toolbarCheck = document.createElement('input');
     toolbarCheck.type = 'checkbox'; toolbarCheck.setAttribute('role', 'switch');
     toolbarCheck.checked = settings().nativeToolbar;
@@ -671,7 +697,7 @@ function showAppearance() {
     const backgroundRow = document.createElement('label');
     backgroundRow.className = 'cu-settings-row';
     const backgroundLabel = document.createElement('span');
-    backgroundLabel.textContent = '显示 SillyTavern 背景图片';
+    backgroundLabel.textContent = ui('显示 SillyTavern 背景图片');
     const backgroundCheck = document.createElement('input');
     backgroundCheck.type = 'checkbox'; backgroundCheck.setAttribute('role', 'switch');
     backgroundCheck.checked = settings().background;
@@ -679,7 +705,7 @@ function showAppearance() {
     backgroundRow.append(backgroundLabel, backgroundCheck);
     const effectsRows = visualEffectControls.map(control => {
         const row = document.createElement('label'); row.className = 'cu-settings-row cu-effect-slider';
-        const title = document.createElement('span'); title.textContent = control.label;
+        const title = document.createElement('span'); title.textContent = ui(control.label);
         const input = document.createElement('input'); input.type = 'range'; input.id = 'cu-effect-' + control.key;
         input.min = control.min; input.max = control.max; input.step = '1';
         input.setAttribute('aria-label', control.label);
@@ -692,19 +718,19 @@ function showAppearance() {
         row.append(title, output, input); return row;
     });
     const effectsReset = document.createElement('div'); effectsReset.className = 'cu-effects-reset';
-    effectsReset.append(button('重置效果', 'reset', () => {
+    effectsReset.append(button(ui('重置效果'), 'reset', () => {
         const config = settings();
         for (const control of visualEffectControls) config[control.key] = control.initial;
         applyVisualEffects(document.body, config); refreshEffectControls(config); save();
     }));
     const qrRow = document.createElement('label');
     qrRow.className = 'cu-settings-row cu-mobile-setting';
-    const qrLabel = document.createElement('span'); qrLabel.textContent = '快速回复收起';
+    const qrLabel = document.createElement('span'); qrLabel.textContent = ui('快速回复收起');
     const qrCheck = document.createElement('input'); qrCheck.type = 'checkbox'; qrCheck.setAttribute('role', 'switch'); qrCheck.checked = settings().quickRepliesCollapsed;
     qrCheck.addEventListener('change', () => { settings().quickRepliesCollapsed = qrCheck.checked; save(); applyAppearance(); });
     qrRow.append(qrLabel, qrCheck);
     const layoutRows = [];
-    for (const [key, title] of [['compactComposer','输入栏紧凑模式']]) {
+    for (const [key, title] of [['compactComposer',ui('输入栏紧凑模式')]]) {
         const option = document.createElement('label'); option.className = 'cu-settings-row';
         const text = document.createElement('span'); text.textContent = title;
         const input = document.createElement('input'); input.type = 'checkbox'; input.setAttribute('role', 'switch'); input.checked = settings()[key];
@@ -712,64 +738,64 @@ function showAppearance() {
         option.append(text, input); layoutRows.push(option);
     }
     const headerRow = document.createElement('label'); headerRow.className = 'cu-settings-row';
-    const headerLabel = document.createElement('span'); headerLabel.textContent = '顶栏显示';
-    const headerSelect = document.createElement('select'); headerSelect.className = 'cu-settings-select'; headerSelect.setAttribute('aria-label', '顶栏显示');
+    const headerLabel = document.createElement('span'); headerLabel.textContent = ui('顶栏显示');
+    const headerSelect = document.createElement('select'); headerSelect.className = 'cu-settings-select'; headerSelect.setAttribute('aria-label', ui('顶栏显示'));
     for (const [value,title] of headerModes) { const option = document.createElement('option'); option.value = value; option.textContent = title; headerSelect.append(option); }
     headerSelect.value = headerMode(); headerSelect.addEventListener('change', () => setHeaderMode(headerSelect.value));
     headerRow.append(headerLabel, headerSelect);
     const homeRow = document.createElement('label'); homeRow.className = 'cu-settings-row';
-    const homeLabel = document.createElement('span'); homeLabel.textContent = '原版首页与最近记录';
+    const homeLabel = document.createElement('span'); homeLabel.textContent = ui('原版首页与最近记录');
     const homeCheck = document.createElement('input'); homeCheck.type = 'checkbox'; homeCheck.setAttribute('role', 'switch'); homeCheck.checked = settings().useNativeHome;
     homeCheck.addEventListener('change', () => { settings().useNativeHome = homeCheck.checked; save(); applyAppearance(); });
     homeRow.append(homeLabel, homeCheck);
     const messageRow = document.createElement('label'); messageRow.className = 'cu-settings-row';
-    const messageLabel = document.createElement('span'); messageLabel.textContent = '角色消息样式';
-    const messageSelect = document.createElement('select'); messageSelect.className = 'cu-settings-select'; messageSelect.setAttribute('aria-label', '角色消息样式');
-    for (const [value, title] of [['minimal','极简'],['avatar','头像'],['banner','横幅']]) {
+    const messageLabel = document.createElement('span'); messageLabel.textContent = ui('角色消息样式');
+    const messageSelect = document.createElement('select'); messageSelect.className = 'cu-settings-select'; messageSelect.setAttribute('aria-label', ui('角色消息样式'));
+    for (const [value, title] of [['minimal',ui('极简')],['avatar',ui('头像')],['banner',ui('横幅')]]) {
         const option = document.createElement('option'); option.value = value; option.textContent = title; messageSelect.append(option);
     }
     messageSelect.value = settings().messageStyle;
     messageSelect.addEventListener('change', () => { settings().messageStyle = messageSelect.value; save(); applyAppearance(); });
     messageRow.append(messageLabel, messageSelect);
     const nameRow = document.createElement('label'); nameRow.className = 'cu-settings-row';
-    const nameLabel = document.createElement('span'); nameLabel.textContent = '侧栏名称';
+    const nameLabel = document.createElement('span'); nameLabel.textContent = ui('侧栏名称');
     const nameInput = document.createElement('input'); nameInput.type = 'text'; nameInput.className = 'cu-brand-name-input';
-    nameInput.setAttribute('aria-label', '侧栏名称'); nameInput.maxLength = 40; nameInput.value = settings().brandName; nameInput.placeholder = 'Claude';
+    nameInput.setAttribute('aria-label', ui('侧栏名称')); nameInput.maxLength = 40; nameInput.value = settings().brandName; nameInput.placeholder = 'Claude';
     nameInput.addEventListener('input', () => { settings().brandName = nameInput.value; save(); applyBranding(); });
     nameRow.append(nameLabel, nameInput);
     nameRow.dataset.cuBrandCustom = '';
     const iconRow = document.createElement('label'); iconRow.className = 'cu-settings-row';
-    const iconLabel = document.createElement('span'); iconLabel.textContent = '品牌图标';
-    const iconSelect = document.createElement('select'); iconSelect.className = 'cu-settings-select'; iconSelect.setAttribute('aria-label', '品牌图标');
-    for (const [value, title] of [['claude','Claude'],['chatgpt','ChatGPT'],['gemini','Gemini'],['deepseek','DeepSeek'],['custom','自定义']]) {
+    const iconLabel = document.createElement('span'); iconLabel.textContent = ui('品牌图标');
+    const iconSelect = document.createElement('select'); iconSelect.className = 'cu-settings-select'; iconSelect.setAttribute('aria-label', ui('品牌图标'));
+    for (const [value, title] of [['claude','Claude'],['chatgpt','ChatGPT'],['gemini','Gemini'],['deepseek','DeepSeek'],['custom',ui('自定义')]]) {
         const option = document.createElement('option'); option.value = value; option.textContent = title; iconSelect.append(option);
     }
     iconSelect.value = settings().brandIcon; iconRow.append(iconLabel, iconSelect);
     iconRow.dataset.cuBrandCustom = '';
     const uploadRow = document.createElement('div'); uploadRow.className = 'cu-settings-row cu-brand-upload'; uploadRow.hidden = settings().brandIcon !== 'custom';
     uploadRow.dataset.cuBrandCustom = '';
-    const uploadLabel = document.createElement('span'); uploadLabel.textContent = '自定义图标';
+    const uploadLabel = document.createElement('span'); uploadLabel.textContent = ui('自定义图标');
     const fileInput = document.createElement('input'); fileInput.type = 'file'; fileInput.accept = 'image/png,image/jpeg,image/webp,image/gif,image/svg+xml'; fileInput.hidden = true;
     const preview = brandElement();
-    const uploadButton = button('上传图标', 'image', () => {});
+    const uploadButton = button(ui('上传图标'), 'image', () => {});
     // Keep the picker inside the original user gesture in WKWebView.
     uploadButton.addEventListener('click', () => fileInput.click());
-    const clearButton = button('移除自定义图标', 'trash', () => { settings().customBrandIcon = ''; save(); applyBranding(); }, 'cu-icon');
+    const clearButton = button(ui('移除自定义图标'), 'trash', () => { settings().customBrandIcon = ''; save(); applyBranding(); }, 'cu-icon');
     clearButton.id = 'cu-clear-brand-icon';
     fileInput.addEventListener('change', async () => {
         const file = fileInput.files?.[0];
         if (!file) return;
         uploadButton.disabled = true;
         try { await storeBrandImage(file); }
-        catch (error) { toastr.error(error.message || '图片加载失败，请换一张图片。'); }
+        catch (error) { toastr.error(error.message || ui('图片加载失败，请换一张图片。')); }
         finally { uploadButton.disabled = false; fileInput.value = ''; }
     });
     uploadRow.append(uploadLabel, preview, uploadButton, clearButton, fileInput);
     iconSelect.addEventListener('change', () => { settings().brandIcon = iconSelect.value; uploadRow.hidden = iconSelect.value !== 'custom'; save(); applyBranding(); });
     const footer = document.createElement('div'); footer.className = 'cu-settings-footer';
-    footer.append(button('停用 Claude Surface', 'close', () => { settings().enabled = false; save(); applyAppearance(); }, 'cu-danger cu-disable-action'));
+    footer.append(button(ui('停用 Claude Surface'), 'close', () => { settings().enabled = false; save(); applyAppearance(); }, 'cu-danger cu-disable-action'));
     const fixedBrandRow = document.createElement('div'); fixedBrandRow.className = 'cu-settings-row'; fixedBrandRow.dataset.cuBrandFixed = '';
-    const fixedBrandLabel = document.createElement('span'); fixedBrandLabel.textContent = '应用名称';
+    const fixedBrandLabel = document.createElement('span'); fixedBrandLabel.textContent = ui('应用名称');
     const fixedName = document.createElement('strong'); fixedName.textContent = 'SillyTavern'; fixedBrandRow.append(fixedBrandLabel,brandElement(),fixedName);
     const group = (title, rows) => {
         const section = document.createElement('section'); section.className = 'cu-settings-section';
@@ -777,8 +803,8 @@ function showAppearance() {
         const list = document.createElement('div'); list.className = 'cu-settings-group'; list.append(...rows);
         section.append(heading, list); return section;
     };
-    const effectsSection = group('背景与毛玻璃', [backgroundRow, ...effectsRows, effectsReset]); effectsSection.classList.add('cu-effects-section');
-    content.append(designGrid, group('外观', [row, paletteRow, fontRow]), effectsSection, group('聊天', [messageRow, qrRow, ...layoutRows]), group('布局', [toolbarRow, homeRow, headerRow]), group('品牌', [fixedBrandRow, nameRow, iconRow, uploadRow]), footer);
+    const effectsSection = group(ui('背景与毛玻璃'), [backgroundRow, ...effectsRows, effectsReset]); effectsSection.classList.add('cu-effects-section');
+    content.append(designGrid, group(ui('外观'), [row, paletteRow, fontRow]), effectsSection, group(ui('聊天'), [messageRow, qrRow, ...layoutRows]), group(ui('布局'), [toolbarRow, homeRow, headerRow]), group(ui('品牌'), [fixedBrandRow, nameRow, iconRow, uploadRow]), footer);
     refreshEffectControls();
     refreshPaletteControls();
     applyBranding();
@@ -786,15 +812,15 @@ function showAppearance() {
 }
 
 function showChatActions() {
-    const content = sheet('对话', { anchor: state.invoker });
+    const content = sheet(ui('对话'), { anchor: state.invoker });
     const list = document.createElement('div');
     list.className = 'cu-sheet-list';
     list.append(
         homeAction({ force: true }),
-        button('聊天记录', 'history', () => { quietNavigation(); closeSheet(); document.querySelector('#option_select_chat')?.click(); }),
-        button('新建聊天', 'plus', () => { quietNavigation(); closeSheet(); document.querySelector('#option_start_new_chat')?.click(); }),
-        button('编辑角色世界书', 'book', showCharacterWorld),
-        button('编辑角色详情', 'edit', showCharacterEditor));
+        button(ui('聊天记录'), 'history', () => { quietNavigation(); closeSheet(); document.querySelector('#option_select_chat')?.click(); }),
+        button(ui('新建聊天'), 'plus', () => { quietNavigation(); closeSheet(); document.querySelector('#option_start_new_chat')?.click(); }),
+        button(ui('编辑角色世界书'), 'book', showCharacterWorld),
+        button(ui('编辑角色详情'), 'edit', showCharacterEditor));
     content.append(list);
 }
 
@@ -823,7 +849,7 @@ async function refreshRecents() {
     } catch (error) {
         console.warn('[Claude Surface] History unavailable', error);
         const root = document.querySelector('.cu-recents');
-        root.replaceChildren(button('打开原版聊天记录', 'history', () => { setSidebar(false); document.querySelector('#option_select_chat')?.click(); }));
+        root.replaceChildren(button(ui('打开原版聊天记录'), 'history', () => { setSidebar(false); document.querySelector('#option_select_chat')?.click(); }));
     } finally { state.refreshing = false; }
 }
 
@@ -839,7 +865,7 @@ function renderRecents() {
     if (!rows.length) {
         const empty = document.createElement('p');
         empty.className = 'cu-empty';
-        empty.textContent = query ? '没有匹配的角色' : '选择角色后会显示在这里';
+        empty.textContent = query ? ui('没有匹配的角色') : ui('选择角色后会显示在这里');
         root.append(empty);
     }
     renderHome();
@@ -921,7 +947,7 @@ async function showCharacterWorld() {
     quietNavigation();
     closeSheet(); setSidebar(false);
     const id = ctx().characterId;
-    if (id == null) { toastr.info('请先选择角色卡。'); return; }
+    if (id == null) { toastr.info(ui('请先选择角色卡。')); return; }
     const world = ctx().characters[id]?.data?.extensions?.world;
     if (world) { openWorldInfoEditor(world); return; }
     await showCharacterEditor();
@@ -946,20 +972,29 @@ function renderHome() {
     document.body.classList.toggle('cu-home-recents', !!state.homeRecent);
     const toggle = root.querySelector('.cu-home-history-toggle');
     toggle.setAttribute('aria-expanded', String(!!state.homeRecent));
-    toggle.setAttribute('aria-label', state.homeRecent ? '收起最近聊天' : '最近聊天');
-    toggle.querySelector('span').textContent = state.homeRecent ? '收起最近聊天' : '最近聊天';
+    toggle.setAttribute('aria-label', state.homeRecent ? ui('收起最近聊天') : ui('最近聊天'));
+    const toggleText = state.homeRecent ? ui('收起最近聊天') : ui('最近聊天');
+    const toggleLabel = toggle.querySelector('span');
+    // WebKit can cancel a pending click if its text-node target is replaced
+    // between pointerdown and pointerup by an unrelated context refresh.
+    if (toggleLabel.textContent !== toggleText) toggleLabel.textContent = toggleText;
     const list = root.querySelector('.cu-home-history');
     list.hidden = !state.homeRecent;
-    list.replaceChildren();
     if (!state.homeRecent) return;
     const entities = characterEntities();
+    // Theme/context updates must not replace unchanged rows under a pointer or
+    // reset the short viewport's scroll anchor while a user closes the list.
+    const revision = JSON.stringify([state.recents.slice(0,30),entities.map(entity=>[entity.key,entity.id,entity.name,entity.avatar])]);
+    if (list.dataset.cuRevision === revision && list.children.length) return;
+    list.dataset.cuRevision = revision;
+    list.replaceChildren();
     for (const row of state.recents.slice(0, 30)) {
         const entity = entities.find(entity => entity.key === (row.group ? `group:${row.group}` : row.avatar));
         if (!entity) continue;
         const file = row.file_name.replace(/\.jsonl$/, '');
         list.append(characterRow(entity, file, () => openCharacter(entity, file)));
     }
-    if (!list.children.length) { const empty = document.createElement('p'); empty.className = 'cu-empty'; empty.textContent = '还没有最近聊天'; list.append(empty); }
+    if (!list.children.length) { const empty = document.createElement('p'); empty.className = 'cu-empty'; empty.textContent = ui('还没有最近聊天'); list.append(empty); }
 }
 
 function updateContext() {
@@ -971,8 +1006,8 @@ function updateContext() {
     const greeting = document.querySelector('.cu-home-greeting');
     greeting.hidden = !home || settings().useNativeHome;
     const day = new Date().getDay();
-    greeting.querySelector('.cu-greeting-text').textContent = `${day === 0 || day === 6 ? '周末愉快' : '今天过得怎么样'}，${context.name1 || '朋友'}`;
-    state.chatTitle = home ? '新建对话' : (context.groups.find(group => group.id === context.groupId)?.name || context.characters[context.characterId]?.name || context.name2 || '对话');
+    greeting.querySelector('.cu-greeting-text').textContent = `${day === 0 || day === 6 ? ui('周末愉快') : ui('今天过得怎么样')}${getCurrentLocale().startsWith('zh') ? '，' : ', '}${context.name1 || ui('朋友')}`;
+    state.chatTitle = home ? ui('新建对话') : (context.groups.find(group => group.id === context.groupId)?.name || context.characters[context.characterId]?.name || context.name2 || ui('对话'));
     document.querySelector('.cu-title').textContent = state.chatTitle;
     const headerAvatar = document.querySelector('.cu-header-avatar');
     const entity = characterEntities().find(entity => entity.group ? entity.group === context.groupId : !context.groupId && String(entity.id) === String(context.characterId));
@@ -981,15 +1016,16 @@ function updateContext() {
         headerAvatar.dataset.character = entity.key; headerAvatar.replaceChildren(avatarElement(entity));
     }
     headerAvatar.hidden = !state.headerEntity;
-    document.querySelector('.cu-account-name').textContent = context.name1 || '用户';
+    document.querySelector('.cu-account-name').textContent = context.name1 || ui('用户');
+    document.querySelector('.cu-account').setAttribute('aria-label', `${ui('用户设定')}: ${context.name1 || ui('用户')}`);
     document.querySelector('.cu-avatar').textContent = (context.name1 || 'U').slice(0,1).toUpperCase();
     let model = '';
     if (context.mainApi === 'openai') model = context.getChatCompletionModel?.() || '';
     const connected = context.onlineStatus && context.onlineStatus !== 'no_connection';
-    document.querySelector('.cu-model-label').textContent = model || (connected ? '模型与连接' : '连接模型');
+    document.querySelector('.cu-model-label').textContent = model || (connected ? ui('模型与连接') : ui('连接模型'));
     const textarea = document.querySelector('#send_textarea');
-    textarea.placeholder = home ? '今天我能为您做些什么？' : '回复';
-    textarea.setAttribute('aria-label', '消息');
+    textarea.placeholder = !connected ? ui('未连接到 API，请先连接模型') : home ? ui('今天我能为您做些什么？') : ui('回复');
+    textarea.setAttribute('aria-label', ui('消息'));
     if (document.querySelector('.cu-recents')) renderRecents();
     document.querySelector('.cu-return-home').hidden = !home || !settings().useNativeHome;
     renderHome();
@@ -1004,15 +1040,18 @@ function registerExtensionSettings() {
     block.className = 'inline-drawer';
     block.innerHTML = '<div class="inline-drawer-toggle inline-drawer-header"><b>Claude Surface</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div></div><div class="inline-drawer-content"><label class="checkbox_label"><input id="cu-extension-enabled" type="checkbox" role="switch"><span>启用 Claude 界面</span></label><label>主题 <select id="cu-extension-mode"><option value="dark">深色</option><option value="light">浅色</option><option value="system">跟随系统</option></select></label></div>';
     host.append(block);
+    // Localize only extension-owned static markup, never user data.
+    const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
+    for (let node; (node = walker.nextNode());) node.textContent = ui(node.textContent);
     const options = block.querySelector('.inline-drawer-content');
-    const companionOption = document.createElement('option'); companionOption.value = 'companion'; companionOption.textContent = '跟随主题伴侣';
+    const companionOption = document.createElement('option'); companionOption.value = 'companion'; companionOption.textContent = ui('跟随主题伴侣');
     block.querySelector('#cu-extension-mode').append(companionOption);
-    const designLabel = document.createElement('label'); designLabel.textContent = '设计风格 ';
+    const designLabel = document.createElement('label'); designLabel.textContent = ui('设计风格 ');
     const designSelect = document.createElement('select'); designSelect.id = 'cu-extension-design';
     for (const design of designs) { const option = document.createElement('option'); option.value = design.id; option.textContent = design.label; designSelect.append(option); }
     designSelect.addEventListener('change', () => { settings().design = designSelect.value; save(); applyAppearance(); });
     designLabel.append(designSelect); options.prepend(designLabel);
-    for (const [id,key,title] of [['cu-extension-serif','serif','英文回复使用衬线字体'],['cu-extension-toolbar','nativeToolbar','显示原生菜单栏'],['cu-extension-compact','compactComposer','输入栏紧凑模式']]) {
+    for (const [id,key,title] of [['cu-extension-serif','serif',ui('英文回复使用衬线字体')],['cu-extension-toolbar','nativeToolbar',ui('显示原生菜单栏')],['cu-extension-compact','compactComposer',ui('输入栏紧凑模式')]]) {
         const label = document.createElement('label');
         label.className = 'checkbox_label';
         const input = document.createElement('input');
@@ -1021,7 +1060,7 @@ function registerExtensionSettings() {
         label.append(input,text); options.append(label);
         input.addEventListener('change', () => { settings()[key] = input.checked; save(); applyAppearance(); });
     }
-    const headerLabel = document.createElement('label'); headerLabel.textContent = '顶栏显示 ';
+    const headerLabel = document.createElement('label'); headerLabel.textContent = ui('顶栏显示 ');
     const headerSelect = document.createElement('select'); headerSelect.id = 'cu-extension-header-mode';
     for (const [value,title] of headerModes) { const option = document.createElement('option'); option.value = value; option.textContent = title; headerSelect.append(option); }
     headerSelect.addEventListener('change', () => setHeaderMode(headerSelect.value));
@@ -1035,7 +1074,7 @@ function initialize() {
     state.initialized = true;
     const header = document.createElement('header');
     header.className = 'cu-header'; header.id = 'cu-header';
-    const sidebarToggle = button('打开侧边栏', 'sidebar', () => {
+    const sidebarToggle = button(ui('打开侧边栏'), 'sidebar', () => {
         if (desktop.matches) { settings().sidebarPinned = !settings().sidebarPinned; save(); }
         setSidebar(!document.body.classList.contains('cu-sidebar-open')); void refreshRecents();
     }, 'cu-icon');
@@ -1048,14 +1087,14 @@ function initialize() {
     const subtitle = document.createElement('span'); subtitle.className = 'cu-header-subtitle'; subtitle.textContent = 'SillyTavern';
     const headerAvatar = document.createElement('span'); headerAvatar.className = 'cu-header-avatar'; headerAvatar.hidden = true; headerAvatar.setAttribute('aria-hidden', 'true');
     titleWrap.append(headerAvatar, title, subtitle);
-    const closeNative = button('关闭原生面板', 'close', closeNativePanels, 'cu-icon');
+    const closeNative = button(ui('关闭原生面板'), 'close', closeNativePanels, 'cu-icon');
     closeNative.id = 'cu-native-close';
     closeNative.hidden = true;
-    header.append(sidebarToggle, titleWrap, closeNative, button('对话操作', 'more', showChatActions, 'cu-icon'), homeAction({className:'cu-icon'}), button('更多', 'sliders', showTools, 'cu-icon'));
+    header.append(sidebarToggle, titleWrap, closeNative, button(ui('聊天操作'), 'more', showChatActions, 'cu-icon'), homeAction({className:'cu-icon', force:true}), button(ui('更多'), 'sliders', showTools, 'cu-icon'));
     const sidebar = document.createElement('nav');
     sidebar.id = 'cu-sidebar';
     sidebar.className = 'cu-sidebar';
-    sidebar.setAttribute('aria-label', '侧边栏');
+    sidebar.setAttribute('aria-label', ui('侧边栏'));
     sidebar.inert = true;
     sidebar.setAttribute('aria-hidden', 'true');
     sidebar.addEventListener('keydown', event => {
@@ -1071,37 +1110,37 @@ function initialize() {
     wordmark.className = 'cu-wordmark';
     const brandName = document.createElement('span'); brandName.className = 'cu-brand-name';
     wordmark.append(brandElement(), brandName);
-    top.append(button('关闭侧边栏', 'sidebar', () => {
+    top.append(button(ui('关闭侧边栏'), 'sidebar', () => {
         if (desktop.matches) { settings().sidebarPinned = false; save(); }
         setSidebar(false); sidebarToggle.focus({ preventScroll: true });
     }, 'cu-icon'), wordmark);
     const search = document.createElement('input');
     search.className = 'cu-search';
     search.type = 'search';
-    search.placeholder = '搜索最近角色';
-    search.setAttribute('aria-label', '搜索最近角色');
+    search.placeholder = ui('搜索最近角色');
+    search.setAttribute('aria-label', ui('搜索最近角色'));
     search.addEventListener('input', renderRecents);
     const nav = document.createElement('div');
     nav.className = 'cu-nav';
-    nav.append(button('首页', 'home', goHome), button('预设', 'sliders', () => nativeTarget('#leftNavDrawerIcon')), button('扩展程序', 'puzzle', () => nativeTarget('#extensions-settings-button .drawer-icon')), button('世界书', 'book', () => nativeTarget('#WIDrawerIcon')), button('角色卡', 'people', showCharacters), button('更多', 'more', showTools));
+    nav.append(button(ui('首页'), 'home', goHome), button(ui('预设'), 'sliders', () => nativeTarget('#leftNavDrawerIcon')), button(ui('扩展程序'), 'puzzle', () => nativeTarget('#extensions-settings-button .drawer-icon')), button(ui('世界书'), 'book', () => nativeTarget('#WIDrawerIcon')), button(ui('角色卡'), 'people', showCharacters), button(ui('更多'), 'more', showTools));
     const recentHeading = document.createElement('div');
     recentHeading.className = 'cu-recent-heading';
-    recentHeading.textContent = '最近使用的角色';
+    recentHeading.textContent = ui('最近使用的角色');
     const recents = document.createElement('div');
     recents.className = 'cu-recents';
     const footer = document.createElement('div');
     footer.className = 'cu-sidebar-footer';
-    const account = button('用户设定', 'people', () => nativeTarget('#persona-management-button .drawer-icon'), 'cu-account');
+    const account = button(ui('用户设定'), 'people', () => nativeTarget('#persona-management-button .drawer-icon'), 'cu-account');
     account.innerHTML = '<span class="cu-avatar"></span><span class="cu-account-name"></span>';
-    footer.append(account, button('主题设置', 'sun', showAppearance, 'cu-icon'));
+    footer.append(account, button(ui('主题设置'), 'sun', showAppearance, 'cu-icon'));
     sidebar.append(top, search, nav, recentHeading, recents, footer);
     const backdrop = document.createElement('button');
     backdrop.type = 'button';
     backdrop.className = 'cu-backdrop';
     backdrop.hidden = true;
-    backdrop.setAttribute('aria-label', '关闭侧边栏');
+    backdrop.setAttribute('aria-label', ui('关闭侧边栏'));
     backdrop.addEventListener('click', () => setSidebar(false));
-    const reveal = button('显示顶栏', 'chevron', () => { state.headerTappedOpen = true; syncHeaderVisibility(); }, 'cu-header-reveal cu-icon');
+    const reveal = button(ui('显示顶栏'), 'chevron', () => { state.headerTappedOpen = true; syncHeaderVisibility(); }, 'cu-header-reveal cu-icon');
     reveal.id = 'cu-header-reveal'; reveal.hidden = true; reveal.setAttribute('aria-controls', 'cu-header');
     document.body.append(header, reveal, backdrop, sidebar);
     const greeting = document.createElement('div');
@@ -1109,14 +1148,17 @@ function initialize() {
     const greetingText = document.createElement('span'); greetingText.className = 'cu-greeting-text';
     greeting.append(brandElement(), greetingText);
     const homeContent = document.createElement('div'); homeContent.className = 'cu-home-content';
-    const choose = button('选择角色，开始对话', 'people', showCharacters, 'cu-home-choose');
-    const recentToggle = button('最近聊天', 'chevron', () => showHomeRecents(), 'cu-home-history-toggle');
+    const choose = button(ui('选择角色，开始对话'), 'people', showCharacters, 'cu-home-choose');
+    const recentToggle = button(ui('最近聊天'), 'chevron', () => showHomeRecents(), 'cu-home-history-toggle');
     const homeHistory = document.createElement('div'); homeHistory.className = 'cu-home-history'; homeHistory.hidden = true;
     homeContent.append(choose, recentToggle, homeHistory);
     const welcome = document.createElement('section'); welcome.className = 'cu-home-welcome';
     welcome.append(greeting, homeContent);
     document.querySelector('#sheld').append(welcome);
-    const returnHome = homeAction({ prefix:'返回 ', force:true, className:'cu-return-home' }); returnHome.hidden = true; document.body.append(returnHome);
+    new ResizeObserver(([entry]) => {
+        document.body.style.setProperty('--cu-composer-height', `${Math.ceil(entry.target.getBoundingClientRect().height)}px`);
+    }).observe(document.querySelector('#form_sheld'));
+    const returnHome = homeAction({ prefix:ui('返回 '), force:true, className:'cu-return-home' }); returnHome.hidden = true; document.body.append(returnHome);
     let homeTouch;
     const homeGestureTarget = event => document.body.classList.contains('cu-home') && !state.sheet && !event.target.closest('#form_sheld,.cu-home-history,input,textarea');
     document.querySelector('#sheld').addEventListener('wheel', event => { if (homeGestureTarget(event) && event.deltaY > 20) showHomeRecents(true); }, { passive: true });
@@ -1124,27 +1166,37 @@ function initialize() {
     document.querySelector('#sheld').addEventListener('touchend', event => { if (homeTouch != null && homeTouch - event.changedTouches[0].clientY > 45) showHomeRecents(true); homeTouch = null; }, { passive: true });
     const meta = document.createElement('div');
     meta.className = 'cu-composer-meta';
-    const modelButton = button('API 连接与模型选择', 'chevron', () => nativeTarget('#API-status-top'));
+    const modelButton = button(ui('API 连接与模型选择'), 'chevron', () => nativeTarget('#API-status-top'));
     modelButton.querySelector('span').className = 'cu-model-label';
-    meta.append(button('更多', 'sliders', showTools), modelButton);
+    meta.append(button(ui('更多'), 'sliders', showTools), modelButton);
     document.querySelector('#form_sheld').append(meta);
-    document.querySelector('#options_button')?.setAttribute('aria-label', '完整聊天菜单');
-    document.querySelector('#extensionsMenuButton')?.setAttribute('aria-label', '附件与扩展菜单');
+    document.querySelector('#options_button')?.setAttribute('aria-label', ui('完整聊天菜单'));
+    document.querySelector('#extensionsMenuButton')?.setAttribute('aria-label', ui('附件与扩展菜单'));
     registerExtensionSettings();
-    state.nativeUI = setupNativeUI({ settings, save, button, svg, showCharacters, openCharacter, characterEntities });
-    for (const [id, name] of [['left-nav-panel','预设'],['right-nav-panel','角色卡']]) {
+    state.nativeUI = setupNativeUI({ settings, save, button, svg, ui, showCharacters, openCharacter, characterEntities });
+    for (const [id, name] of [['left-nav-panel',ui('预设')],['right-nav-panel',ui('角色卡')]]) {
         const panel = document.getElementById(id);
         if (!panel) continue;
         const heading = document.createElement('div'); heading.className = 'cu-dock-heading';
         const label = document.createElement('span'); label.textContent = name;
-        heading.append(label, button(`关闭${name}`, 'close', () => {
+        heading.append(label, button(getCurrentLocale().startsWith('zh') ? `关闭${name}` : `Close ${name}`, 'close', () => {
             if (panel.classList.contains('openDrawer')) panel.parentElement.querySelector('.drawer-toggle')?.click();
         }, 'cu-icon'));
         panel.prepend(heading);
     }
-    state.compatUI = setupExtensionCompatibility({ settings, save, appearanceChanged: applyAppearance });
+    state.compatUI = setupExtensionCompatibility({ settings, save, appearanceChanged: applyAppearance, ui });
     state.themeUI = setupManagedTheme({ settings, save, report, appearanceChanged: applyAppearance });
     setupHeaderScroll();
+    // Browsing stored alternatives is always available. An offline right swipe
+    // at the end would enter the native generation path and increment its count.
+    document.addEventListener('click', event => {
+        if (!settings().enabled || !event.target.closest?.('#chat .last_mes .swipe_right')) return;
+        const context = ctx(), message = context.chat.at(-1);
+        if (context.onlineStatus && context.onlineStatus !== 'no_connection') return;
+        if (message && (message.swipe_id || 0) < (message.swipes?.length || 1) - 1) return;
+        event.preventDefault(); event.stopImmediatePropagation();
+        toastr.info(ui('未连接到 API，请先连接模型'));
+    }, true);
     // SVG paths and button padding are not .drawer-icon targets. Do not let
     // the native outside-press closer close a drawer before its toggle click.
     const nativeBar = document.getElementById('top-settings-holder');
@@ -1199,6 +1251,7 @@ function initialize() {
         revealHeader(); setSidebar(false); syncNativePanels();
         if (!desktop.matches) closeNativePanels();
     });
+    shortViewport.addEventListener('change', () => applyAppearance());
     // Keep the real composer above mobile keyboards without replacing its input handlers.
     const adjustViewport = () => {
         const viewport = window.visualViewport;

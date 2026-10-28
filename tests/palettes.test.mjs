@@ -36,8 +36,9 @@ test('invalid or legacy settings resolve to a safe family default', () => {
     assert.equal(selectedPalette({ design: 'adwaita', designPalettes: [] }).id, 'blue');
     assert.equal(selectedPalette({ design: 'swiss', designPalettes: { swiss: 'missing' } }).id, 'vermilion');
     assert.deepEqual(paletteOptions('missing'), paletteOptions('claude'));
-    assert.deepEqual(palettesByDesign.claude[0].light, {});
-    assert.deepEqual(palettesByDesign.claude[0].dark, {});
+    for (const tokens of [palettesByDesign.claude[0].light,palettesByDesign.claude[0].dark]) {
+        assert.ok(contrast(tokens.accent,tokens['on-accent']) >= 4.5, 'default Claude actions retain readable foregrounds');
+    }
 });
 
 test('every curated palette has unique options, valid tokens and readable text/actions', () => {

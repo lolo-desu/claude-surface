@@ -21,7 +21,7 @@ body[data-claude-ui] #WorldInfo .tt-codemirror-editor .cm-content { font: 400 16
 body[data-claude-ui] #WorldInfo .tt-codemirror-editor .cm-panels-top { border-bottom: 1px solid var(--cu-input-border) !important; background: var(--cu-surface) !important; }
 body[data-claude-ui] #WorldInfo .tt-codemirror-editor .cm-editor-tools { padding: 4px 6px; gap: 4px; }
 body[data-claude-ui] #WorldInfo .tt-codemirror-editor .cm-editor-tools button { width: 28px; min-width: 28px; height: 28px; min-height: 28px; max-height: 28px; padding: 0 !important; display: grid; place-items: center; }
-@media (min-width:900px) {
+@media (min-width:900px) and (pointer:fine), (min-width:1101px) {
     body[data-claude-ui] #WorldInfo #world_popup > .flex-container { gap: 8px; }
     body[data-claude-ui] #WorldInfo #world_popup > .flex-container > .menu_button { flex: 0 0 auto; width: auto; min-width: 36px; height: 36px; padding: 4px 10px; margin: 0; }
     body[data-claude-ui] #WorldInfo #world_popup > .flex-container:has(#world_editor_select) > .select2-container { flex: 1 1 180px; width: auto !important; min-width: 150px; }
@@ -44,7 +44,7 @@ body[data-claude-ui] #WorldInfo .tt-codemirror-editor .cm-editor-tools button { 
     body[data-claude-ui] #WorldInfo #world_popup_entries_list select[name="entryStateSelector"] { width: 36px !important; min-width: 36px; height: 36px; padding: 0 !important; text-align: center; text-align-last: center; }
     body[data-claude-ui] #WorldInfo #world_popup_entries_list .inline-drawer-header > .menu_button { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 36px; width: 36px; height: 36px; min-height: 36px; padding: 0 !important; margin: 0; }
 }
-@media (max-width:899px) {
+@media (max-width:899px), (max-width:1100px) and (pointer:coarse) {
     body[data-claude-ui]:has(#WorldInfo.cu-world-surface.openDrawer) #sheld { visibility: hidden; }
     body[data-claude-ui] #WorldInfo.cu-world-surface { --cu-wi-radius: var(--cu-control-radius,10px); font: 400 14px/22px var(--cu-sans); }
     body[data-claude-ui] #WorldInfo.cu-world-surface #wi-holder { display: block !important; padding: 0 0 12px; }

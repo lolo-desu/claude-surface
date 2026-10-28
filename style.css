@@ -2,6 +2,8 @@
 /* PALETTE START */
 body[data-claude-ui] {
     --cu-bg: #191919;
+    --cu-accent: #d77757;
+    --cu-on-accent: #191919;
     --cu-sidebar: #1f1f1f;
     --cu-input: #303030;
     --cu-surface: #262626;
@@ -24,6 +26,8 @@ body[data-claude-ui] {
 }
 body[data-claude-ui="light"] {
     --cu-bg: #fff;
+    --cu-accent: #a8472d;
+    --cu-on-accent: #fff;
     --cu-sidebar: #f8f8f8;
     --cu-input: #fff;
     --cu-surface: #fff;
@@ -46,7 +50,6 @@ body[data-claude-ui="light"] {
 }
 /* PALETTE END */
 body[data-claude-ui] {
-    --cu-accent: #d77757;
     --cu-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
     --cu-serif: Georgia, "Times New Roman", var(--cu-sans);
     --cu-sidebar-width: 280px;
@@ -432,7 +435,7 @@ body[data-claude-ui].cu-native-open { --cu-chat-top: 90px; --cu-panel-top: 98px;
 body[data-claude-ui].cu-native-open #top-settings-holder>.drawer { flex: 0 1 44px; min-width: 0; }
 body[data-claude-ui].cu-native-open #top-settings-holder .drawer-icon { font-size: 20px; width: auto; color: var(--cu-muted); }
 body[data-claude-ui].cu-native-open #top-settings-holder .openIcon { color: var(--cu-accent); }
-body[data-claude-ui].cu-shell-ready :is(#left-nav-panel,#right-nav-panel,.drawer-content) {
+body[data-claude-ui].cu-shell-ready :is(#left-nav-panel,#right-nav-panel,.drawer-content):where(:not(#completion_prompt_manager_popup)) {
     position: fixed !important;
     top: var(--cu-panel-top) !important;
     left: auto !important;
@@ -516,14 +519,14 @@ body[data-claude-ui].cu-shell-ready.cu-home #chat { visibility: hidden; pointer-
 .cu-segment .cu-button { min-height: 30px; font-size: 12px; }
 .cu-sheet-list { display: grid; gap: 3px; }
 .cu-sheet-list .cu-button { justify-content: flex-start; width: 100%; padding: 12px; }
-@media (min-width: 900px) {
+@media (min-width: 900px) and (pointer: fine), (min-width: 1101px) {
     body[data-claude-ui].cu-sidebar-open #sheld { left: var(--cu-sidebar-width) !important; width: calc(100% - var(--cu-sidebar-width)) !important; }
     .cu-sidebar-open .cu-header { left: var(--cu-sidebar-width); }
     .cu-sidebar-open .cu-backdrop { display: none; }
     .cu-home-greeting { font-size: 32px; }
     body[data-claude-ui].cu-home #form_sheld { margin-bottom: 20vh; }
 }
-@media (max-width: 899px) {
+@media (max-width: 899px), (max-width: 1100px) and (pointer: coarse) {
     .cu-sidebar { width: 100%; }
     body[data-claude-ui] #chat { padding: 16px 20px 28px !important; }
     body[data-claude-ui] #chat .mes_text { font-size: 15px; line-height: 1.55; }
@@ -651,7 +654,7 @@ body[data-claude-ui] #completion_prompt_manager_popup > :is(#completion_prompt_m
 body[data-claude-ui] #completion_prompt_manager_popup .completion_prompt_manager_popup_entry { min-width: 0; }
 body[data-claude-ui] #completion_prompt_manager_popup .completion_prompt_manager_popup_entry_form { height: auto; min-height: 100%; min-width: 0; }
 body[data-claude-ui] #completion_prompt_manager_popup #completion_prompt_manager_popup_entry_form_prompt { flex: none; height: clamp(200px,35dvh,460px); resize: vertical; }
-@media (min-width: 900px) {
+@media (min-width: 900px) and (pointer: fine), (min-width: 1101px) {
     body[data-claude-ui].cu-shell-ready #completion_prompt_manager_popup {
         left: calc(var(--cu-sidebar-space) + (100vw - var(--cu-sidebar-space)) / 2) !important; right: auto !important; translate: -50% 0;
         width: min(760px,calc(100vw - var(--cu-sidebar-space) - 32px)) !important;
@@ -667,8 +670,8 @@ body[data-claude-ui]:not(.cu-baibai-tools) #left-nav-panel #completion_prompt_ma
 body[data-claude-ui]:not(.cu-baibai-tools) #left-nav-panel #completion_prompt_manager #completion_prompt_manager_list > .completion_prompt_manager_prompt { display: grid !important; grid-template-columns: 14px minmax(0,1fr) auto 42px !important; }
 body[data-claude-ui]:not(.cu-baibai-tools) #left-nav-panel #completion_prompt_manager #completion_prompt_manager_list > .completion_prompt_manager_prompt_invisible { display: none !important; }
 body[data-claude-ui]:not(.cu-baibai-tools) #left-nav-panel #completion_prompt_manager #completion_prompt_manager_list .drag-handle { display: block !important; position: static !important; translate: none; transform: none; width: 14px; height: auto; line-height: 18px; }
-@media (min-width: 900px) {
-    body[data-claude-ui].cu-shell-ready :is(#left-nav-panel,#right-nav-panel,.drawer-content) {
+@media (min-width: 900px) and (pointer: fine), (min-width: 1101px) {
+    body[data-claude-ui].cu-shell-ready :is(#left-nav-panel,#right-nav-panel,.drawer-content):where(:not(#completion_prompt_manager_popup)) {
         left: 50% !important; right: auto !important; translate: -50% 0;
         width: min(1040px,calc(100vw - 64px)) !important; max-width: calc(100vw - 64px) !important;
         padding: 24px !important;
@@ -685,7 +688,7 @@ body[data-claude-ui]:not(.cu-baibai-tools) #left-nav-panel #completion_prompt_ma
     body[data-claude-ui].cu-home #form_sheld { margin-bottom: 24px; }
     .cu-home-welcome { bottom: 230px; }
 }
-@media (max-width: 899px) {
+@media (max-width: 899px), (max-width: 1100px) and (pointer: coarse) {
     .cu-sheet-panel::before { display: none; }
     .cu-sheet-handle { display: grid; place-items: center; width: 64px; height: 22px; padding: 8px 14px; margin: -12px auto 10px; touch-action: none; cursor: grab; flex-shrink: 0; }
     .cu-sheet-handle svg { display: none; }
@@ -702,7 +705,7 @@ body[data-claude-ui]:not(.cu-baibai-tools) #left-nav-panel #completion_prompt_ma
 
 /* Mobile world editor: compact cards inspired by the supplied layout reference.
    Desktop deliberately retains the native editor structure and control flow. */
-@media (max-width: 899px) {
+@media (max-width: 899px), (max-width: 1100px) and (pointer: coarse) {
     body[data-claude-ui] #WorldInfo #wiTopBlock { display: flex; flex-direction: column; gap: 10px; }
     body[data-claude-ui] #WorldInfo #wiTopBlock > .range-block { flex: none; width: 100%; min-width: 0; padding: 4px 0; }
     body[data-claude-ui] #WorldInfo #wiTopBlock .inline-drawer-header { width: 100%; border-bottom: 0 !important; margin: 0; padding: 10px 0; }
@@ -826,7 +829,7 @@ body[data-claude-ui].cu-shell-ready #WorldInfo :is(#world_popup,#world_popup_ent
 @keyframes cu-world-appear { from { opacity: .85; } to { opacity: 1; } }
 /* Mobile QR disclosure follows real touch input, so narrow PC windows retain it. */
 .cu-mobile-setting { display: none; }
-@media (max-width: 899px) and (pointer: coarse) {
+@media (max-width: 1100px) and (pointer: coarse) {
     .cu-mobile-setting { display: flex; }
     body[data-claude-ui].cu-qr-collapsed #form_sheld:not(:has(#send_textarea:focus,#qr--bar:focus-within)) #qr--bar { display: none !important; }
 }
@@ -845,14 +848,14 @@ body[data-claude-ui]:not(.cu-baibai-tools) #left-nav-panel #completion_prompt_ma
 @media (min-width: 600px) and (pointer: fine) {
     body[data-claude-ui].cu-shell-ready #top-settings-holder > .drawer > .drawer-content { left: 50% !important; right: auto !important; translate: -50% 0; width: min(1040px,calc(100vw - 64px)) !important; max-width: calc(100vw - 64px) !important; }
 }
-@media (max-width: 899px) {
+@media (max-width: 899px), (max-width: 1100px) and (pointer: coarse) {
     body[data-claude-ui] #WorldInfo #world_popup[data-bai-bai-world-info-popup-layout="true"] { display: flex; flex-direction: column; gap: 10px; }
     body[data-claude-ui] #WorldInfo #world_popup :is(.bai-bai-wi-popup-source-stash,.bai-bai-wi-mobile-hidden-stash)[hidden] { display: none !important; }
     body[data-claude-ui] #WorldInfo #world_popup [data-bai-bai-world-info-mobile-header-layout="true"] .wi-card-entry { padding: 10px; border: 1px solid var(--cu-border); border-radius: 14px; background: var(--cu-hover); }
     body[data-claude-ui] #WorldInfo #world_popup [data-bai-bai-world-info-mobile-header-layout="true"] .inline-drawer-header { border: 0; background: transparent; }
     body[data-claude-ui] #WorldInfo #world_popup [data-bai-bai-world-info-mobile-header-layout="true"] .bai-bai-wi-mobile-header-grid { min-height: 0; height: auto; }
 }
-@media (max-width: 899px) {
+@media (max-width: 899px), (max-width: 1100px) and (pointer: coarse) {
     .cu-backdrop { display: none !important; }
     body[data-claude-ui] #WorldInfo #world_popup_entries_list .cu-wi-content-field { display: flex !important; flex-direction: column; align-items: stretch; width: 100%; min-width: 0; }
     body[data-claude-ui] #WorldInfo #world_popup_entries_list .cu-wi-content-heading { display: block !important; order: 0; width: 100%; min-width: 0; margin: 0; }
@@ -899,7 +902,7 @@ body[data-claude-ui].cu-compact-composer :is(#options_button,#extensionsMenuButt
     body[data-claude-ui] #completion_prompt_manager_popup #completion_prompt_manager_popup_entry_form_prompt { height: clamp(180px,25dvh,300px); }
     body[data-claude-ui] #completion_prompt_manager_popup .completion_prompt_manager_popup_entry_form_footer { position: sticky; bottom: 0; padding: 8px 0; background: var(--cu-surface); z-index: 1; }
 }
-@media (min-width: 900px) {
+@media (min-width: 900px) and (pointer: fine), (min-width: 1101px) {
     body[data-claude-ui] { --cu-sidebar-space: 0px; --cu-dock-width: clamp(240px,25vw,360px); }
     body[data-claude-ui] #user-settings-block-content { gap: 18px; align-items: flex-start; }
     body[data-claude-ui] #user-settings-block-content > div { min-width: 0; }
@@ -920,7 +923,7 @@ body[data-claude-ui].cu-compact-composer :is(#options_button,#extensionsMenuButt
     body[data-claude-ui] #left-nav-panel #range_block_openai > * { width: 100%; min-width: 0; }
 }
 @media (min-width: 900px) and (max-width: 1199px) { body[data-claude-ui] { --cu-sidebar-width: 220px; } }
-@media (max-width: 899px) {
+@media (max-width: 899px), (max-width: 1100px) and (pointer: coarse) {
     body[data-claude-ui],body[data-claude-ui].cu-native-open { --cu-panel-top: var(--cu-chat-top); --cu-panel-max-height: calc(100dvh - var(--cu-panel-top)); }
     body[data-claude-ui].cu-shell-ready #top-settings-holder > .drawer > .drawer-content { left: 0 !important; right: 0 !important; translate: none !important; top: var(--cu-panel-top) !important; width: 100vw !important; max-width: 100vw !important; height: var(--cu-panel-max-height) !important; max-height: var(--cu-panel-max-height) !important; margin: 0 !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; background: var(--cu-bg) !important; }
     body[data-claude-ui] #top-settings-holder > .drawer > .drawer-content::before { display: none; }
@@ -929,7 +932,7 @@ body[data-claude-ui].cu-compact-composer :is(#options_button,#extensionsMenuButt
 
 /* The world editor owns a bounded mobile viewport; only its inner holder scrolls.
    Native html transforms otherwise make fixed background overscan scroll the page. */
-@media (max-width: 899px) {
+@media (max-width: 899px), (max-width: 1100px) and (pointer: coarse) {
     html:has(body[data-claude-ui] :is(#WorldInfo,#completion_prompt_manager_popup).openDrawer:not(.closedDrawer)) {
         height: 100%; overflow: hidden; overflow: clip; overscroll-behavior: none;
         -webkit-transform: none; transform: none; -webkit-perspective: none; perspective: none;
@@ -1057,7 +1060,7 @@ body[data-claude-ui="light"] .cu-button.cu-danger { color: #b54435; }
 .cu-home-greeting > .cu-brand-mark { width: 28px; height: 28px; flex-basis: 28px; }
 .cu-brand-name-input { width: 180px; max-width: 58%; min-width: 0; padding: 8px 10px; border: 1px solid var(--cu-border); border-radius: 9px; color: var(--cu-text); background: var(--cu-input); font: inherit; }
 .cu-brand-upload[hidden] { display: none; }
-@media (max-width: 899px) {
+@media (max-width: 899px), (max-width: 1100px) and (pointer: coarse) {
     body[data-claude-ui] #rm_extensions_block > .extensions_block > .alignitemscenter.flex-container { grid-template-columns: repeat(2,minmax(0,1fr)); }
     body[data-claude-ui] #rm_extensions_block :is(#extensions_details,#third_party_extension_button) { width: 100%; min-width: 0; padding: 8px; }
     .cu-sheet-panel { padding-left: 16px; padding-right: 16px; }
@@ -1072,9 +1075,77 @@ body[data-claude-ui="light"] .cu-button.cu-danger { color: #b54435; }
     background: var(--cu-surface); color: var(--cu-muted); touch-action: manipulation;
 }
 .cu-header-reveal[hidden] { display: none; }
-@media (min-width: 900px) {
+@media (min-width: 900px) and (pointer: fine), (min-width: 1101px) {
     body[data-claude-ui].cu-sidebar-open .cu-header-reveal { left: calc(50% + var(--cu-sidebar-width) / 2); }
 }
+
+/* UI audit: bounded scrolling, readable native navigation and usable short viewports. */
+body[data-claude-ui] .cu-sidebar { overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; }
+body[data-claude-ui] .cu-sidebar > :not(.cu-recents) { flex-shrink: 0; }
+body[data-claude-ui] .cu-native-icon.closedIcon { opacity: 1 !important; color: var(--cu-text) !important; }
+body[data-claude-ui] #top-settings-holder > .drawer > .drawer-toggle { cursor: pointer; }
+body[data-claude-ui] .cu-settings-row > .cu-brand-mark { flex: 0 0 24px !important; width: 24px !important; margin-inline-start: auto; }
+body[data-claude-ui] .cu-appearance-settings .cu-settings-section { display: block; margin-block: 18px; }
+body[data-claude-ui] .cu-appearance-settings .cu-settings-section-title { display: block; margin: 0 0 8px; font: 600 14px/22px var(--cu-sans); color: var(--cu-text); }
+body[data-claude-ui] .cu-sheet-heading { flex: 0 0 auto; }
+body[data-claude-ui] .cu-sheet-heading .cu-icon { margin-inline-start: auto; }
+body[data-claude-ui] .cu-home-welcome { top: clamp(24px,8dvh,100px); bottom: calc(var(--cu-composer-height,150px) + 16px); gap: 16px; overflow-y: auto; overscroll-behavior: contain; }
+body[data-claude-ui] .cu-home-content { flex: 1 0 auto; }
+body[data-claude-ui] .cu-home-choose { flex-shrink: 0; }
+body[data-claude-ui].cu-home-recents .cu-home-choose { display: inline-flex; }
+body[data-claude-ui] .cu-home-history { flex-shrink: 0; overflow: visible; }
+body[data-claude-ui] .cu-return-home { top: auto; bottom: calc(var(--cu-composer-height,150px) + 16px); }
+body[data-claude-ui] #chat #curEditTextarea { border: 1px solid var(--cu-input-border) !important; border-radius: 8px; padding: 10px; background: var(--cu-input); }
+body[data-claude-ui] #chat #curEditTextarea:focus-visible { outline: 2px solid var(--cu-accent) !important; outline-offset: -2px; }
+body[data-claude-ui] #chat .mes:has(#curEditTextarea) .mes_edit { display: none !important; }
+body[data-claude-ui] #chat .welcomePanel { background: var(--cu-surface); color: var(--cu-text); border-radius: 12px; padding: 16px; }
+@media (pointer: coarse) {
+    body[data-claude-ui] .cu-header { height: var(--cu-header); padding: 2px 4px; gap: 2px; }
+    body[data-claude-ui] .cu-header .cu-icon { width: 44px; height: 44px; min-width: 44px; min-height: 44px; }
+    body[data-claude-ui] .cu-sheet-heading .cu-icon { width: 44px; height: 44px; }
+    body[data-claude-ui] #chat .ch_name :is(.mes_button,.mes_edit_buttons .menu_button) { min-width: 44px; min-height: 44px; }
+    body[data-claude-ui] #chat :is(.swipe_left,.swipe_right) { min-width: 44px; min-height: 44px; opacity: 1; }
+    body[data-claude-ui] .cu-composer-meta { height: 44px; }
+    body[data-claude-ui] .cu-composer-meta .cu-button { min-height: 44px; }
+    body[data-claude-ui] :is(.drawer-content,.popup) label.checkbox_label { min-height: 44px; align-items: center; }
+    body[data-claude-ui] .cu-sheet-handle { min-height: 44px; margin-top: -12px; }
+}
+@media (max-height: 500px) {
+    body[data-claude-ui] .cu-home-welcome { top: 12px; bottom: calc(var(--cu-composer-height,100px) + 8px); gap: 8px; }
+    body[data-claude-ui] .cu-home-greeting { font-size: 22px; }
+    body[data-claude-ui] .cu-home-content { gap: 6px; }
+    body[data-claude-ui] .cu-home-choose { padding: 8px 16px; }
+    body[data-claude-ui] .cu-sidebar .cu-recents { flex: 1 0 auto; overflow: visible; }
+    body[data-claude-ui] .cu-sheet-panel { max-height: calc(100dvh - 16px); padding-block: 8px; }
+    body[data-claude-ui] .cu-sheet-handle { display: none; }
+    body[data-claude-ui] .cu-design-grid { grid-template-columns: repeat(4,minmax(0,1fr)); }
+    body[data-claude-ui] .cu-design-preview { height: 40px; }
+}
+@media (max-height: 500px) and (pointer: coarse) {
+    body[data-claude-ui] { --cu-header: 44px; --cu-chat-top: 44px; --cu-native-height: 44px; }
+    body[data-claude-ui].cu-native-open { --cu-chat-top: 88px; }
+    body[data-claude-ui].cu-header-hidden { --cu-chat-top: 0px; }
+    body[data-claude-ui] #top-settings-holder { top: var(--cu-header) !important; height: var(--cu-native-height) !important; }
+    body[data-claude-ui].cu-header-hidden #top-settings-holder { top: -44px !important; }
+    body[data-claude-ui] #form_sheld { padding-block: 0 !important; margin-bottom: 0 !important; }
+    body[data-claude-ui].cu-compact-composer #nonQRFormItems { min-height: 44px; }
+    body[data-claude-ui].cu-compact-composer :is(#options_button,#extensionsMenuButton,#send_but,#mes_continue,#mes_impersonate,#mes_stop,.stscript_btn,#quickPersona) { width: 44px !important; min-width: 44px !important; max-width: 44px !important; height: 44px !important; min-height: 44px !important; max-height: 44px !important; }
+    body[data-claude-ui] #qr--bar { max-height: 44px; }
+}
+
+body[data-claude-ui] #WorldInfo .cu-wi-state-label { flex: 0 0 auto; margin: 0 2px 0 8px; font: 400 14px/22px var(--cu-sans); color: var(--cu-text); }
+body[data-claude-ui] #WorldInfo :is(.keyprimary,.keysecondary) { position: relative; box-sizing: border-box; padding-inline-end: 44px; }
+body[data-claude-ui] #WorldInfo .switch_input_type_icon { position: absolute; inset: 26px 0 auto auto; display: grid; place-items: center; width: 36px; height: 36px; margin: 0; padding: 0; border: 1px solid var(--cu-input-border); border-radius: var(--cu-control-radius,8px); background: var(--cu-input); }
+@media (max-width:1100px) and (pointer:coarse) {
+    body[data-claude-ui] #user-settings-block-content { display: grid !important; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 20px; }
+    body[data-claude-ui] #user-settings-block-content > div { width: 100% !important; min-width: 0; font-size: 14px; }
+    body[data-claude-ui] #user-settings-block-content :is(small,.fontSize10,.fontsize80p) { font-size: 13px !important; line-height: 1.5; }
+}
+@media (max-width:600px) {
+    body[data-claude-ui] #user-settings-block-content { grid-template-columns: minmax(0,1fr); }
+}
+
+body[data-claude-ui] :is(.timestamp,.cu-header-subtitle) { font-size: 11px !important; line-height: 16px; }
 /* DESIGNS START */
 /* Design families. Kept separate for review, embedded by build-themes.mjs. */
 .cu-design-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; margin-bottom: 16px; }
@@ -1171,7 +1242,7 @@ body[data-claude-ui][data-cu-design="adwaita"] {
 }
 body[data-claude-ui="light"][data-cu-design="adwaita"] {
     --cu-bg: #fff; --cu-sidebar: #ebebed; --cu-surface: #f6f5f4; --cu-input: #fff;
-    --cu-text: #303034; --cu-muted: #747478; --cu-border: #00000014; --cu-input-border: #00000026;
+    --cu-text: #303034; --cu-muted: #626267; --cu-border: #00000014; --cu-input-border: #00000026;
     --cu-hover: #00000006; --cu-selected: #d8e1eb; --cu-user: #f2f2f3; --cu-code: #f6f5f4;
     --cu-accent: #1c71d8; --cu-on-accent: #fff; --cu-link: #1c71d8;
 }
@@ -1234,7 +1305,7 @@ body[data-claude-ui][data-cu-design="swiss"] {
 }
 body[data-claude-ui="light"][data-cu-design="swiss"] {
     --cu-bg: #f3f0e8; --cu-sidebar: #e0e5d8; --cu-surface: #f7f4ec; --cu-input: #f7f4ec;
-    --cu-text: #193c35; --cu-muted: #5d6f63; --cu-border: #193c3524; --cu-input-border: #193c3540;
+    --cu-text: #193c35; --cu-muted: #4e6054; --cu-border: #193c3524; --cu-input-border: #193c3540;
     --cu-hover: #193c3508; --cu-selected: #c9d5c2; --cu-user: #d9e2d4; --cu-code: #eeece2;
     --cu-accent: #c43e2b; --cu-on-accent: #fff; --cu-link: #2d6553;
 }
@@ -1271,7 +1342,7 @@ body[data-claude-ui][data-cu-design="swiss"] .cu-button[aria-pressed="true"] { c
 body[data-claude-ui]:is([data-cu-design="material"],[data-cu-design="adwaita"]) .cu-settings-group > .cu-settings-row:not([hidden]):not(:has(~ :not([hidden]))) { border-bottom: 0; }
 
 /* Preserve the existing full-page mobile drawers and compact composer. */
-@media (max-width: 899px) {
+@media (max-width: 899px), (max-width: 1100px) and (pointer: coarse) {
     body[data-claude-ui][data-cu-design="adwaita"] #cu-header { gap: 4px; }
     body[data-claude-ui][data-cu-design="adwaita"] .cu-title-wrap { position: static; translate: none; flex: 1; width: 0; min-width: 0; max-width: none; gap: 0 4px; }
     body[data-claude-ui][data-cu-design="material"] .cu-header { padding-inline: 8px; }
@@ -1510,6 +1581,18 @@ body[data-claude-ui][data-cu-design="swiss"] .cu-button:not(.cu-danger):not(:dis
     body[data-claude-ui] :is(.cu-button,.cu-design-card)[aria-pressed="true"] { outline: 2px solid Highlight !important; outline-offset: -3px; }
 }
 
+/* Touch hit areas grow independently of checkbox marks and range tracks. */
+@media (pointer: coarse) {
+    body[data-claude-ui] :is(.drawer-content,.popup):where(:not(#WorldInfo)) :is(.menu_button,.right_menu_button,button:not(.switch_input_type_icon)) { min-width: 44px !important; min-height: 44px !important; }
+    body[data-claude-ui] :is(.drawer-content,.popup):where(:not(#WorldInfo)) :is(select,input[type="text"],input[type="number"],input[type="search"],input[type="range"]) { min-width: 44px; min-height: 44px !important; font-size: 16px !important; }
+    body[data-claude-ui] #WorldInfo .tt-codemirror-editor .cm-editor-tools button { width: 44px !important; min-width: 44px !important; height: 44px !important; min-height: 44px !important; max-height: 44px !important; }
+}
+
+@media (pointer: coarse) {
+    body[data-claude-ui] #WorldInfo :is(.keyprimary,.keysecondary) { padding-inline-end: 48px; }
+    body[data-claude-ui] #WorldInfo .switch_input_type_icon { width: 40px; height: 40px; }
+}
+
 /* Prompt Manager supplies its own white labels and drop-shadows. Keep its layout/handlers, including BaiBai's. */
 body[data-claude-ui] #completion_prompt_manager,
 body[data-claude-ui] #completion_prompt_manager * { text-shadow: none !important; filter: none !important; }
@@ -1617,10 +1700,10 @@ body[data-claude-ui] .daynight-settings .dn-seg .menu_button.dn-on { color: var(
 body[data-claude-ui] .cu-segment { flex-wrap: wrap; max-width: 100%; }
 body[data-claude-ui] [data-cu-mode="companion"][hidden] { display: none; }
 
-@media (min-width: 900px) {
+@media (min-width: 900px) and (pointer: fine), (min-width: 1101px) {
     body[data-claude-ui].cu-sidebar-open #extensionSideBar { left: calc(var(--cu-sidebar-width) + 12px) !important; }
 }
-@media (max-width: 899px) {
+@media (max-width: 899px), (max-width: 1100px) and (pointer: coarse) {
     body[data-claude-ui] #sheld { --cu-addon-bar-height: 84px; }
     body[data-claude-ui] #extensionTopBar { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); grid-template-rows: 32px 32px; padding: 8px; }
     body[data-claude-ui] #extensionTopBarChatName { grid-column: 1 / 5; grid-row: 1; min-width: 0; }
@@ -1638,6 +1721,15 @@ body[data-claude-ui] [data-cu-mode="companion"][hidden] { display: none; }
     html.dn-switching:has(body[data-claude-ui]) body *::after { transition: none !important; }
     html:has(body[data-claude-ui])::view-transition-old(root),
     html:has(body[data-claude-ui])::view-transition-new(root) { animation: none !important; }
+}
+
+/* One row on short touch screens; all upstream actions remain available. */
+@media (max-height: 500px) and (pointer: coarse) {
+    body[data-claude-ui] #sheld { --cu-addon-bar-height: 44px; }
+    body[data-claude-ui] #extensionTopBar { display: flex; gap: 2px; height: 44px; min-height: 44px; padding: 2px 4px; overflow-x: auto; overflow-y: hidden; }
+    body[data-claude-ui] #extensionTopBar .right_menu_button { flex: 0 0 40px; width: 40px; height: 40px; }
+    body[data-claude-ui] #extensionTopBarChatName { flex: 1 1 120px; min-width: 100px; width: auto; }
+    body[data-claude-ui] #extensionTopBarSearchInput { flex: 1 1 110px; width: 110px; min-width: 90px; }
 }
 
 /* Shared visual system for the native editor and real ST-BaiBai-Tools layout.
@@ -1663,7 +1755,7 @@ body[data-claude-ui] #WorldInfo .tt-codemirror-editor .cm-content { font: 400 16
 body[data-claude-ui] #WorldInfo .tt-codemirror-editor .cm-panels-top { border-bottom: 1px solid var(--cu-input-border) !important; background: var(--cu-surface) !important; }
 body[data-claude-ui] #WorldInfo .tt-codemirror-editor .cm-editor-tools { padding: 4px 6px; gap: 4px; }
 body[data-claude-ui] #WorldInfo .tt-codemirror-editor .cm-editor-tools button { width: 28px; min-width: 28px; height: 28px; min-height: 28px; max-height: 28px; padding: 0 !important; display: grid; place-items: center; }
-@media (min-width:900px) {
+@media (min-width:900px) and (pointer:fine), (min-width:1101px) {
     body[data-claude-ui] #WorldInfo #world_popup > .flex-container { gap: 8px; }
     body[data-claude-ui] #WorldInfo #world_popup > .flex-container > .menu_button { flex: 0 0 auto; width: auto; min-width: 36px; height: 36px; padding: 4px 10px; margin: 0; }
     body[data-claude-ui] #WorldInfo #world_popup > .flex-container:has(#world_editor_select) > .select2-container { flex: 1 1 180px; width: auto !important; min-width: 150px; }
@@ -1686,7 +1778,7 @@ body[data-claude-ui] #WorldInfo .tt-codemirror-editor .cm-editor-tools button { 
     body[data-claude-ui] #WorldInfo #world_popup_entries_list select[name="entryStateSelector"] { width: 36px !important; min-width: 36px; height: 36px; padding: 0 !important; text-align: center; text-align-last: center; }
     body[data-claude-ui] #WorldInfo #world_popup_entries_list .inline-drawer-header > .menu_button { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 36px; width: 36px; height: 36px; min-height: 36px; padding: 0 !important; margin: 0; }
 }
-@media (max-width:899px) {
+@media (max-width:899px), (max-width:1100px) and (pointer:coarse) {
     body[data-claude-ui]:has(#WorldInfo.cu-world-surface.openDrawer) #sheld { visibility: hidden; }
     body[data-claude-ui] #WorldInfo.cu-world-surface { --cu-wi-radius: var(--cu-control-radius,10px); font: 400 14px/22px var(--cu-sans); }
     body[data-claude-ui] #WorldInfo.cu-world-surface #wi-holder { display: block !important; padding: 0 0 12px; }
@@ -1794,12 +1886,18 @@ body[data-claude-ui] #WorldInfo .tt-codemirror-editor .cm-editor-tools button { 
 }
 
 /* Independent controls shared by all design families. Only surface colors become translucent. */
+/* A bounded background host clips blur overscan before it reaches the root's
+   scrollable area. Isolation keeps it above the body's paint at all widths. */
+html:has(> body[data-claude-ui]) { overflow: clip; }
+body[data-claude-ui] { isolation: isolate; overflow: clip !important; }
+body[data-claude-ui] .cu-background-layer { position: fixed; inset: 0; overflow: hidden; z-index: -1; pointer-events: none; }
+body[data-claude-ui] .cu-background-layer > :is(#bg1,#bg_custom) { position: absolute !important; }
 body[data-claude-ui].cu-background-enabled :is(#bg1,#bg_custom) {
     filter: var(--cu-background-filter,none);
 }
 /* Overscan the image instead of leaving transparent blur fringes at the viewport edges. */
 body[data-claude-ui].cu-background-enabled.cu-background-blurred :is(#bg1,#bg_custom) {
-    position: fixed !important; top: calc(0px - var(--cu-background-spread)) !important; left: calc(0px - var(--cu-background-spread)) !important;
+    top: calc(0px - var(--cu-background-spread)) !important; left: calc(0px - var(--cu-background-spread)) !important;
     width: calc(100vw + var(--cu-background-spread) + var(--cu-background-spread)) !important;
     height: calc(100dvh + var(--cu-background-spread) + var(--cu-background-spread)) !important;
     background-attachment: scroll;
@@ -1812,15 +1910,15 @@ body[data-claude-ui].cu-background-enabled #chat .mes_text :is(i,em) { color: va
 
 /* Filtering #sheld or #top-settings-holder would change fixed-drawer containing blocks. */
 body[data-claude-ui].cu-glass-enabled :is(.cu-header,#extensionTopBar) {
-    background: color-mix(in srgb,var(--cu-bg) var(--cu-ui-opacity,88%),transparent) !important;
+    background: color-mix(in srgb,var(--cu-bg) max(90%,var(--cu-ui-opacity,88%)),transparent) !important;
     -webkit-backdrop-filter: var(--cu-ui-backdrop,none) !important; backdrop-filter: var(--cu-ui-backdrop,none) !important;
 }
 body[data-claude-ui].cu-glass-enabled .cu-sidebar {
-    background: color-mix(in srgb,var(--cu-sidebar) var(--cu-ui-opacity,88%),transparent) !important;
+    background: color-mix(in srgb,var(--cu-sidebar) max(90%,var(--cu-ui-opacity,88%)),transparent) !important;
     -webkit-backdrop-filter: var(--cu-ui-backdrop,none) !important; backdrop-filter: var(--cu-ui-backdrop,none) !important;
 }
 body[data-claude-ui].cu-glass-enabled :is(.cu-sheet-panel,.drawer-content,.popup,.floating_panel,.options-content,#extensionsMenu,#select_chat_popup,#dialogue_popup,.list-group,.ui-autocomplete,#quickPersonaMenu,#extensionSideBar,#extensionConnectionProfiles) {
-    background: color-mix(in srgb,var(--cu-surface) var(--cu-ui-opacity,88%),transparent) !important;
+    background: color-mix(in srgb,var(--cu-surface) max(96%,var(--cu-ui-opacity,88%)),transparent) !important;
     -webkit-backdrop-filter: var(--cu-ui-backdrop,none) !important; backdrop-filter: var(--cu-ui-backdrop,none) !important;
 }
 body[data-claude-ui].cu-glass-enabled #send_form {
@@ -1828,13 +1926,13 @@ body[data-claude-ui].cu-glass-enabled #send_form {
     -webkit-backdrop-filter: var(--cu-ui-backdrop,none) !important; backdrop-filter: var(--cu-ui-backdrop,none) !important;
 }
 body[data-claude-ui].cu-glass-enabled.cu-shell-ready #top-settings-holder > .drawer > .drawer-content {
-    background: color-mix(in srgb,var(--cu-surface) var(--cu-ui-opacity,88%),transparent) !important;
+    background: color-mix(in srgb,var(--cu-surface) max(96%,var(--cu-ui-opacity,88%)),transparent) !important;
 }
 /* Blur just a painted pseudo-element, not the native toolbar's drawer-hosting element. */
 body[data-claude-ui].cu-glass-enabled #top-settings-holder { background: transparent !important; isolation: isolate; }
 body[data-claude-ui].cu-glass-enabled #top-settings-holder::before {
     content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
-    background: color-mix(in srgb,var(--cu-bg) var(--cu-ui-opacity,88%),transparent);
+    background: color-mix(in srgb,var(--cu-bg) max(90%,var(--cu-ui-opacity,88%)),transparent);
     -webkit-backdrop-filter: var(--cu-ui-backdrop,none) !important; backdrop-filter: var(--cu-ui-backdrop,none) !important;
 }
 
@@ -1861,6 +1959,14 @@ body[data-claude-ui] .cu-effects-reset { display: flex; justify-content: flex-en
 /* DESIGNS END */
 /* PALETTES START */
 /* Generated from palettes.js. Choices are scoped to their design and mode. */
+body[data-claude-ui][data-cu-design="claude"][data-cu-palette="clay"] {
+    --cu-accent: #d77757;
+    --cu-on-accent: #191919;
+}
+body[data-claude-ui="light"][data-cu-design="claude"][data-cu-palette="clay"] {
+    --cu-accent: #a8472d;
+    --cu-on-accent: #ffffff;
+}
 body[data-claude-ui][data-cu-design="claude"][data-cu-palette="olive"] {
     --cu-bg: #1c201a;
     --cu-sidebar: #22271f;
@@ -2144,7 +2250,7 @@ body[data-claude-ui="light"][data-cu-design="swiss"][data-cu-palette="vermilion"
     --cu-surface: #f7f4ec;
     --cu-input: #f7f4ec;
     --cu-text: #193c35;
-    --cu-muted: #5d6f63;
+    --cu-muted: #4e6054;
     --cu-border: #193c3524;
     --cu-input-border: #193c3540;
     --cu-hover: #193c3508;
@@ -2178,7 +2284,7 @@ body[data-claude-ui="light"][data-cu-design="swiss"][data-cu-palette="cobalt"] {
     --cu-surface: #fafaf6;
     --cu-input: #fafaf6;
     --cu-text: #213548;
-    --cu-muted: #5d6b77;
+    --cu-muted: #53616d;
     --cu-border: #21354824;
     --cu-input-border: #21354840;
     --cu-hover: #21354808;
@@ -2212,7 +2318,7 @@ body[data-claude-ui="light"][data-cu-design="swiss"][data-cu-palette="olive"] {
     --cu-surface: #fcf9ef;
     --cu-input: #fcf9ef;
     --cu-text: #373b26;
-    --cu-muted: #6a6e56;
+    --cu-muted: #5b5f48;
     --cu-border: #373b2624;
     --cu-input-border: #373b2640;
     --cu-hover: #373b2608;
