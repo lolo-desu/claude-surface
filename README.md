@@ -1,16 +1,17 @@
-# Claude Surface 0.10.8 开发版
+# Claude Surface 0.10.8
 
 为 SillyTavern 提供 Claude、Material Design、Adwaita 和 FlatDesign 的界面扩展。
 
 | 分支 | 用途 | 当前版本 |
 | --- | --- | --- |
-| [`main`](https://github.com/lolo-desu/claude-surface/tree/main) | 主线，日常安装与更新使用 | 0.9.5 |
-| [`codex/material-adwaita-swiss`](https://github.com/lolo-desu/claude-surface/tree/codex/material-adwaita-swiss) | 开发，后续功能与修复先在这里验证 | 0.10.8 |
-| [`codex/legacy`](https://github.com/lolo-desu/claude-surface/tree/codex/legacy) | 遗产，保留升级前主线的 Claude 风格与行为 | 0.8.1 |
+| [`main`](https://github.com/lolo-desu/claude-surface/tree/main) | 主线，日常安装与更新使用 | 0.10.8 |
+| [`unstable`](https://github.com/lolo-desu/claude-surface/tree/unstable) | 开发，后续功能与修复先在这里验证；本次发布时与主线相同 | 0.10.8 |
+| [`legacy`](https://github.com/lolo-desu/claude-surface/tree/legacy) | 遗产，保留本次升级前的主线版本 | 0.9.5 |
+| [`legacy-v0.8.1`](https://github.com/lolo-desu/claude-surface/tree/legacy-v0.8.1) | 早期遗产，保留原有 Claude 风格与行为 | 0.8.1 |
 
 ## 安装
 
-0.10.8 开发版：世界书主要关键字、逻辑、可选过滤器及内容标签统一使用相同字号、行高和文字颜色；递归选项用同一网格排列，勾选框对齐文字首行，长标签不再挤乱下一行。为 TauriTavern CodeMirror 编辑器增加完整边框、独立底色及工具栏分隔线，统一工具按钮尺寸，Adwaita 的编辑区可以明确辨认，FlatDesign 保留直角。修复预设顶部链接按钮偏宽、图标偏移的问题，保留原开关行为。四种设计逐一截图验收，覆盖原生／柏宝布局、原生文本框／真实 Tauri 编辑器以及日夜模式。
+0.10.8：开发版验收后发布到主线。世界书主要关键字、逻辑、可选过滤器及内容标签统一使用相同字号、行高和文字颜色；递归选项用同一网格排列，勾选框对齐文字首行，长标签不再挤乱下一行。为 TauriTavern CodeMirror 编辑器增加完整边框、独立底色及工具栏分隔线，统一工具按钮尺寸，Adwaita 的编辑区可以明确辨认，FlatDesign 保留直角。修复预设顶部链接按钮偏宽、图标偏移的问题，保留原开关行为。四种设计逐一截图验收，覆盖原生／柏宝布局、原生文本框／真实 Tauri 编辑器以及日夜模式。
 
 0.10.7 开发版：停止创建带时间戳的 Backup 主题。启用前的外观、未保存的颜色与自定义 CSS 保存在扩展设置内，停用时直接恢复；反复启停、切换风格和刷新均不向原生主题列表添加备份，也不覆盖原主题文件。兼容读取旧版恢复快照，已有历史备份文件保留。包含 0.10.6 的手机与桌面世界书排列修正。
 
@@ -36,7 +37,7 @@
 https://github.com/lolo-desu/claude-surface
 ```
 
-直接填写仓库 URL 会安装 `main` 主线。需要开发版或遗产版时，在安装框的“Branch or tag name／分支或标签名”分别填写 `codex/material-adwaita-swiss` 或 `codex/legacy`。已有安装可在扩展管理中切换分支，再刷新页面。三个分支是同一扩展的不同版本，选择一个使用即可。
+直接填写仓库 URL 会安装 `main` 主线。需要开发版时，在安装框的“Branch or tag name／分支或标签名”填写 `unstable`；需要遗产版时填写 `legacy`（0.9.5）或 `legacy-v0.8.1`（0.8.1）。已有安装可在扩展管理中切换分支，再刷新页面；旧开发分支 `codex/material-adwaita-swiss` 已改名为 `unstable`，旧遗产分支 `codex/legacy` 已改名为 `legacy-v0.8.1`，原分支安装请切换到对应新名称以继续更新。四个分支是同一扩展的不同版本，选择一个使用即可。
 
 安装完成后刷新页面即可使用，后续可通过酒馆的扩展管理更新。仓库根目录直接包含 `manifest.json`、`index.js` 和 `style.css`，无需构建或安装依赖。
 
@@ -134,3 +135,4 @@ powershell -File install-startup.ps1 -SillyTavernPath 'D:\SillyTavern'
 `tests/world-info.browser.mjs` 在触摸手机上下文中检查四种风格、深浅色、320/393/430px 竖屏和 844px 横屏的世界书宽高、横向溢出、输入聚焦和内部滚动，并检查旧浮动坐标不会移动面板。Chromium 额外使用真实触摸事件滑动；Playwright 的移动 WebKit 不提供滚轮注入，内部滚动通过键盘事件检查。键盘收起／弹出通过模拟 VisualViewport 变化检查布局计算，另测手动缩放不会重排面板以及关闭／桌面切换后的清理。这些检查不等于 iOS 原生键盘和真机边缘回弹验证。运行方式和 Playwright 环境变量与控件回归相同。
 
 `tests/prompt-editor.browser.mjs` 在 Chromium、WebKit 的四种风格与深浅色下，以 320/412/844/1440px 窗口验证真实铅笔按钮打开、正文输入、取消不改动原值、保存后重开、Escape、外部点击后重开及顶栏关闭。保存测试仅修改测试浏览器的内存，并恢复原文；服务器设置／主题／预设保存和生成请求被拦截。另模拟可视区域缩小检查编辑器高度。默认运行仓库候选 CSS 与界面模块；`CU_SERVER_CSS=1` 验证实例已安装的文件。上述浏览器检查不等于 iOS 真机软键盘测试。
+
