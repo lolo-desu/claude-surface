@@ -46,13 +46,13 @@ body[data-claude-ui][data-cu-design="material"] .cu-sidebar :is(.cu-button,.cu-r
 body[data-claude-ui][data-cu-design="material"] .cu-header .cu-icon { border-radius: 50%; }
 body[data-claude-ui][data-cu-design="material"] .cu-search { border-radius: 24px !important; background: var(--cu-input) !important; padding: 10px 14px; }
 body[data-claude-ui][data-cu-design="material"] .cu-home-welcome { isolation: isolate; }
-/* Keep the light behind the greeting, independent of the height of the recent-chat area. */
+/* A complete, softly rounded wash inside the stationary home canvas. */
 body[data-claude-ui][data-cu-design="material"] .cu-home-welcome::before,
 body[data-claude-ui][data-cu-design="material"] .cu-home-welcome::after {
     content: ""; position: absolute;
-    /* Keep the entire fade below the header even on a short landscape screen. */
-    top: max(-96px,calc(0px - var(--cu-home-offset))); left: 50%; width: min(640px,100%);
-    height: min(280px,calc(var(--cu-home-offset) + var(--cu-home-offset) + 88px));
+    top: calc(var(--cu-home-offset) + 32px - var(--cu-home-light-height) / 2);
+    left: 50%; width: min(600px,calc(var(--cu-home-light-height) * 1.875),100%);
+    height: var(--cu-home-light-height);
     transform: translateX(-50%); pointer-events: none; z-index: -1;
     /* Explicit radii fade both layers to zero before any edge of their paint box. */
     -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%,#000 28%,transparent 96%);
@@ -60,13 +60,12 @@ body[data-claude-ui][data-cu-design="material"] .cu-home-welcome::after {
 }
 body[data-claude-ui][data-cu-design="material"] .cu-home-welcome::before {
     background:
-        radial-gradient(ellipse at 42% 43%,color-mix(in srgb,var(--cu-accent) 8%,transparent) 0%,color-mix(in srgb,var(--cu-accent) 6%,transparent) 18%,color-mix(in srgb,var(--cu-accent) 3%,transparent) 40%,color-mix(in srgb,var(--cu-accent) .8%,transparent) 62%,transparent 82%),
-        radial-gradient(ellipse at 68% 50%,color-mix(in srgb,var(--cu-link) 4%,transparent) 0%,color-mix(in srgb,var(--cu-link) 1.5%,transparent) 36%,transparent 72%);
+        radial-gradient(ellipse at 50% 46%,color-mix(in srgb,var(--cu-accent) 9%,transparent) 0%,color-mix(in srgb,var(--cu-accent) 5%,transparent) 24%,color-mix(in srgb,var(--cu-accent) 2%,transparent) 50%,transparent 78%);
 }
 /* A static, barely visible dither breaks dark-gradient banding without animated blur layers. */
 body[data-claude-ui][data-cu-design="material"] .cu-home-welcome::after {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' seed='8' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Cpath fill='%23808080' filter='url(%23grain)' d='M0 0h128v128H0z'/%3E%3C/svg%3E");
-    opacity: .025; mix-blend-mode: soft-light;
+    opacity: .015; mix-blend-mode: soft-light;
 }
 body[data-claude-ui][data-cu-design="material"] .cu-home-greeting { font: 500 clamp(28px,4vw,42px)/1.25 var(--cu-sans); letter-spacing: -.04em; }
 body[data-claude-ui][data-cu-design="material"] .cu-home-choose { border-radius: 24px; background: var(--cu-selected); border-color: transparent; padding: 14px 22px; }

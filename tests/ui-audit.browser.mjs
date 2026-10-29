@@ -50,9 +50,9 @@ for(const [engineName,engine]of[['chromium',chromium],['webkit',webkit]]){
     await page.locator('.cu-home-history-toggle').click();
     await page.locator('.cu-home-history').waitFor({state:'visible'});
     assert(await page.locator('.cu-home-choose').isVisible());
-    const recent=await dimensions(page,'.cu-home-history'),welcome=await dimensions(page,'.cu-home-scroll');
+    const recent=await dimensions(page,'.cu-home-history'),welcome=await dimensions(page,'.cu-home-welcome');
     assert(recent.height>=30&&welcome.clientHeight>=80,JSON.stringify({label,recent,welcome}));
-    if(height<500){await page.locator('.cu-home-scroll').evaluate(x=>x.scrollTop=x.scrollHeight);assert(await page.locator('.cu-home-history > *').first().isVisible());}
+    if(height<500){await page.locator('.cu-home-history').evaluate(x=>x.scrollTop=x.scrollHeight);assert(await page.locator('.cu-home-history > *').last().isVisible());}
     await page.screenshot({path:path.join(out,label+'-recent.png')});
     if(family==='claude'&&mode==='dark'){
      const row=await page.locator('.cu-home-history > *').first().elementHandle();

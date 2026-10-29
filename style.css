@@ -472,7 +472,6 @@ body[data-claude-ui].cu-shell-ready.cu-home #chat { visibility: hidden; pointer-
     .cu-home .cu-home-greeting { font-size: 24px; }
     .cu-home .cu-home-content { gap: 8px; }
 }
-.cu-home-recents .cu-home-welcome { top: 30px; gap: 18px; }
 .cu-home-greeting { margin: 0; width: 100%; display: flex; flex: 0 0 auto; gap: 10px; align-items: center; justify-content: center; font: 28px/1.4 var(--cu-serif); color: var(--cu-text); text-wrap: balance; }
 .cu-star { width: 28px; height: 28px; color: var(--cu-accent); flex: 0 0 auto; }
 .cu-home-greeting[hidden] { display: none; }
@@ -585,8 +584,6 @@ body[data-claude-ui] .cu-native-icon { display: flex; justify-content: center; a
 .cu-home-choose { border: 1px solid var(--cu-border); border-radius: 12px; padding: 14px 20px; }
 .cu-home-history-toggle { color: var(--cu-muted); font-size: 13px; }
 .cu-home-history { overflow-y: auto; width: 100%; min-height: 0; padding: 4px; border-top: 1px solid var(--cu-border); }
-.cu-home-recents .cu-home-greeting { font-size: 25px; }
-.cu-home-recents .cu-home-choose { display: none; }
 .cu-home-recents .cu-home-history-toggle svg { transform: rotate(180deg); }
 .cu-return-home { position: fixed; top: 56px; right: 20px; z-index: 1019; background: var(--cu-surface); border: 1px solid var(--cu-border); box-shadow: 0 3px 14px #0002; }
 .cu-sheet { animation: cu-backdrop-in 180ms ease both; overflow: hidden; overscroll-behavior: contain; }
@@ -1089,16 +1086,21 @@ body[data-claude-ui] .cu-appearance-settings .cu-settings-section { display: blo
 body[data-claude-ui] .cu-appearance-settings .cu-settings-section-title { display: block; margin: 0 0 8px; font: 600 14px/22px var(--cu-sans); color: var(--cu-text); }
 body[data-claude-ui] .cu-sheet-heading { flex: 0 0 auto; }
 body[data-claude-ui] .cu-sheet-heading .cu-icon { margin-inline-start: auto; }
-/* The outer frame lets decoration fade outside the content's top edge.
-   Only the inner viewport scrolls; decorative overscan never enters it. */
-body[data-claude-ui] .cu-home-welcome { --cu-home-offset: clamp(24px,8dvh,100px); top: var(--cu-home-offset); bottom: calc(var(--cu-composer-height,150px) + 16px); gap: 16px; overflow: visible; }
-body[data-claude-ui] .cu-home-scroll { display: flex; flex-direction: column; align-items: center; gap: inherit; width: 100%; min-width: 0; min-height: 0; flex: 1 1 auto; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; }
+/* The home is a stationary canvas. Space above the greeting belongs to the
+   light itself, rather than clipping or flattening it against the header. */
+body[data-claude-ui] .cu-home-welcome { --cu-home-offset: clamp(144px,18dvh,200px); --cu-home-light-height: 320px; top: 0; bottom: calc(var(--cu-composer-height,150px) + 24px); gap: 18px; overflow: clip; overscroll-behavior: none; touch-action: pinch-zoom; }
+body[data-claude-ui] .cu-home-scroll { box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: inherit; width: 100%; height: 100%; min-width: 0; min-height: 0; padding-top: var(--cu-home-offset); flex: 1 1 auto; overflow: clip; }
+body[data-claude-ui].cu-home #sheld { overflow: clip; overscroll-behavior: none; }
+html:has(> body[data-claude-ui].cu-home), body[data-claude-ui].cu-home { overscroll-behavior: none; }
 body[data-claude-ui] .cu-home-greeting { min-width: 0; }
-body[data-claude-ui] .cu-greeting-text { min-width: 0; overflow-wrap: anywhere; }
-body[data-claude-ui] .cu-home-content { flex: 1 0 auto; }
+body[data-claude-ui] .cu-greeting-text { min-width: 0; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+body[data-claude-ui] .cu-home-content { flex: 0 1 auto; }
 body[data-claude-ui] .cu-home-choose { flex-shrink: 0; }
 body[data-claude-ui].cu-home-recents .cu-home-choose { display: inline-flex; }
-body[data-claude-ui] .cu-home-history { flex-shrink: 0; overflow: visible; }
+body[data-claude-ui] .cu-home-history-toggle { flex-shrink: 0; }
+body[data-claude-ui].cu-home-recents .cu-home-welcome { touch-action: pan-y pinch-zoom; }
+body[data-claude-ui].cu-home-recents .cu-home-content { flex: 1 1 auto; }
+body[data-claude-ui] .cu-home-history { flex: 1 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y pinch-zoom; }
 body[data-claude-ui] .cu-return-home { top: auto; bottom: calc(var(--cu-composer-height,150px) + 16px); }
 body[data-claude-ui] #chat #curEditTextarea { border: 1px solid var(--cu-input-border) !important; border-radius: 8px; padding: 10px; background: var(--cu-input); }
 body[data-claude-ui] #chat #curEditTextarea:focus-visible { outline: 2px solid var(--cu-accent) !important; outline-offset: -2px; }
@@ -1116,7 +1118,7 @@ body[data-claude-ui] #chat .welcomePanel { background: var(--cu-surface); color:
     body[data-claude-ui] .cu-sheet-handle { min-height: 44px; margin-top: -12px; }
 }
 @media (max-height: 500px) {
-    body[data-claude-ui] .cu-home-welcome { --cu-home-offset: 12px; bottom: calc(var(--cu-composer-height,100px) + 8px); gap: 8px; }
+    body[data-claude-ui] .cu-home-welcome { --cu-home-offset: 36px; --cu-home-light-height: 112px; bottom: calc(var(--cu-composer-height,100px) + 8px); gap: 8px; }
     body[data-claude-ui] .cu-home-greeting { font-size: 22px; }
     body[data-claude-ui] .cu-home-content { gap: 6px; }
     body[data-claude-ui] .cu-home-choose { padding: 8px 16px; }
@@ -1200,13 +1202,13 @@ body[data-claude-ui][data-cu-design="material"] .cu-sidebar :is(.cu-button,.cu-r
 body[data-claude-ui][data-cu-design="material"] .cu-header .cu-icon { border-radius: 50%; }
 body[data-claude-ui][data-cu-design="material"] .cu-search { border-radius: 24px !important; background: var(--cu-input) !important; padding: 10px 14px; }
 body[data-claude-ui][data-cu-design="material"] .cu-home-welcome { isolation: isolate; }
-/* Keep the light behind the greeting, independent of the height of the recent-chat area. */
+/* A complete, softly rounded wash inside the stationary home canvas. */
 body[data-claude-ui][data-cu-design="material"] .cu-home-welcome::before,
 body[data-claude-ui][data-cu-design="material"] .cu-home-welcome::after {
     content: ""; position: absolute;
-    /* Keep the entire fade below the header even on a short landscape screen. */
-    top: max(-96px,calc(0px - var(--cu-home-offset))); left: 50%; width: min(640px,100%);
-    height: min(280px,calc(var(--cu-home-offset) + var(--cu-home-offset) + 88px));
+    top: calc(var(--cu-home-offset) + 32px - var(--cu-home-light-height) / 2);
+    left: 50%; width: min(600px,calc(var(--cu-home-light-height) * 1.875),100%);
+    height: var(--cu-home-light-height);
     transform: translateX(-50%); pointer-events: none; z-index: -1;
     /* Explicit radii fade both layers to zero before any edge of their paint box. */
     -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%,#000 28%,transparent 96%);
@@ -1214,13 +1216,12 @@ body[data-claude-ui][data-cu-design="material"] .cu-home-welcome::after {
 }
 body[data-claude-ui][data-cu-design="material"] .cu-home-welcome::before {
     background:
-        radial-gradient(ellipse at 42% 43%,color-mix(in srgb,var(--cu-accent) 8%,transparent) 0%,color-mix(in srgb,var(--cu-accent) 6%,transparent) 18%,color-mix(in srgb,var(--cu-accent) 3%,transparent) 40%,color-mix(in srgb,var(--cu-accent) .8%,transparent) 62%,transparent 82%),
-        radial-gradient(ellipse at 68% 50%,color-mix(in srgb,var(--cu-link) 4%,transparent) 0%,color-mix(in srgb,var(--cu-link) 1.5%,transparent) 36%,transparent 72%);
+        radial-gradient(ellipse at 50% 46%,color-mix(in srgb,var(--cu-accent) 9%,transparent) 0%,color-mix(in srgb,var(--cu-accent) 5%,transparent) 24%,color-mix(in srgb,var(--cu-accent) 2%,transparent) 50%,transparent 78%);
 }
 /* A static, barely visible dither breaks dark-gradient banding without animated blur layers. */
 body[data-claude-ui][data-cu-design="material"] .cu-home-welcome::after {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' seed='8' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Cpath fill='%23808080' filter='url(%23grain)' d='M0 0h128v128H0z'/%3E%3C/svg%3E");
-    opacity: .025; mix-blend-mode: soft-light;
+    opacity: .015; mix-blend-mode: soft-light;
 }
 body[data-claude-ui][data-cu-design="material"] .cu-home-greeting { font: 500 clamp(28px,4vw,42px)/1.25 var(--cu-sans); letter-spacing: -.04em; }
 body[data-claude-ui][data-cu-design="material"] .cu-home-choose { border-radius: 24px; background: var(--cu-selected); border-color: transparent; padding: 14px 22px; }

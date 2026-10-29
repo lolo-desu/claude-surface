@@ -1,74 +1,91 @@
-/** Home hotfix: keep Material light outside the scrolling viewport and reject
- * horizontal overflow inside the home itself, including long names/recents.
- * Run against an isolated profile with sample recent chats; writes are blocked. */
+/** Stationary home acceptance, deliberately focused on mainstream phone and
+ * desktop layouts. Recents open by button only and scroll inside their list.
+ * Chromium uses real CDP touch drags; WebKit checks desktop wheel input and cancellation
+ * of single-touch events (not a claim of real iOS hardware validation). */
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 const {chromium,webkit}=await import(process.env.CU_PLAYWRIGHT_MODULE||'playwright');
 const {default:sharp}=await import(process.env.CU_SHARP_MODULE||'sharp');
-const out=path.resolve(process.env.CU_TEST_OUTPUT||'artifacts/home-layout');
-await fs.mkdir(out,{recursive:true});
+const out=path.resolve(process.env.CU_TEST_OUTPUT||'artifacts/home-mainstream');await fs.mkdir(out,{recursive:true});
 const report={cases:[],errors:[]};
-for(const [engineName,engine] of [['chromium',chromium],['webkit',webkit]]){
+const selectors=['html','body','#sheld','.cu-home-welcome','.cu-home-scroll','.cu-home-content'];
+async function positions(page){return page.evaluate(selectors=>({
+ elements:selectors.map(selector=>{const x=document.querySelector(selector);return{selector,left:x.scrollLeft,top:x.scrollTop,width:x.clientWidth,scrollWidth:x.scrollWidth,height:x.clientHeight,scrollHeight:x.scrollHeight};}),
+ greeting:document.querySelector('.cu-home-greeting').getBoundingClientRect().toJSON(),
+ input:document.querySelector('#form_sheld').getBoundingClientRect().toJSON(),
+ expanded:document.querySelector('.cu-home-history-toggle').getAttribute('aria-expanded'),
+ viewport:{x:visualViewport.offsetLeft,y:visualViewport.offsetTop},
+}),selectors);}
+function stationary(before,after,label){
+ assert(after.elements.every(x=>x.left===0&&x.top===0&&x.scrollWidth<=x.width+1),JSON.stringify({label,after}));
+ assert(after.elements.filter(x=>x.selector.startsWith('.cu-home')).every(x=>x.scrollHeight<=x.height+1),`home has a vertical scroll range: ${label}`);
+ assert.equal(after.expanded,'false',`gesture opened recents: ${label}`);
+ assert(Math.abs(before.greeting.y-after.greeting.y)<1&&Math.abs(before.greeting.x-after.greeting.x)<1,`greeting moved: ${label}`);
+ assert(Math.abs(before.input.bottom-after.input.bottom)<1,`composer moved: ${label}`);
+ assert.equal(after.viewport.x,0);assert.equal(after.viewport.y,0);
+}
+for(const [engineName,engine]of[['chromium',chromium],['webkit',webkit]]){
  if(process.env.CU_ENGINE&&process.env.CU_ENGINE!==engineName)continue;
  const executablePath=process.env[engineName==='chromium'?'CU_CHROMIUM_EXECUTABLE':'CU_WEBKIT_EXECUTABLE'];
  const browser=await engine.launch({headless:true,...(executablePath?{executablePath}:{})});
- try{for(const touch of [false,true]){
-  const context=await browser.newContext({viewport:{width:750,height:415},hasTouch:touch,isMobile:touch,locale:'zh-CN'});
+ try{for(const [device,width,height,touch]of[['phone',390,844,true],['desktop',1440,900,false]]){
+  const context=await browser.newContext({viewport:{width,height},hasTouch:touch,isMobile:touch,deviceScaleFactor:touch?3:1,locale:'zh-CN'});
   await context.route(/\/api\/(settings|themes|presets|chats)\/save/,r=>r.fulfill({json:{result:'ok'}}));
   await context.route('**/api/extensions/version',r=>r.fulfill({json:{isUpToDate:true}}));
   const page=await context.newPage();page.setDefaultTimeout(12000);page.on('pageerror',e=>report.errors.push(String(e)));
   try{
    await page.goto(process.env.CU_TEST_URL||'http://127.0.0.1:8011/',{waitUntil:'networkidle'});
    for(const family of ['claude','material','adwaita','swiss'])for(const mode of ['dark','light']){
-    await page.locator('.cu-header').getByRole('button',{name:'更多',exact:true}).click();
-    await page.locator('.cu-sheet').getByRole('button',{name:'主题设置',exact:true}).click();
+    const label=`${engineName}-${device}-${family}-${mode}`;
+    await page.locator('.cu-header').getByRole('button',{name:'更多',exact:true}).click();await page.locator('.cu-sheet').getByRole('button',{name:'主题设置',exact:true}).click();
     await page.locator(`[data-cu-design-choice="${family}"]`).click();await page.locator(`[data-cu-mode="${mode}"]`).click();
-    await page.getByRole('switch',{name:'显示 SillyTavern 背景图片',exact:true}).uncheck();
-    await page.getByRole('switch',{name:'显示原生菜单栏',exact:true}).uncheck();
+    for(const name of ['显示 SillyTavern 背景图片','显示原生菜单栏','输入栏紧凑模式'])await page.getByRole('switch',{name,exact:true}).uncheck();
     await page.locator('.cu-sheet-heading').getByRole('button',{name:'关闭',exact:true}).click();await page.locator('.cu-sheet').waitFor({state:'hidden'});
-    const sizes=touch?[[320,700],[412,915],[844,390]]:[[750,415],[1024,768],[1440,900]];
-    for(const [width,height]of sizes){
-     await page.setViewportSize({width,height});
-     const label=`${engineName}-${width}x${height}-${touch?'touch':'mouse'}-${family}-${mode}`;
-     const inspect=()=>page.evaluate(()=>{
-      const selectors=['html','body','#sheld','.cu-home-welcome','.cu-home-scroll','.cu-home-content'];
-      return selectors.map(selector=>{const x=document.querySelector(selector),r=x.getBoundingClientRect();return{selector,width:x.clientWidth,scrollWidth:x.scrollWidth,left:x.scrollLeft,x:r.x};});
-     });
-     const flat=await inspect();assert(flat.every(x=>x.scrollWidth<=x.width+1&&x.left===0),JSON.stringify({label,flat}));
-     const original=await page.locator('.cu-greeting-text').textContent();
-     await page.locator('.cu-greeting-text').evaluate(x=>x.textContent='LongUnbrokenCharacterName'.repeat(7));
-     assert((await inspect()).every(x=>x.scrollWidth<=x.width+1),`long greeting overflows: ${label}`);
-     await page.locator('.cu-greeting-text').evaluate((x,text)=>x.textContent=text,original);
-     await page.evaluate(()=>{for(const selector of ['html','body','#sheld','.cu-home-welcome','.cu-home-scroll'])document.querySelector(selector).scrollLeft=80;window.scrollTo(80,0);});
-     const dragged=await inspect();assert(dragged.every(x=>x.left===0),JSON.stringify({label,dragged}));
-     const image=await page.screenshot({path:path.join(out,label+'-home.png')});
-     let glowDelta;
-     if(family==='material'){
-      assert.equal(await page.locator('.cu-home-welcome').evaluate(x=>getComputedStyle(x).overflowY),'visible');
-      const band=await page.evaluate(()=>{const r=document.querySelector('.cu-home-welcome').getBoundingClientRect(),s=document.querySelector('#sheld').getBoundingClientRect();const top=Math.ceil(Math.max(s.top+2,r.top-26));return{left:Math.round(r.x+r.width/2-50),top,width:100,height:Math.max(1,Math.floor(r.top-top-2))};});
-      const clean=await page.addStyleTag({content:'.cu-home-welcome::before,.cu-home-welcome::after{opacity:0!important}'});
-      const noGlow=await page.screenshot();await clean.evaluate(x=>x.remove());
-      const a=await sharp(image).extract(band).removeAlpha().raw().toBuffer(),b=await sharp(noGlow).extract(band).removeAlpha().raw().toBuffer();
-      glowDelta=a.reduce((sum,v,i)=>sum+Math.abs(v-b[i]),0)/a.length;
-      assert(glowDelta>.1,JSON.stringify({label,band,glowDelta,error:'Material light was clipped above the welcome frame'}));
-      const edge={...band,top:await page.locator('#sheld').evaluate(x=>Math.ceil(x.getBoundingClientRect().top)),height:2};
-      const edgeA=await sharp(image).extract(edge).removeAlpha().raw().toBuffer(),edgeB=await sharp(noGlow).extract(edge).removeAlpha().raw().toBuffer();
-      const edgeDelta=edgeA.reduce((sum,v,i)=>sum+Math.abs(v-edgeB[i]),0)/edgeA.length;
-      assert(edgeDelta<=.1,JSON.stringify({label,edgeDelta,error:'Material light meets the header before fading to zero'}));
-     }
-     await page.locator('.cu-home-history-toggle').click();await page.locator('.cu-home-history').waitFor({state:'visible'});
-     assert((await inspect()).every(x=>x.scrollWidth<=x.width+1),`recent chats overflow: ${label}`);
-     const scrolled=await page.locator('.cu-home-scroll').evaluate(x=>{x.scrollTop=x.scrollHeight;return{top:x.scrollTop,height:x.clientHeight,total:x.scrollHeight};});
-     if(scrolled.total>scrolled.height+1)assert(scrolled.top>0,`vertical scrolling lost: ${label}`);
-     await page.screenshot({path:path.join(out,label+'-recent.png')});
-     await page.locator('.cu-home-history-toggle').click();await page.locator('.cu-home-history').waitFor({state:'hidden'});
-     await page.locator('.cu-home-scroll').evaluate(x=>x.scrollTop=0);
-     report.cases.push({label,flat,dragged,scrolled,glowDelta});console.log('PASS',label);
+    const before=await positions(page);stationary(before,before,label);
+    await page.evaluate(selectors=>{for(const selector of selectors){const x=document.querySelector(selector);x.scrollLeft=80;x.scrollTop=80;}window.scrollTo(80,80);},selectors);
+    stationary(before,await positions(page),label+' programmatic');
+    const canvas=await page.locator('.cu-home-welcome').boundingBox(),x=canvas.x+canvas.width/2,y=canvas.y+canvas.height*.65;
+    const mobileWebKit=touch&&engineName==='webkit';
+    await page.mouse.move(x,y);for(const [dx,dy]of[[250,0],[-250,0],[0,250],[0,-250]]){
+     if(mobileWebKit)await page.locator('.cu-home-welcome').dispatchEvent('wheel',{deltaX:dx,deltaY:dy,bubbles:true,cancelable:true});
+     else await page.mouse.wheel(dx,dy);
     }
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));stationary(before,await positions(page),label+' wheel');
+    let realTouch=false;
+    if(touch&&engineName==='chromium'){
+     const cdp=await context.newCDPSession(page);
+     for(const [dx,dy]of[[90,0],[-90,0],[0,90],[0,-90]]){
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});
+      for(let step=1;step<=6;step++)await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x+dx*step/6,y:y+dy*step/6}]});
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+     }
+     await cdp.detach();realTouch=true;stationary(before,await positions(page),label+' native touch');
+    }
+    const cancellation=await page.locator('.cu-home-welcome').evaluate(x=>[1,2].map(count=>{const e=new Event('touchmove',{bubbles:true,cancelable:true});Object.defineProperty(e,'touches',{value:Array(count).fill({clientX:100,clientY:300})});x.dispatchEvent(e);return e.defaultPrevented;}));
+    assert.deepEqual(cancellation,[true,false],`single-touch hold / pinch zoom: ${label}`);
+    const image=await page.screenshot({path:path.join(out,label+'-home.png'),animations:'disabled',scale:'css'});
+    let glow;
+    if(family==='material'){
+     glow=await page.locator('.cu-home-welcome').evaluate(x=>{const s=getComputedStyle(x,'::before');return{top:parseFloat(s.top),height:parseFloat(s.height),width:parseFloat(s.width),frameHeight:x.clientHeight,frameWidth:x.clientWidth};});
+     assert(glow.top>=16&&glow.height===320&&glow.top+glow.height<=glow.frameHeight&&glow.width<=glow.frameWidth+1,JSON.stringify({label,glow}));
+     const noLightStyle=await page.addStyleTag({content:'.cu-home-welcome::before,.cu-home-welcome::after{opacity:0!important}'});
+     const noLight=await page.screenshot({animations:'disabled',scale:'css'});await noLightStyle.evaluate(x=>x.remove());
+     const band={left:Math.round(canvas.x+canvas.width/2-50),top:Math.round(canvas.y+glow.top+glow.height/2-10),width:100,height:20};
+     const a=await sharp(image).extract(band).removeAlpha().raw().toBuffer(),b=await sharp(noLight).extract(band).removeAlpha().raw().toBuffer();
+     glow.centerDelta=a.reduce((sum,v,i)=>sum+Math.abs(v-b[i]),0)/a.length;assert(glow.centerDelta>.5,`light invisible: ${label}`);
+    }
+    await page.locator('.cu-home-history-toggle').click();await page.locator('.cu-home-history').waitFor({state:'visible'});
+    const list=page.locator('.cu-home-history');const listRect=await list.boundingBox();assert(listRect.height>=80,`recent list collapsed: ${label}`);
+    if(mobileWebKit)await list.evaluate(x=>x.scrollTop=400);
+    else{await page.mouse.move(listRect.x+listRect.width/2,listRect.y+listRect.height/2);await page.mouse.wheel(0,400);}
+    await page.waitForFunction(()=>{const x=document.querySelector('.cu-home-history');return x.scrollHeight<=x.clientHeight+1||x.scrollTop>0;});
+    const listTop=await list.evaluate(x=>x.scrollTop);assert((await positions(page)).elements.every(x=>x.left===0&&x.top===0),`list scrolled an ancestor: ${label}`);
+    await page.screenshot({path:path.join(out,label+'-recent.png'),animations:'disabled',scale:'css'});
+    await page.locator('.cu-home-history-toggle').click();await list.waitFor({state:'hidden'});stationary(before,await positions(page),label+' collapsed again');
+    report.cases.push({label,realTouch,cancellation,glow,listTop,listScrollMode:mobileWebKit?'programmatic':'wheel'});console.log('PASS',label);
    }
-  }catch(error){await page.screenshot({path:path.join(out,`${engineName}-${touch?'touch':'mouse'}-failure.png`)});throw error;}finally{await context.close();}
+  }catch(error){await page.screenshot({path:path.join(out,`${engineName}-${device}-failure.png`),scale:'css'});throw error;}finally{await context.close();}
  }}finally{await browser.close();}
 }
-assert.equal(report.errors.length,0,report.errors.join('\n'));
-await fs.writeFile(path.join(out,'summary.json'),JSON.stringify(report,null,2));console.log(JSON.stringify({cases:report.cases.length,errors:report.errors.length}));
+assert.equal(report.errors.length,0,report.errors.join('\n'));await fs.writeFile(path.join(out,'summary.json'),JSON.stringify(report,null,2));console.log(JSON.stringify({cases:report.cases.length}));

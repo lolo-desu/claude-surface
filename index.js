@@ -1161,11 +1161,16 @@ function initialize() {
         document.body.style.setProperty('--cu-composer-height', `${Math.ceil(entry.target.getBoundingClientRect().height)}px`);
     }).observe(document.querySelector('#form_sheld'));
     const returnHome = homeAction({ prefix:ui('返回 '), force:true, className:'cu-return-home' }); returnHome.hidden = true; document.body.append(returnHome);
-    let homeTouch;
-    const homeGestureTarget = event => document.body.classList.contains('cu-home') && !state.sheet && !event.target.closest('#form_sheld,.cu-home-history,input,textarea');
-    document.querySelector('#sheld').addEventListener('wheel', event => { if (homeGestureTarget(event) && event.deltaY > 20) showHomeRecents(true); }, { passive: true });
-    document.querySelector('#sheld').addEventListener('touchstart', event => { homeTouch = homeGestureTarget(event) ? event.touches[0].clientY : null; }, { passive: true });
-    document.querySelector('#sheld').addEventListener('touchend', event => { if (homeTouch != null && homeTouch - event.changedTouches[0].clientY > 45) showHomeRecents(true); homeTouch = null; }, { passive: true });
+    // Home gestures must not move the canvas or implicitly expand recents.
+    // Only an explicitly opened history list scrolls; two-finger zoom remains.
+    const holdHomeCanvas = event => {
+        if (!settings().enabled || state.sheet || !document.body.classList.contains('cu-home')) return;
+        if (event.type === 'touchmove' && event.touches.length !== 1) return;
+        if (event.target.closest('.cu-home-history,#form_sheld')) return;
+        if (event.cancelable) event.preventDefault();
+    };
+    document.querySelector('#sheld').addEventListener('wheel', holdHomeCanvas, { passive: false });
+    document.querySelector('#sheld').addEventListener('touchmove', holdHomeCanvas, { passive: false });
     const meta = document.createElement('div');
     meta.className = 'cu-composer-meta';
     const modelButton = button(ui('API 连接与模型选择'), 'chevron', () => nativeTarget('#API-status-top'));
