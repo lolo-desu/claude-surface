@@ -49,7 +49,10 @@ body[data-claude-ui][data-cu-design="material"] .cu-home-welcome { isolation: is
 /* Keep the light behind the greeting, independent of the height of the recent-chat area. */
 body[data-claude-ui][data-cu-design="material"] .cu-home-welcome::before,
 body[data-claude-ui][data-cu-design="material"] .cu-home-welcome::after {
-    content: ""; position: absolute; top: -96px; left: 50%; width: min(640px,calc(100% + 48px)); height: 280px;
+    content: ""; position: absolute;
+    /* Keep the entire fade below the header even on a short landscape screen. */
+    top: max(-96px,calc(0px - var(--cu-home-offset))); left: 50%; width: min(640px,100%);
+    height: min(280px,calc(var(--cu-home-offset) + var(--cu-home-offset) + 88px));
     transform: translateX(-50%); pointer-events: none; z-index: -1;
     /* Explicit radii fade both layers to zero before any edge of their paint box. */
     -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%,#000 28%,transparent 96%);

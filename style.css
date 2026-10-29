@@ -1089,7 +1089,12 @@ body[data-claude-ui] .cu-appearance-settings .cu-settings-section { display: blo
 body[data-claude-ui] .cu-appearance-settings .cu-settings-section-title { display: block; margin: 0 0 8px; font: 600 14px/22px var(--cu-sans); color: var(--cu-text); }
 body[data-claude-ui] .cu-sheet-heading { flex: 0 0 auto; }
 body[data-claude-ui] .cu-sheet-heading .cu-icon { margin-inline-start: auto; }
-body[data-claude-ui] .cu-home-welcome { top: clamp(24px,8dvh,100px); bottom: calc(var(--cu-composer-height,150px) + 16px); gap: 16px; overflow-y: auto; overscroll-behavior: contain; }
+/* The outer frame lets decoration fade outside the content's top edge.
+   Only the inner viewport scrolls; decorative overscan never enters it. */
+body[data-claude-ui] .cu-home-welcome { --cu-home-offset: clamp(24px,8dvh,100px); top: var(--cu-home-offset); bottom: calc(var(--cu-composer-height,150px) + 16px); gap: 16px; overflow: visible; }
+body[data-claude-ui] .cu-home-scroll { display: flex; flex-direction: column; align-items: center; gap: inherit; width: 100%; min-width: 0; min-height: 0; flex: 1 1 auto; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; }
+body[data-claude-ui] .cu-home-greeting { min-width: 0; }
+body[data-claude-ui] .cu-greeting-text { min-width: 0; overflow-wrap: anywhere; }
 body[data-claude-ui] .cu-home-content { flex: 1 0 auto; }
 body[data-claude-ui] .cu-home-choose { flex-shrink: 0; }
 body[data-claude-ui].cu-home-recents .cu-home-choose { display: inline-flex; }
@@ -1111,7 +1116,7 @@ body[data-claude-ui] #chat .welcomePanel { background: var(--cu-surface); color:
     body[data-claude-ui] .cu-sheet-handle { min-height: 44px; margin-top: -12px; }
 }
 @media (max-height: 500px) {
-    body[data-claude-ui] .cu-home-welcome { top: 12px; bottom: calc(var(--cu-composer-height,100px) + 8px); gap: 8px; }
+    body[data-claude-ui] .cu-home-welcome { --cu-home-offset: 12px; bottom: calc(var(--cu-composer-height,100px) + 8px); gap: 8px; }
     body[data-claude-ui] .cu-home-greeting { font-size: 22px; }
     body[data-claude-ui] .cu-home-content { gap: 6px; }
     body[data-claude-ui] .cu-home-choose { padding: 8px 16px; }
@@ -1198,7 +1203,10 @@ body[data-claude-ui][data-cu-design="material"] .cu-home-welcome { isolation: is
 /* Keep the light behind the greeting, independent of the height of the recent-chat area. */
 body[data-claude-ui][data-cu-design="material"] .cu-home-welcome::before,
 body[data-claude-ui][data-cu-design="material"] .cu-home-welcome::after {
-    content: ""; position: absolute; top: -96px; left: 50%; width: min(640px,calc(100% + 48px)); height: 280px;
+    content: ""; position: absolute;
+    /* Keep the entire fade below the header even on a short landscape screen. */
+    top: max(-96px,calc(0px - var(--cu-home-offset))); left: 50%; width: min(640px,100%);
+    height: min(280px,calc(var(--cu-home-offset) + var(--cu-home-offset) + 88px));
     transform: translateX(-50%); pointer-events: none; z-index: -1;
     /* Explicit radii fade both layers to zero before any edge of their paint box. */
     -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%,#000 28%,transparent 96%);

@@ -1,15 +1,17 @@
-# Claude Surface 0.10.9 开发版
+# Claude Surface 0.10.10 开发版
 
 为 SillyTavern 提供 Claude、Material Design、Adwaita 和 FlatDesign 的界面扩展。
 
 | 分支 | 用途 | 当前版本 |
 | --- | --- | --- |
 | [`main`](https://github.com/lolo-desu/claude-surface/tree/main) | 主线，日常安装与更新使用 | 0.10.8 |
-| [`unstable`](https://github.com/lolo-desu/claude-surface/tree/unstable) | 开发，独立验证后再合入主线，不自动同步 | 0.10.9 |
+| [`unstable`](https://github.com/lolo-desu/claude-surface/tree/unstable) | 开发，独立验证后再合入主线，不自动同步 | 0.10.10 |
 | [`legacy`](https://github.com/lolo-desu/claude-surface/tree/legacy) | 遗产，保留本次升级前的主线版本 | 0.9.5 |
 | [`legacy-v0.8.1`](https://github.com/lolo-desu/claude-surface/tree/legacy-v0.8.1) | 早期遗产，保留原有 Claude 风格与行为 | 0.8.1 |
 
 ## 安装
+
+0.10.10 开发版 hotfix：修复 Material Design 首页光晕在欢迎区域上沿被裁切，以及首页能够左右滚动的问题。装饰光晕与内容滚动分离，收窄光晕的绘制宽度；近期聊天仍可上下滚动，长名称自动换行。只更新 `unstable`，`main` 保持 0.10.8。
 
 0.10.9 开发版：修复桌面背景图被底色遮住、背景模糊引起页面整体偏移的问题，模糊范围由独立背景容器裁切；停用后恢复原背景节点位置。矮横屏自动采用紧凑输入栏与单行聊天标题条，最近聊天和侧栏内容可滚动到达；1100px 及以下的触屏使用完整抽屉，避免过密的桌面停靠布局。原生工具栏恢复清晰图标，并补充可访问名称、展开状态与 Enter／空格操作。
 

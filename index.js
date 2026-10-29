@@ -1153,7 +1153,9 @@ function initialize() {
     const homeHistory = document.createElement('div'); homeHistory.className = 'cu-home-history'; homeHistory.hidden = true;
     homeContent.append(choose, recentToggle, homeHistory);
     const welcome = document.createElement('section'); welcome.className = 'cu-home-welcome';
-    welcome.append(greeting, homeContent);
+    const homeScroll = document.createElement('div'); homeScroll.className = 'cu-home-scroll';
+    homeScroll.append(greeting, homeContent);
+    welcome.append(homeScroll);
     document.querySelector('#sheld').append(welcome);
     new ResizeObserver(([entry]) => {
         document.body.style.setProperty('--cu-composer-height', `${Math.ceil(entry.target.getBoundingClientRect().height)}px`);
