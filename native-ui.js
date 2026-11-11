@@ -1,6 +1,7 @@
 import { setupMobileWorldInfo, setupMobilePanelViewport } from './world-info-ui.js';
 import { toggleDrawer } from '../../../utils.js';
 import { extensionNames } from '../../../extensions.js';
+import { nativeDrawerControl } from './native-controls.js';
 /* Adapt native elements in place: their IDs, values and event handlers stay intact. */
 export function setupNativeUI({ settings, svg, ui = text => text, showCharacters, openCharacter, characterEntities }) {
     const hasBaiBaiTools = () => {
@@ -32,7 +33,6 @@ export function setupNativeUI({ settings, svg, ui = text => text, showCharacters
     const presetIcon = document.getElementById('leftNavDrawerIcon');
     const originalPresetTitle = presetIcon?.title;
     const toolbarAttributes = new Map();
-    const toolbarNames = ['预设','API 连接','回复格式','世界书','用户设置','背景','扩展程序','用户设定','角色卡'];
     let statusId = 0;
     const worldAttributes = new Map();
     const actionNames = new Map();
@@ -77,7 +77,9 @@ export function setupNativeUI({ settings, svg, ui = text => text, showCharacters
         document.querySelectorAll('#WIMultiSelector .select2-selection__choice__remove').forEach(button=>attributes(button,{'aria-label':ui('移除此世界书'),title:ui('移除此世界书')}));
     }
     function refreshToolbar() {
-        document.querySelectorAll('#top-settings-holder > .drawer > .drawer-toggle').forEach((toggle,index) => {
+        document.querySelectorAll('#top-settings-holder > .drawer > .drawer-toggle').forEach(toggle => {
+            const control = nativeDrawerControl(toggle);
+            if (!control) return;
             const keys = ['role','tabindex','aria-label','aria-controls','aria-expanded'];
             const icon = toggle.querySelector('.drawer-icon');
             if (!toolbarAttributes.has(toggle)) toolbarAttributes.set(toggle,{attributes:Object.fromEntries(keys.map(key => [key,toggle.getAttribute(key)])),iconAttributes:icon && Object.fromEntries(['role','tabindex','aria-hidden'].map(key=>[key,icon.getAttribute(key)]))});
@@ -88,14 +90,14 @@ export function setupNativeUI({ settings, svg, ui = text => text, showCharacters
             }
             if (icon) { icon.setAttribute('role','presentation'); icon.setAttribute('aria-hidden','true'); icon.tabIndex = -1; }
             toggle.setAttribute('role','button'); toggle.tabIndex = 0;
-            toggle.setAttribute('aria-label',ui(toolbarNames[index]) || toggle.querySelector('.drawer-icon')?.title || '更多');
+            toggle.setAttribute('aria-label',ui(control.label));
             const panel = toggle.parentElement.querySelector('.drawer-content');
             if (panel?.id) toggle.setAttribute('aria-controls',panel.id);
             toggle.setAttribute('aria-expanded',String(!!panel?.classList.contains('openDrawer')));
         });
     }
     document.getElementById('top-settings-holder')?.addEventListener('keydown', event => {
-        if (!settings().enabled || !['Enter',' '].includes(event.key) || !event.target.matches('.drawer-toggle')) return;
+        if (!settings().enabled || !['Enter',' '].includes(event.key) || !event.target.matches('.drawer-toggle') || !nativeDrawerControl(event.target)) return;
         event.preventDefault(); event.target.click();
     });
     new MutationObserver(records => {
@@ -135,9 +137,9 @@ export function setupNativeUI({ settings, svg, ui = text => text, showCharacters
             paintRange(input);
         });
         refreshTitle();
-        const glyphs = ['sliders','plug','type','book','sliders','image','puzzle','user','people'];
-        document.querySelectorAll('#top-settings-holder > .drawer > .drawer-toggle > .drawer-icon').forEach((icon, index) => {
-            if (!icon.classList.contains('cu-native-icon')) { icon.classList.add('cu-native-icon'); icon.innerHTML = svg(glyphs[index]); }
+        document.querySelectorAll('#top-settings-holder > .drawer > .drawer-toggle > .drawer-icon').forEach(icon => {
+            const control = nativeDrawerControl(icon);
+            if (control && !icon.classList.contains('cu-native-icon')) { icon.classList.add('cu-native-icon'); icon.innerHTML = svg(control.icon); }
         });
         for (const [id, glyph] of [['rm_button_create','plus'],['character_import_button','arrow'],['external_import_button','plug'],['rm_button_group_chats','people'],['rm_button_search','search'],['charListGridToggle','image'],['bulkEditButton','edit'],['rm_button_characters','people']]) {
             const control = document.getElementById(id);

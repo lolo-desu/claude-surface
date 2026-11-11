@@ -2,6 +2,7 @@ import { closeCurrentChat, setActiveCharacter, setActiveGroup } from '../../../.
 import { openGroupById } from '../../../group-chats.js';
 import { brandMarks } from './brand-marks.js';
 import { setupNativeUI } from './native-ui.js';
+import { nativeDrawerControl } from './native-controls.js';
 import { setupManagedTheme } from './theme-manager.js';
 import { designs, designOf, appearanceMode } from './designs.js';
 import { designBrand } from './design-branding.js';
@@ -627,12 +628,11 @@ function showTools() {
     const content = sheet(ui('更多'), { anchor: state.invoker });
     const grid = document.createElement('div');
     grid.className = 'cu-tool-grid';
-    const names = [ui('预设'), ui('API 连接'), ui('回复格式'), ui('世界书'), ui('用户设置'), ui('背景'), ui('扩展程序'), ui('用户设定'), ui('角色卡')];
-    const glyphs = ['sliders','plug','type','book','sliders','image','puzzle','user','people'];
     document.querySelectorAll('#top-settings-holder > .drawer > .drawer-toggle').forEach((toggle, index) => {
         const original = toggle.querySelector('.drawer-icon');
-        const title = names[index] || original?.title || `工具 ${index + 1}`;
-        const item = button(title, glyphs[index], () => index === 8 ? showCharacters() : openNative(toggle));
+        const control = nativeDrawerControl(toggle);
+        const title = control ? ui(control.label) : original?.title || `工具 ${index + 1}`;
+        const item = button(title, control?.icon || 'puzzle', () => control?.characters ? showCharacters() : openNative(toggle));
         grid.append(item);
     });
     const footer = document.createElement('div'); footer.className = 'cu-tools-footer';
