@@ -39,7 +39,7 @@ export function setupExtensionCompatibility({ settings, save, appearanceChanged,
     const rootObserver = new MutationObserver(refresh);
     rootObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     const markerObserver = new MutationObserver(records => {
-        if (records.some(record => [...record.addedNodes, ...record.removedNodes].some(node =>
+        if (records.some(record => !record.target?.closest?.('#chat') && [...record.addedNodes, ...record.removedNodes].some(node =>
             node.nodeType === 1 && (node.matches(companionMarkers) || node.querySelector(companionMarkers))))) refresh();
     });
     markerObserver.observe(document.body, { childList: true, subtree: true });

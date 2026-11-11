@@ -1,15 +1,19 @@
-# Claude Surface 0.10.13 开发版
+# Claude Surface 0.10.14 开发版
 
 为 SillyTavern 提供 Claude、Material Design、Adwaita 和 FlatDesign 的界面扩展。
 
 | 分支 | 用途 | 当前版本 |
 | --- | --- | --- |
 | [`main`](https://github.com/lolo-desu/claude-surface/tree/main) | 主线，日常安装与更新使用 | 0.10.12 |
-| [`unstable`](https://github.com/lolo-desu/claude-surface/tree/unstable) | 开发，独立验证后再合入主线，不自动同步 | 0.10.13 |
+| [`unstable`](https://github.com/lolo-desu/claude-surface/tree/unstable) | 开发，独立验证后再合入主线，不自动同步 | 0.10.14 |
 | [`legacy`](https://github.com/lolo-desu/claude-surface/tree/legacy) | 遗产，保留本次升级前的主线版本 | 0.9.5 |
 | [`legacy-v0.8.1`](https://github.com/lolo-desu/claude-surface/tree/legacy-v0.8.1) | 早期遗产，保留原有 Claude 风格与行为 | 0.8.1 |
 
 ## 安装
+
+0.10.14 开发版：优化长聊天切换与消息处理。Surface 的历史入口在原生选择流程加载前指定目标历史，避免先加载另一份聊天；群聊采用同样策略，已打开的历史不重复加载。角色卡浅加载、生成／保存保护和原生聊天事件保持生效，仅保存当前历史指针，不再为首次打开历史额外重载聊天或完整保存角色卡。
+
+消息装饰按新增或编辑的消息增量处理，每帧最多 80 条；流式正文不触发头像／操作控件装饰。仅修改配色、深浅色或字号不再重扫消息。合并聊天事件与近期记录请求，未变化的侧栏保留节点、焦点和列表滚动位置；横幅原图延迟加载，切回其他消息样式或停用时恢复图片属性。主题管理仅在初次等待原生控件挂载时观察整个 body，主题伴侣标记检测跳过聊天正文。保留酒馆原生的聊天显示条数、旧楼层加载、编辑、保存及自动滚动偏好，不删除或截断聊天数据。旧宿主若缺少历史指针 API，会退回原生历史打开流程。本次仅更新 `unstable`，`main` 保持 0.10.12。
 
 0.10.12 主线 hotfix／0.10.13 开发版：修复启用柏宝书顶栏入口后，“更多 → 用户设定”错误打开柏宝书的问题。菜单名称、图标与角色卡操作改按原生抽屉 ID 识别，不再依赖顶栏按钮顺序；第三方入口保留自身名称、图标和点击行为。开发版原生顶栏的可访问名称也使用同一识别规则。两条分支仅同步此修复，主线不包含 0.10.9–0.10.11 的开发版功能。
 
@@ -152,6 +156,8 @@ powershell -File install-startup.ps1 -SillyTavernPath 'D:\SillyTavern'
 `tests/ui-audit.browser.mjs` 针对背景层叠、根页面滚动、矮屏聊天／最近聊天／侧栏、原生导航键盘操作、提示词编辑器避让侧栏进行回归；`tests/ui-details.browser.mjs` 检查中英文、自有颜色 token 的文字对比度、玻璃浮层不透明度、原生首页返回、Quick Persona、离线右滑以及停用后的背景 DOM／原生属性恢复。使用独立测试资料和已安装的 Top Info Bar、Quick Persona，拦截设置、主题和聊天保存及生成请求。两套测试默认访问本机 8011，可通过与其他浏览器回归相同的环境变量指定实例与浏览器。此类浏览器回归仍不等于 iOS 真机键盘、安全区及辅助读屏验收。
 
 `tests/toolbar.browser.mjs` 使用真实 ST-BaiBai-Book 顶栏入口，检查四种风格、深浅色、手机／桌面，以及插件启停、第三方插入和原生抽屉重排后的菜单名称、图标、用户设定／角色卡／用户设置导航和第三方点击行为。需要安装柏宝书的本地 SillyTavern 与 Playwright Chromium；环境变量用法同其他浏览器测试。设置保存及扩展变更请求被拦截。
+
+`tests/chat-performance.browser.mjs` 使用合成的 400／1000 条全量显示与 5000 条保留原生 100 条窗口的聊天，对比历史请求数、消息装饰访问数、主线程长任务和导航耗时；同时验证新增消息、流式正文、编辑／取消、旧楼层加载、群聊切换、原生自动滚动偏好、横幅恢复及停用。`CU_SOURCE` 指定基线代码目录，`CU_BASELINE=1` 只记录旧版行为；两版使用相同数据与 Chromium，需要默认 Seraphina 角色卡，写入请求拦截到测试内存。耗时是本机测量，不等于客户手机或 iOS TauriTavern 真机表现。
 
 ## 待办（待讨论，尚未实现）
 

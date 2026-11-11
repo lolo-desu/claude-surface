@@ -35,24 +35,28 @@ export function setupNativeUI({ settings, svg, ui = text => text, showCharacters
     const toolbarAttributes = new Map();
     let statusId = 0;
     const worldAttributes = new Map();
-    const actionNames = new Map();
-    function refreshActions() {
-        for (const [control,record] of actionNames) {
-            if (!control.isConnected) { actionNames.delete(control); continue; }
-            if (!settings().enabled) {
-                if (control.getAttribute('aria-label') === record.applied) record.original == null ? control.removeAttribute('aria-label') : control.setAttribute('aria-label',record.original);
-                actionNames.delete(control);
+    // Weak keys release removed chat controls without walking all old messages.
+    const actionNames = new WeakMap();
+    function refreshActions(root = document) {
+        const enabled = settings().enabled;
+        const selector = root === document
+            ? '#top-settings-holder :is(.menu_button,.right_menu_button),#chat .ch_name .mes_button,#chat .swipe_left,#chat .swipe_right'
+            : root.id === 'top-settings-holder' ? '.menu_button,.right_menu_button' : '.ch_name .mes_button,.swipe_left,.swipe_right';
+        root.querySelectorAll(selector).forEach(control => {
+            const record = actionNames.get(control);
+            if (!enabled) {
+                if (record && control.getAttribute('aria-label') === record.applied) record.original == null ? control.removeAttribute('aria-label') : control.setAttribute('aria-label',record.original);
+                actionNames.delete(control); return;
             }
-        }
-        if (!settings().enabled) return;
-        document.querySelectorAll('#top-settings-holder :is(.menu_button,.right_menu_button),#chat .ch_name .mes_button,#chat .swipe_left,#chat .swipe_right').forEach(control=>{
             const caption = control.title?.trim().split('\n')[0];
             if (!caption || control.closest('.mes_text') || control.getAttribute('aria-labelledby')) return;
-            if (control.getAttribute('aria-label') && !actionNames.has(control)) return;
+            if (control.getAttribute('aria-label') && !record) return;
             const text = control.textContent.trim();
             if (text.length > 2 && /[a-zA-Z0-9\u4e00-\u9fff]/.test(text)) return;
-            if (!actionNames.has(control)) actionNames.set(control,{original:control.getAttribute('aria-label')});
-            const value = caption.slice(0,160); control.setAttribute('aria-label',value); actionNames.get(control).applied=value;
+            if (!record) actionNames.set(control,{original:control.getAttribute('aria-label')});
+            const value = caption.slice(0,160);
+            if (control.getAttribute('aria-label') !== value) control.setAttribute('aria-label',value);
+            actionNames.get(control).applied=value;
         });
     }
     function decorateWorld() {
@@ -116,7 +120,7 @@ export function setupNativeUI({ settings, svg, ui = text => text, showCharacters
     function decorate(root = document) {
         refreshToolbar();
         decorateWorld();
-        refreshActions();
+        refreshActions(document.getElementById('top-settings-holder'));
         document.body.classList.toggle('cu-baibai-tools', settings().enabled && hasBaiBaiTools());
         mobileWorld.refresh();
         root.querySelectorAll('input[type="range"]').forEach(input => {
@@ -179,5 +183,5 @@ export function setupNativeUI({ settings, svg, ui = text => text, showCharacters
     }, true);
     const context = SillyTavern.getContext();
     for (const name of ['SETTINGS_UPDATED','MAIN_API_CHANGED']) if (context.eventTypes[name]) context.eventSource.on(context.eventTypes[name], () => { decorate(); });
-    return { refreshActions, refresh: () => { refreshTitle(); refreshToolbar(); decorateWorld(); refreshActions(); mobileWorld.refresh(); refreshPromptViewport(); } };
+    return { refreshActions, refresh: () => { refreshTitle(); refreshToolbar(); decorateWorld(); refreshActions(document.getElementById('top-settings-holder')); mobileWorld.refresh(); refreshPromptViewport(); } };
 }

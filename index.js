@@ -1,5 +1,7 @@
-import { closeCurrentChat, setActiveCharacter, setActiveGroup } from '../../../../script.js';
-import { openGroupById } from '../../../group-chats.js';
+import * as host from '../../../../script.js';
+import * as groupChats from '../../../group-chats.js';
+import { createChatNavigator } from './chat-navigation.js';
+import { observeMessageUpdates } from './message-updates.js';
 import { brandMarks } from './brand-marks.js';
 import { setupNativeUI } from './native-ui.js';
 import { nativeDrawerControl } from './native-controls.js';
@@ -13,9 +15,17 @@ import { createLocalizer } from './localization.js';
 import { getCurrentLocale, translate } from '../../../i18n.js';
 import { openWorldInfoEditor } from '../../../world-info.js';
 
+const { closeCurrentChat, setActiveCharacter, setActiveGroup } = host;
 const ui = createLocalizer(getCurrentLocale(), translate);
 const KEY = 'claude_surface';
 const ctx = () => SillyTavern.getContext();
+const navigateChat = createChatNavigator({ context: ctx, host, groups: groupChats });
+const bannerImages = new WeakMap();
+function restoreBannerAttributes(image) {
+    const original = bannerImages.get(image);
+    if (original) for (const [key,value] of Object.entries(original)) value == null ? image.removeAttribute(key) : image.setAttribute(key,value);
+    bannerImages.delete(image);
+}
 const media = matchMedia('(prefers-color-scheme: dark)');
 const desktop = matchMedia('(min-width: 900px) and (pointer: fine), (min-width: 1101px)');
 const shortViewport = matchMedia('(max-height: 500px) and (pointer: coarse)');
@@ -234,7 +244,6 @@ function applyAppearance() {
         setSidebar(false);
         document.body.classList.remove('cu-native-open', 'cu-home');
         document.querySelector('.cu-home-greeting').hidden = true;
-        decorateMessages(false);
     }
     document.body.style.setProperty('--cu-serif', config.serif ? 'Georgia, "Times New Roman", var(--cu-sans)' : 'var(--cu-sans)');
     document.querySelectorAll('[data-cu-mode]').forEach(el => el.setAttribute('aria-pressed', String(el.dataset.cuMode === config.mode)));
@@ -259,7 +268,11 @@ function applyAppearance() {
     state.nativeUI?.refresh();
     state.compatUI?.refresh();
     void state.themeUI?.sync().catch(report);
-    if (config.enabled) { decorateMessages(); updateContext(); }
+    const messageAppearance = `${config.enabled}:${config.messageStyle}`;
+    if (state.messageAppearance !== messageAppearance) {
+        state.messageAppearance = messageAppearance; decorateMessages(config.enabled);
+    }
+    if (config.enabled) updateContext();
     syncNativePanels();
     setSidebar(false);
 }
@@ -423,14 +436,19 @@ function openNative(toggle) {
     syncNativePanels();
 }
 
-function decorateMessages(enabled = settings().enabled) {
-    state.nativeUI?.refreshActions();
-    document.querySelectorAll('#chat > .mes').forEach(message => {
+function decorateMessages(enabled = settings().enabled, messages) {
+    if (!messages && state.messageUpdates) {
+        state.messageUpdates.refreshAll(() => decorateMessages(enabled, document.querySelectorAll('#chat > .mes')));
+        return;
+    }
+    const config = settings();
+    (messages || document.querySelectorAll('#chat > .mes')).forEach(message => {
+        state.nativeUI?.refreshActions(message);
         const avatar = message.querySelector('.mesAvatarWrapper');
         const block = message.querySelector('.mes_block');
         const footer = block?.querySelector(':scope > .ch_name');
         if (!avatar || !footer) return;
-        const hero = enabled && settings().messageStyle !== 'minimal' && ['avatar','banner'].includes(settings().messageStyle)
+        const hero = enabled && ['avatar','banner'].includes(config.messageStyle)
             && message.getAttribute('is_user') !== 'true' && message.getAttribute('is_system') !== 'true';
         avatar.classList.toggle('cu-message-hero', hero);
         if (hero) {
@@ -449,22 +467,26 @@ function decorateMessages(enabled = settings().enabled) {
         if (image) {
             const current = image.getAttribute('src');
             if (image.dataset.cuCover && current !== image.dataset.cuCover) {
+                restoreBannerAttributes(image);
                 delete image.dataset.cuOriginalAvatar; delete image.dataset.cuCover;
             }
-            if (hero && settings().messageStyle === 'banner' && !image.dataset.cuCover) {
+            if (hero && config.messageStyle === 'banner' && !image.dataset.cuCover) {
                 try {
                     const url = new URL(current, location.href);
                     const file = url.searchParams.get('file');
                     if (url.origin === location.origin && url.pathname === '/thumbnail' && url.searchParams.get('type') === 'avatar' && file) {
                         const cover = `/characters/${encodeURIComponent(file)}`;
+                        bannerImages.set(image, { loading: image.getAttribute('loading'), decoding: image.getAttribute('decoding') });
+                        image.loading = 'lazy'; image.decoding = 'async';
                         image.dataset.cuOriginalAvatar = current;
                         image.dataset.cuCover = cover;
                         image.setAttribute('src', cover);
                     }
                 } catch { /* Custom avatars keep their original URL. */ }
-            } else if ((!hero || settings().messageStyle !== 'banner') && image.dataset.cuCover) {
+            } else if ((!hero || config.messageStyle !== 'banner') && image.dataset.cuCover) {
                 image.setAttribute('src', image.dataset.cuOriginalAvatar);
                 delete image.dataset.cuOriginalAvatar; delete image.dataset.cuCover;
+                restoreBannerAttributes(image);
             }
         }
         for (const [name, icon] of [['copy','copy'],['edit','edit'],['close_all','collapse'],['edit_done','check'],['edit_cancel','close'],['delete','trash']]) {
@@ -475,7 +497,8 @@ function decorateMessages(enabled = settings().enabled) {
         }
     });
     const anchor = state.editorAnchor;
-    if (anchor?.text.isConnected) {
+    if (anchor && !anchor.text.isConnected) state.editorAnchor = null;
+    if (anchor?.text.isConnected && (!messages || [...messages].includes(anchor.text.closest('.mes')))) {
         const chat = document.getElementById('chat');
         chat.scrollTop += anchor.text.getBoundingClientRect().top - anchor.top;
         state.editorAnchor = null;
@@ -836,7 +859,19 @@ async function goHome(forceClaude = false) {
     void refreshRecents();
 }
 
-async function refreshRecents() {
+function refreshRecents() {
+    state.recentsDirty = true;
+    if (state.recentTimer != null || state.refreshing || !settings().enabled) return;
+    state.recentTimer = setTimeout(() => {
+        state.recentTimer = null;
+        if (!settings().enabled) { state.recentsDirty = false; return; }
+        if (state.selecting) { refreshRecents(); return; }
+        state.recentsDirty = false;
+        void fetchRecents();
+    }, 100);
+}
+
+async function fetchRecents() {
     if (state.refreshing) return;
     state.refreshing = true;
     try {
@@ -849,26 +884,32 @@ async function refreshRecents() {
     } catch (error) {
         console.warn('[Claude Surface] History unavailable', error);
         const root = document.querySelector('.cu-recents');
+        delete root.dataset.cuRevision;
         root.replaceChildren(button(ui('打开原版聊天记录'), 'history', () => { setSidebar(false); document.querySelector('#option_select_chat')?.click(); }));
-    } finally { state.refreshing = false; }
+    } finally { state.refreshing = false; if (state.recentsDirty) refreshRecents(); }
 }
 
-function renderRecents() {
+function renderRecents(entities) {
     const root = document.querySelector('.cu-recents');
     if (!root) return;
     const query = document.querySelector('.cu-search').value.toLocaleLowerCase();
-    root.replaceChildren();
-    const entities = characterEntities();
+    if (!Array.isArray(entities)) entities = characterEntities();
+    const byKey = new Map(entities.map(entity => [entity.key,entity]));
     const keys = [...new Set([...settings().recentCharacters, ...state.recents.map(row => row.group ? `group:${row.group}` : row.avatar)])];
-    const rows = keys.map(key => entities.find(entity => entity.key === key)).filter(Boolean).filter(entity => entity.name.toLocaleLowerCase().includes(query));
-    for (const entity of rows) root.append(characterRow(entity));
-    if (!rows.length) {
-        const empty = document.createElement('p');
-        empty.className = 'cu-empty';
-        empty.textContent = query ? ui('没有匹配的角色') : ui('选择角色后会显示在这里');
-        root.append(empty);
+    const rows = keys.map(key => byKey.get(key)).filter(Boolean).filter(entity => entity.name.toLocaleLowerCase().includes(query));
+    const context = ctx();
+    const revision = JSON.stringify([query,context.characterId,context.groupId,rows]);
+    if (root.dataset.cuRevision !== revision || !root.children.length) {
+        root.dataset.cuRevision = revision; root.replaceChildren();
+        for (const entity of rows) root.append(characterRow(entity));
+        if (!rows.length) {
+            const empty = document.createElement('p');
+            empty.className = 'cu-empty';
+            empty.textContent = query ? ui('没有匹配的角色') : ui('选择角色后会显示在这里');
+            root.append(empty);
+        }
     }
-    renderHome();
+    renderHome(entities);
 }
 
 function characterEntities() {
@@ -915,16 +956,9 @@ async function openCharacter(entity, file) {
     if (state.selecting) return;
     state.selecting = true;
     try {
-        if (entity.group) {
-            await openGroupById(entity.group);
-            setActiveGroup(entity.group);
-            if (file) await ctx().openGroupChat(entity.group, file);
-        } else {
-            await ctx().selectCharacterById(entity.id, { switchMenu: false });
-            if (String(ctx().characterId) !== String(entity.id)) return;
-            setActiveCharacter(entity.avatar);
-            if (file && ctx().getCurrentChatId() !== file) await ctx().openCharacterChat(file);
-        }
+        if (!await navigateChat(entity, file)) return;
+        if (entity.group) setActiveGroup(entity.group);
+        else setActiveCharacter(entity.avatar);
         settings().recentCharacters = [entity.key, ...settings().recentCharacters.filter(key => key !== entity.key)].slice(0, 60);
         save();
         closeSheet();
@@ -965,7 +999,7 @@ function showHomeRecents(show = !state.homeRecent) {
     renderHome();
 }
 
-function renderHome() {
+function renderHome(entities) {
     const root = document.querySelector('.cu-home-content');
     if (!root) return;
     root.hidden = !settings().enabled || !document.body.classList.contains('cu-home');
@@ -980,21 +1014,27 @@ function renderHome() {
     if (toggleLabel.textContent !== toggleText) toggleLabel.textContent = toggleText;
     const list = root.querySelector('.cu-home-history');
     list.hidden = !state.homeRecent;
-    if (!state.homeRecent) return;
-    const entities = characterEntities();
+    if (root.hidden || !state.homeRecent) return;
+    if (!Array.isArray(entities)) entities = characterEntities();
     // Theme/context updates must not replace unchanged rows under a pointer or
     // reset the short viewport's scroll anchor while a user closes the list.
     const revision = JSON.stringify([state.recents.slice(0,30),entities.map(entity=>[entity.key,entity.id,entity.name,entity.avatar])]);
     if (list.dataset.cuRevision === revision && list.children.length) return;
     list.dataset.cuRevision = revision;
     list.replaceChildren();
+    const byKey = new Map(entities.map(entity => [entity.key,entity]));
     for (const row of state.recents.slice(0, 30)) {
-        const entity = entities.find(entity => entity.key === (row.group ? `group:${row.group}` : row.avatar));
+        const entity = byKey.get(row.group ? `group:${row.group}` : row.avatar);
         if (!entity) continue;
         const file = row.file_name.replace(/\.jsonl$/, '');
         list.append(characterRow(entity, file, () => openCharacter(entity, file)));
     }
     if (!list.children.length) { const empty = document.createElement('p'); empty.className = 'cu-empty'; empty.textContent = ui('还没有最近聊天'); list.append(empty); }
+}
+
+function queueContextUpdate() {
+    if (state.contextFrame != null) return;
+    state.contextFrame = requestAnimationFrame(() => { state.contextFrame = null; updateContext(); });
 }
 
 function updateContext() {
@@ -1010,7 +1050,8 @@ function updateContext() {
     state.chatTitle = home ? ui('新建对话') : (context.groups.find(group => group.id === context.groupId)?.name || context.characters[context.characterId]?.name || context.name2 || ui('对话'));
     document.querySelector('.cu-title').textContent = state.chatTitle;
     const headerAvatar = document.querySelector('.cu-header-avatar');
-    const entity = characterEntities().find(entity => entity.group ? entity.group === context.groupId : !context.groupId && String(entity.id) === String(context.characterId));
+    const entities = characterEntities();
+    const entity = entities.find(entity => entity.group ? entity.group === context.groupId : !context.groupId && String(entity.id) === String(context.characterId));
     state.headerEntity = home ? null : entity;
     if (state.headerEntity && headerAvatar.dataset.character !== entity.key) {
         headerAvatar.dataset.character = entity.key; headerAvatar.replaceChildren(avatarElement(entity));
@@ -1026,9 +1067,8 @@ function updateContext() {
     const textarea = document.querySelector('#send_textarea');
     textarea.placeholder = !connected ? ui('未连接到 API，请先连接模型') : home ? ui('今天我能为您做些什么？') : ui('回复');
     textarea.setAttribute('aria-label', ui('消息'));
-    if (document.querySelector('.cu-recents')) renderRecents();
+    if (document.querySelector('.cu-recents')) renderRecents(entities);
     document.querySelector('.cu-return-home').hidden = !home || !settings().useNativeHome;
-    renderHome();
     syncNativePanels();
 }
 
@@ -1225,21 +1265,18 @@ function initialize() {
     void refreshRecents();
     const context = ctx();
     for (const name of ['APP_READY','CHAT_CHANGED','CHAT_LOADED','SETTINGS_UPDATED','MAIN_API_CHANGED','CHATCOMPLETION_MODEL_CHANGED','ONLINE_STATUS_CHANGED','PERSONA_CHANGED']) {
-        if (context.eventTypes[name]) context.eventSource.on(context.eventTypes[name], () => { updateContext(); if (name.includes('CHAT') || name === 'APP_READY') void refreshRecents(); });
+        if (context.eventTypes[name]) context.eventSource.on(context.eventTypes[name], () => { queueContextUpdate(); if (name.includes('CHAT') || name === 'APP_READY') void refreshRecents(); });
     }
     for (const name of ['CHAT_DELETED','CHAT_CREATED','CHAT_RENAMED','GROUP_CHAT_CREATED','GROUP_CHAT_DELETED']) {
         if (context.eventTypes[name]) context.eventSource.on(context.eventTypes[name], refreshRecents);
     }
     const chatElement = document.querySelector('#chat');
-    const chatObserver = new MutationObserver(records => {
-        const rootChange = records.some(record => record.target === chatElement);
-        const editorChange = records.some(record => [...record.addedNodes, ...record.removedNodes].some(node => node.nodeType === 1 && (node.matches('.mes,#curEditTextarea') || node.querySelector('#curEditTextarea'))));
-        if (rootChange || editorChange) {
-            cancelAnimationFrame(state.messageFrame);
-            state.messageFrame = requestAnimationFrame(() => { decorateMessages(); if (rootChange) updateContext(); });
-        }
+    state.messageUpdates = observeMessageUpdates({
+        root: chatElement, enabled: () => settings().enabled,
+        decorate: messages => decorateMessages(true, messages),
+        contextChanged: queueContextUpdate,
+        followLoad: () => state.selecting && ctx().powerUserSettings.auto_scroll_chat_to_bottom !== false,
     });
-    chatObserver.observe(chatElement, { childList: true, subtree: true });
     document.addEventListener('click', captureEditorAnchor, true);
     const nativeObserver = new MutationObserver(() => {
         cancelAnimationFrame(state.nativeFrame);

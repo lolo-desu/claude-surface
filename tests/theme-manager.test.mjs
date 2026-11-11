@@ -29,7 +29,7 @@ function harness(patch = {}, mounted = true) {
             getThemeObject: name => Object.fromEntries(['custom_css','font_scale','main_text_color','reduced_motion'].map(key => [key,context.powerUserSettings[key]]).concat([['name',name]])),
             applyPowerUserSettings: () => { refreshes++; },
         },
-        MutationObserver: class { constructor(fn) { observers.push(fn); } observe() {} },
+        MutationObserver: class { constructor(fn) { observers.push(fn); } observe() {} disconnect() {} },
         jQuery: target => ({ val(value) { if (target === selector) selector.value = value; else { controlValues.set(target,value); if(target==='#customCSS')cssWrites.push(value); } return this; },
             prop(key,value) { controlValues.set(target+':'+key,value); return this; },
             attr(key,value) { controlValues.set(target+':'+key,value); return this; },
@@ -208,4 +208,19 @@ test('generated native designs preserve day/night palettes and exclude active sh
         assert.equal(preset.reduced_motion, undefined);
         assert.equal(/@import|url\(["']?https?:/i.test(preset.custom_css), false, 'No remote stylesheet or media');
     }
+});
+
+
+test('already-mounted theme controls need no global body mutation observer', () => {
+    const h = harness();
+    assert.equal(h.observers.length, 1); // The remaining observer watches native head styles.
+});
+
+test('deferred native control mounting reconnects theme sync once controls appear', async () => {
+    const h = harness({}, false);
+    assert.equal(h.observers.length, 2);
+    h.document.getElementById = id => id === 'themes' ? h.selector : id === 'ui_preset_import_file' ? {} : id === 'custom-style' ? h.style : null;
+    h.observers[1]();
+    await h.manager.sync();
+    assert.equal(h.selected.at(-1), 'Claude Surface Base Dark');
 });
