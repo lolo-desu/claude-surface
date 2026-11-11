@@ -1,15 +1,17 @@
-# Claude Surface 0.10.8
+# Claude Surface 0.10.12
 
 为 SillyTavern 提供 Claude、Material Design、Adwaita 和 FlatDesign 的界面扩展。
 
 | 分支 | 用途 | 当前版本 |
 | --- | --- | --- |
-| [`main`](https://github.com/lolo-desu/claude-surface/tree/main) | 主线，日常安装与更新使用 | 0.10.8 |
-| [`unstable`](https://github.com/lolo-desu/claude-surface/tree/unstable) | 开发，后续功能与修复先在这里验证；本次发布时与主线相同 | 0.10.8 |
+| [`main`](https://github.com/lolo-desu/claude-surface/tree/main) | 主线，日常安装与更新使用 | 0.10.12 |
+| [`unstable`](https://github.com/lolo-desu/claude-surface/tree/unstable) | 开发，独立验证后再合入主线，不自动同步 | 0.10.13 |
 | [`legacy`](https://github.com/lolo-desu/claude-surface/tree/legacy) | 遗产，保留本次升级前的主线版本 | 0.9.5 |
 | [`legacy-v0.8.1`](https://github.com/lolo-desu/claude-surface/tree/legacy-v0.8.1) | 早期遗产，保留原有 Claude 风格与行为 | 0.8.1 |
 
 ## 安装
+
+0.10.12 主线 hotfix／0.10.13 开发版：修复启用柏宝书顶栏入口后，“更多 → 用户设定”错误打开柏宝书的问题。菜单名称、图标与角色卡操作改按原生抽屉 ID 识别，不再依赖顶栏按钮顺序；第三方入口保留自身名称、图标和点击行为。开发版原生顶栏的可访问名称也使用同一识别规则。两条分支仅同步此修复，主线不包含 0.10.9–0.10.11 的开发版功能。
 
 0.10.8：开发版验收后发布到主线。世界书主要关键字、逻辑、可选过滤器及内容标签统一使用相同字号、行高和文字颜色；递归选项用同一网格排列，勾选框对齐文字首行，长标签不再挤乱下一行。为 TauriTavern CodeMirror 编辑器增加完整边框、独立底色及工具栏分隔线，统一工具按钮尺寸，Adwaita 的编辑区可以明确辨认，FlatDesign 保留直角。修复预设顶部链接按钮偏宽、图标偏移的问题，保留原开关行为。四种设计逐一截图验收，覆盖原生／柏宝布局、原生文本框／真实 Tauri 编辑器以及日夜模式。
 
@@ -136,3 +138,10 @@ powershell -File install-startup.ps1 -SillyTavernPath 'D:\SillyTavern'
 
 `tests/prompt-editor.browser.mjs` 在 Chromium、WebKit 的四种风格与深浅色下，以 320/412/844/1440px 窗口验证真实铅笔按钮打开、正文输入、取消不改动原值、保存后重开、Escape、外部点击后重开及顶栏关闭。保存测试仅修改测试浏览器的内存，并恢复原文；服务器设置／主题／预设保存和生成请求被拦截。另模拟可视区域缩小检查编辑器高度。默认运行仓库候选 CSS 与界面模块；`CU_SERVER_CSS=1` 验证实例已安装的文件。上述浏览器检查不等于 iOS 真机软键盘测试。
 
+
+`tests/toolbar.browser.mjs` 使用真实 ST-BaiBai-Book 顶栏入口，检查四种风格、深浅色、手机／桌面，以及插件启停、第三方插入和原生抽屉重排后的菜单名称、图标、用户设定／角色卡／用户设置导航和第三方点击行为。需要安装柏宝书的本地 SillyTavern 与 Playwright Chromium；环境变量用法同其他浏览器测试。设置保存及扩展变更请求被拦截。
+
+## 待办（待讨论，尚未实现）
+
+- 自定义颜色：在现有主题配色选项中增加“自定义”，打开下一级编辑界面，允许逐项调整全部界面与正文颜色，并支持 JSON 导入、导出。覆盖背景、面板、输入框、边框、主／辅助文本、链接、引用、斜体、下划线、强调色及代码配色。
+- 实现前讨论：自定义配置如何按设计风格与深浅模式保存；与原生正文颜色设置的优先级；JSON 格式、导入校验、预览及恢复默认的行为。当前引用色被主题链接色覆盖的问题留待此方案一并处理，本次 hotfix 不改变颜色行为。

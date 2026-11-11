@@ -1,6 +1,7 @@
 import { setupMobileWorldInfo, setupMobilePanelViewport } from './world-info-ui.js';
 import { toggleDrawer } from '../../../utils.js';
 import { extensionNames } from '../../../extensions.js';
+import { nativeDrawerControl } from './native-controls.js';
 /* Adapt native elements in place: their IDs, values and event handlers stay intact. */
 export function setupNativeUI({ settings, svg, showCharacters, openCharacter, characterEntities }) {
     const hasBaiBaiTools = () => {
@@ -62,9 +63,9 @@ export function setupNativeUI({ settings, svg, showCharacters, openCharacter, ch
             paintRange(input);
         });
         refreshTitle();
-        const glyphs = ['sliders','plug','type','book','sliders','image','puzzle','user','people'];
-        document.querySelectorAll('#top-settings-holder > .drawer > .drawer-toggle > .drawer-icon').forEach((icon, index) => {
-            if (!icon.classList.contains('cu-native-icon')) { icon.classList.add('cu-native-icon'); icon.innerHTML = svg(glyphs[index]); }
+        document.querySelectorAll('#top-settings-holder > .drawer > .drawer-toggle > .drawer-icon').forEach(icon => {
+            const control = nativeDrawerControl(icon);
+            if (control && !icon.classList.contains('cu-native-icon')) { icon.classList.add('cu-native-icon'); icon.innerHTML = svg(control.icon); }
         });
         for (const [id, glyph] of [['rm_button_create','plus'],['character_import_button','arrow'],['external_import_button','plug'],['rm_button_group_chats','people'],['rm_button_search','search'],['charListGridToggle','image'],['bulkEditButton','edit'],['rm_button_characters','people']]) {
             const control = document.getElementById(id);
