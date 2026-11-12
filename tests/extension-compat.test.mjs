@@ -104,3 +104,10 @@ test('both old Swiss preset and new FlatDesign preset resolve to the same saved 
     assert.equal(h.forTheme('SillyTavern FlatDesign').label, 'FlatDesign');
     assert.equal(h.forTheme('Foreign'), undefined);
 });
+
+
+test('message HTML is never scanned for Companion settings markers', () => {
+    const h = harness();
+    const node = { nodeType: 1, matches() { throw Error('scanned message'); }, querySelector() { throw Error('scanned subtree'); } };
+    assert.doesNotThrow(() => h.observers[1]([{ target: { closest: () => ({ id: 'chat' }) }, addedNodes: [node], removedNodes: [] }]));
+});

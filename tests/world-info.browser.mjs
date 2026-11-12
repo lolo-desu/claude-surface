@@ -59,6 +59,7 @@ for(const [name,engine] of [['chromium',chromium],['webkit',webkit]]) {
   });
   const page=await context.newPage(); page.setDefaultTimeout(6000); page.setDefaultNavigationTimeout(30000);
   await page.goto(origin,{waitUntil:'networkidle'});
+  let rootOverflow;
   for(const family of ['claude','material','adwaita','swiss']) {
    for(const mode of ['dark','light']) {
     await appearance(page);
@@ -66,6 +67,7 @@ for(const [name,engine] of [['chromium',chromium],['webkit',webkit]]) {
     await page.locator(`[data-cu-mode="${mode}"]`).click();
     await page.locator('.cu-sheet-panel').focus(); await page.keyboard.press('Escape');
     await page.locator('.cu-sheet').waitFor({state:'hidden'});
+    rootOverflow=await page.locator('html').evaluate(el=>getComputedStyle(el).overflowX);
     await openWorld(page);
     const selector=page.locator('#world_editor_select');
     const selected=await selector.locator('option').evaluateAll(options=>{const option=options.find(o=>o.value);return option?{value:option.value,label:option.textContent}:null;});
@@ -145,13 +147,13 @@ for(const [name,engine] of [['chromium',chromium],['webkit',webkit]]) {
     await page.waitForFunction(()=>Math.abs(document.querySelector('#WorldInfo').getBoundingClientRect().bottom-innerHeight)<1);
     await page.locator('.cu-header button[aria-label="关闭原生面板"]').click();
     await page.waitForFunction(()=>!document.body.style.getPropertyValue('--cu-world-view-height'));
-    assert.equal(await page.locator('html').evaluate(el=>getComputedStyle(el).overflowX),'visible','Root remains locked after closing');
+    assert.equal(await page.locator('html').evaluate(el=>getComputedStyle(el).overflowX),rootOverflow,'World editor did not release its scroll lock');
    }
   }
   await openWorld(page);
   await page.setViewportSize({width:1280,height:900});
   await page.waitForFunction(()=>!document.body.style.getPropertyValue('--cu-world-view-height'));
-  assert.equal(await page.locator('html').evaluate(el=>getComputedStyle(el).overflowX),'visible');
+  assert.equal(await page.locator('html').evaluate(el=>getComputedStyle(el).overflowX),rootOverflow);
   assert((await geometry(page)).panel.width<1200,'Desktop still uses mobile panel width');
   await context.close();
  } catch(error) {

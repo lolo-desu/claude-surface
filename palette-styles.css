@@ -1,4 +1,12 @@
 /* Generated from palettes.js. Choices are scoped to their design and mode. */
+body[data-claude-ui][data-cu-design="claude"][data-cu-palette="clay"] {
+    --cu-accent: #d77757;
+    --cu-on-accent: #191919;
+}
+body[data-claude-ui="light"][data-cu-design="claude"][data-cu-palette="clay"] {
+    --cu-accent: #a8472d;
+    --cu-on-accent: #ffffff;
+}
 body[data-claude-ui][data-cu-design="claude"][data-cu-palette="olive"] {
     --cu-bg: #1c201a;
     --cu-sidebar: #22271f;
@@ -282,7 +290,7 @@ body[data-claude-ui="light"][data-cu-design="swiss"][data-cu-palette="vermilion"
     --cu-surface: #f7f4ec;
     --cu-input: #f7f4ec;
     --cu-text: #193c35;
-    --cu-muted: #5d6f63;
+    --cu-muted: #4e6054;
     --cu-border: #193c3524;
     --cu-input-border: #193c3540;
     --cu-hover: #193c3508;
@@ -316,7 +324,7 @@ body[data-claude-ui="light"][data-cu-design="swiss"][data-cu-palette="cobalt"] {
     --cu-surface: #fafaf6;
     --cu-input: #fafaf6;
     --cu-text: #213548;
-    --cu-muted: #5d6b77;
+    --cu-muted: #53616d;
     --cu-border: #21354824;
     --cu-input-border: #21354840;
     --cu-hover: #21354808;
@@ -350,7 +358,7 @@ body[data-claude-ui="light"][data-cu-design="swiss"][data-cu-palette="olive"] {
     --cu-surface: #fcf9ef;
     --cu-input: #fcf9ef;
     --cu-text: #373b26;
-    --cu-muted: #6a6e56;
+    --cu-muted: #5b5f48;
     --cu-border: #373b2624;
     --cu-input-border: #373b2640;
     --cu-hover: #373b2608;

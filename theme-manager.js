@@ -181,10 +181,15 @@ export function setupManagedTheme({ settings, save, report, appearanceChanged })
     const { eventSource, eventTypes } = context;
     for (const type of [eventTypes.SETTINGS_UPDATED, eventTypes.CHAT_CHANGED].filter(Boolean)) eventSource.on(type, nativeChanged);
     new MutationObserver(nativeChanged).observe(document.head, { childList: true, subtree: true });
-    new MutationObserver(() => {
-        if ((!themeSelect || !importInput) && document.getElementById('themes') && document.getElementById('ui_preset_import_file')) {
-            controls(); void sync().catch(report);
-        }
-    }).observe(document.body, { childList: true, subtree: true });
+    // Native handlers on retained controls survive Tauri detaching the tree.
+    // Watch for the initial mount only, rather than every later chat mutation.
+    if (!themeSelect || !importInput) {
+        const mountObserver = new MutationObserver(() => {
+            if (document.getElementById('themes') && document.getElementById('ui_preset_import_file')) {
+                controls(); mountObserver.disconnect(); void sync().catch(report);
+            }
+        });
+        mountObserver.observe(document.body, { childList: true, subtree: true });
+    }
     return { sync };
 }

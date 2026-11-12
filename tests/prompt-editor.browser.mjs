@@ -88,7 +88,7 @@ for(const [name,engine] of [['chromium',chromium],['webkit',webkit]]){
     await edit(page);
     // Outside-press closing used to leave a stale closedDrawer class. Reopen
     // through the real pencil action and ensure it is usable again.
-    await page.locator('.cu-header').click({position:{x:2,y:46}});await page.locator(popupId).waitFor({state:'hidden'});
+    await page.locator('.cu-header').click({position:{x:2,y:2}});await page.locator(popupId).waitFor({state:'hidden'});
     await edit(page);assert(!await page.locator(popupId).evaluate(el=>el.classList.contains('closedDrawer')));
     if(viewport.width===412 && mode==='dark')await page.screenshot({path:path.join(output,label+'.png')});
     await page.locator('.cu-header button[aria-label="关闭原生面板"]').click();await page.locator(popupId).waitFor({state:'hidden'});

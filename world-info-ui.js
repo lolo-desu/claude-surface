@@ -1,7 +1,7 @@
 /* Fixed native editors share normal-scale visible-viewport bounds. */
 export function setupMobilePanelViewport(settings, panel, prefix) {
     if (!panel) return () => {};
-    const mobile = matchMedia('(max-width: 899px)');
+    const mobile = matchMedia('(max-width: 899px), (max-width: 1100px) and (pointer: coarse)');
     let viewportFrame, viewportActive = false;
     const viewportProperties = ['width','height','top','left'].map(name => `--cu-${prefix}-view-${name}`);
     function refreshViewport() {
@@ -39,16 +39,16 @@ export function setupMobilePanelViewport(settings, panel, prefix) {
 }
 
 /* Adapt semantic fields once. Keep native nodes, editor instances and events. */
-export function setupMobileWorldInfo(settings, { toggleDrawer, externalLayout = () => false } = {}) {
-    const mobile = matchMedia('(max-width: 899px)');
+export function setupMobileWorldInfo(settings, { toggleDrawer, externalLayout = () => false, ui = text => text } = {}) {
+    const mobile = matchMedia('(max-width: 899px), (max-width: 1100px) and (pointer: coarse)');
     const panel = document.getElementById('WorldInfo');
     const list = document.getElementById('world_popup_entries_list');
     const headers = new Map(), editors = new Map();
     const toolbarLabels = new Map();
     const managementLabels = {
-        world_import_button: '导入', world_popup_export: '导出', world_popup_name_button: '重命名',
-        world_duplicate: '复制', world_popup_delete: '删除', OpenAllWIEntries: '展开全部',
-        CloseAllWIEntries: '收起全部', world_backfill_memos: '填充标题', world_apply_current_sorting: '应用排序',
+        world_import_button: ui('导入'), world_popup_export: ui('导出'), world_popup_name_button: ui('重命名'),
+        world_duplicate: ui('复制'), world_popup_delete: ui('删除'), OpenAllWIEntries: ui('展开全部'),
+        CloseAllWIEntries: ui('收起全部'), world_backfill_memos: ui('填充标题'), world_apply_current_sorting: ui('应用排序'),
     };
     let toolsButton;
     const refreshViewport = setupMobilePanelViewport(settings, panel, 'world');
@@ -91,7 +91,7 @@ export function setupMobileWorldInfo(settings, { toggleDrawer, externalLayout = 
         const root = panel.querySelector('.bai-bai-wi-popup-header') || document.getElementById('world_popup');
         if (!root) return;
         for (const [node] of toolbarLabels) if (!node.isConnected) toolbarLabels.delete(node);
-        for (const [id, label] of Object.entries({ ...managementLabels, world_popup_new: '新条目' })) {
+        for (const [id, label] of Object.entries({ ...managementLabels, world_popup_new: ui('新条目') })) {
             const node = document.getElementById(id);
             if (!node) continue;
             if (!toolbarLabels.has(node)) toolbarLabels.set(node, { cuWiLabel: node.dataset.cuWiLabel, cuWiTool: node.dataset.cuWiTool });
@@ -101,10 +101,10 @@ export function setupMobileWorldInfo(settings, { toggleDrawer, externalLayout = 
         if (!toolsButton) {
             toolsButton = document.createElement('button'); toolsButton.type = 'button';
             toolsButton.className = 'cu-wi-tools-toggle';
-            toolsButton.setAttribute('aria-label', '更多世界书操作');
+            toolsButton.setAttribute('aria-label', ui('更多世界书操作'));
             toolsButton.setAttribute('aria-controls', 'world_popup');
             const icon = document.createElement('i'); icon.className = 'fa-solid fa-ellipsis'; icon.setAttribute('aria-hidden', 'true');
-            const text = document.createElement('span'); text.textContent = '更多'; toolsButton.append(icon, text);
+            const text = document.createElement('span'); text.textContent = ui('更多'); toolsButton.append(icon, text);
             toolsButton.addEventListener('click', () => {
                 const expanded = panel.classList.toggle('cu-wi-tools-open');
                 toolsButton.setAttribute('aria-expanded', String(expanded));
@@ -149,7 +149,7 @@ export function setupMobileWorldInfo(settings, { toggleDrawer, externalLayout = 
         if (editors.has(editor) || editor.matches('[data-bai-bai-world-info-mobile-expanded-layout="true"]')) return;
         const record = { nodes: [], classes: [], wrappers: [] };
         const details = document.createElement('details'); details.className = 'cu-wi-advanced';
-        const summary = document.createElement('summary'); summary.textContent = '更多条目设置';
+        const summary = document.createElement('summary'); summary.textContent = ui('更多条目设置');
         details.append(summary); record.wrappers.push(details);
         const candidates = [...editor.children].slice(1);
         const overrides = editor.querySelector('[name="perEntryOverridesBlock"]');
@@ -178,7 +178,7 @@ export function setupMobileWorldInfo(settings, { toggleDrawer, externalLayout = 
         refreshViewport();
         panel?.classList.toggle('cu-world-surface', settings().enabled && mobile.matches);
         refreshToolbar(settings().enabled && mobile.matches);
-        list.dataset.cuEmptyMessage = document.getElementById('world_editor_select')?.value ? '没有匹配的条目' : '选择世界书后，在这里查看和编辑条目';
+        list.dataset.cuEmptyMessage = document.getElementById('world_editor_select')?.value ? ui('没有匹配的条目') : ui('选择世界书后，在这里查看和编辑条目');
         observer.disconnect();
         try {
             const enabled = settings().enabled && mobile.matches && !externalLayout();

@@ -16,7 +16,7 @@ const swissNight = (color, selected, link) => ({
 
 export const palettesByDesign = {
     claude: [
-        choice('clay', '陶土', '#d77757', {}, {}),
+        choice('clay', '陶土', '#d77757', {accent:'#a8472d','on-accent':'#ffffff'}, {accent:'#d77757','on-accent':'#191919'}),
         choice('olive', '橄榄', '#65764c', colors([
             '#fbfbf6', '#f1f2e8', '#ffffff', '#ffffff', '#30352b', '#62675c', '#30352b25', '#30352b36',
             '#30352b09', '#e4e9d7', '#edf0e6', '#f1f2e8', '#566d42', '#ffffff', '#4b6241',
@@ -75,19 +75,19 @@ export const palettesByDesign = {
     swiss: [
         choice('vermilion', '朱红', '#c43e2b', {
             bg: '#f3f0e8', sidebar: '#e0e5d8', surface: '#f7f4ec', input: '#f7f4ec',
-            text: '#193c35', muted: '#5d6f63', border: '#193c3524', 'input-border': '#193c3540',
+            text: '#193c35', muted: '#4e6054', border: '#193c3524', 'input-border': '#193c3540',
             hover: '#193c3508', selected: '#c9d5c2', user: '#d9e2d4', code: '#eeece2',
             accent: '#c43e2b', 'on-accent': '#ffffff', link: '#2d6553',
         }, swissNight('#ef795b', '#393939', '#f59b82')),
         choice('cobalt', '钴蓝', '#325f9c', {
             bg: '#f3f3ef', sidebar: '#e4e8ea', surface: '#fafaf6', input: '#fafaf6',
-            text: '#213548', muted: '#5d6b77', border: '#21354824', 'input-border': '#21354840',
+            text: '#213548', muted: '#53616d', border: '#21354824', 'input-border': '#21354840',
             hover: '#21354808', selected: '#cfdce5', user: '#dde5eb', code: '#e9edf0',
             accent: '#315f9b', 'on-accent': '#ffffff', link: '#315f9b',
         }, swissNight('#9cbbe8', '#333c48', '#b0c8ec')),
         choice('olive', '苔金', '#6c7043', {
             bg: '#f5f2e8', sidebar: '#e9e6d6', surface: '#fcf9ef', input: '#fcf9ef',
-            text: '#373b26', muted: '#6a6e56', border: '#373b2624', 'input-border': '#373b2640',
+            text: '#373b26', muted: '#5b5f48', border: '#373b2624', 'input-border': '#373b2640',
             hover: '#373b2608', selected: '#dcdcc5', user: '#e7e7d5', code: '#eeecdf',
             accent: '#626438', 'on-accent': '#ffffff', link: '#5c6034',
         }, swissNight('#c7c58c', '#3d3d32', '#d2d0a3')),

@@ -1,10 +1,16 @@
 /* Independent controls shared by all design families. Only surface colors become translucent. */
+/* A bounded background host clips blur overscan before it reaches the root's
+   scrollable area. Isolation keeps it above the body's paint at all widths. */
+html:has(> body[data-claude-ui]) { overflow: clip; }
+body[data-claude-ui] { isolation: isolate; overflow: clip !important; }
+body[data-claude-ui] .cu-background-layer { position: fixed; inset: 0; overflow: hidden; z-index: -1; pointer-events: none; }
+body[data-claude-ui] .cu-background-layer > :is(#bg1,#bg_custom) { position: absolute !important; }
 body[data-claude-ui].cu-background-enabled :is(#bg1,#bg_custom) {
     filter: var(--cu-background-filter,none);
 }
 /* Overscan the image instead of leaving transparent blur fringes at the viewport edges. */
 body[data-claude-ui].cu-background-enabled.cu-background-blurred :is(#bg1,#bg_custom) {
-    position: fixed !important; top: calc(0px - var(--cu-background-spread)) !important; left: calc(0px - var(--cu-background-spread)) !important;
+    top: calc(0px - var(--cu-background-spread)) !important; left: calc(0px - var(--cu-background-spread)) !important;
     width: calc(100vw + var(--cu-background-spread) + var(--cu-background-spread)) !important;
     height: calc(100dvh + var(--cu-background-spread) + var(--cu-background-spread)) !important;
     background-attachment: scroll;
@@ -17,15 +23,15 @@ body[data-claude-ui].cu-background-enabled #chat .mes_text :is(i,em) { color: va
 
 /* Filtering #sheld or #top-settings-holder would change fixed-drawer containing blocks. */
 body[data-claude-ui].cu-glass-enabled :is(.cu-header,#extensionTopBar) {
-    background: color-mix(in srgb,var(--cu-bg) var(--cu-ui-opacity,88%),transparent) !important;
+    background: color-mix(in srgb,var(--cu-bg) max(90%,var(--cu-ui-opacity,88%)),transparent) !important;
     -webkit-backdrop-filter: var(--cu-ui-backdrop,none) !important; backdrop-filter: var(--cu-ui-backdrop,none) !important;
 }
 body[data-claude-ui].cu-glass-enabled .cu-sidebar {
-    background: color-mix(in srgb,var(--cu-sidebar) var(--cu-ui-opacity,88%),transparent) !important;
+    background: color-mix(in srgb,var(--cu-sidebar) max(90%,var(--cu-ui-opacity,88%)),transparent) !important;
     -webkit-backdrop-filter: var(--cu-ui-backdrop,none) !important; backdrop-filter: var(--cu-ui-backdrop,none) !important;
 }
 body[data-claude-ui].cu-glass-enabled :is(.cu-sheet-panel,.drawer-content,.popup,.floating_panel,.options-content,#extensionsMenu,#select_chat_popup,#dialogue_popup,.list-group,.ui-autocomplete,#quickPersonaMenu,#extensionSideBar,#extensionConnectionProfiles) {
-    background: color-mix(in srgb,var(--cu-surface) var(--cu-ui-opacity,88%),transparent) !important;
+    background: color-mix(in srgb,var(--cu-surface) max(96%,var(--cu-ui-opacity,88%)),transparent) !important;
     -webkit-backdrop-filter: var(--cu-ui-backdrop,none) !important; backdrop-filter: var(--cu-ui-backdrop,none) !important;
 }
 body[data-claude-ui].cu-glass-enabled #send_form {
@@ -33,13 +39,13 @@ body[data-claude-ui].cu-glass-enabled #send_form {
     -webkit-backdrop-filter: var(--cu-ui-backdrop,none) !important; backdrop-filter: var(--cu-ui-backdrop,none) !important;
 }
 body[data-claude-ui].cu-glass-enabled.cu-shell-ready #top-settings-holder > .drawer > .drawer-content {
-    background: color-mix(in srgb,var(--cu-surface) var(--cu-ui-opacity,88%),transparent) !important;
+    background: color-mix(in srgb,var(--cu-surface) max(96%,var(--cu-ui-opacity,88%)),transparent) !important;
 }
 /* Blur just a painted pseudo-element, not the native toolbar's drawer-hosting element. */
 body[data-claude-ui].cu-glass-enabled #top-settings-holder { background: transparent !important; isolation: isolate; }
 body[data-claude-ui].cu-glass-enabled #top-settings-holder::before {
     content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
-    background: color-mix(in srgb,var(--cu-bg) var(--cu-ui-opacity,88%),transparent);
+    background: color-mix(in srgb,var(--cu-bg) max(90%,var(--cu-ui-opacity,88%)),transparent);
     -webkit-backdrop-filter: var(--cu-ui-backdrop,none) !important; backdrop-filter: var(--cu-ui-backdrop,none) !important;
 }
 
