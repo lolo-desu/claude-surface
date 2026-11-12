@@ -306,6 +306,12 @@ body[data-claude-ui] #chat .reasoning_edit_textarea { width: 100%; min-height: 1
     body[data-claude-ui] #chat .mes_reasoning_arrow { transition: none !important; }
 }
 body[data-claude-ui] #form_sheld { flex: 0 0 auto; width: min(768px,100%); margin: 0 auto; padding: 0 16px max(12px, env(safe-area-inset-bottom)); background: var(--cu-bg); }
+/* Native iOS PWA padding and the composer otherwise reserve the safe area
+   twice. Keep one reservation on the composer, including short landscapes. */
+@supports (-webkit-touch-callout: none) {
+    body[data-claude-ui].PWA #sheld { padding-bottom: 0 !important; }
+    body[data-claude-ui].PWA #form_sheld { padding-bottom: max(12px, env(safe-area-inset-bottom)) !important; }
+}
 body[data-claude-ui] #send_form { padding: 8px; border: 1px solid var(--cu-input-border) !important; border-radius: 14px; background: var(--cu-input) !important; box-shadow: 0 4px 20px #00000009; backdrop-filter: none; }
 body[data-claude-ui] #send_form:has(#send_textarea:focus-visible) { outline: none !important; border-color: var(--cu-muted) !important; box-shadow: inset 0 0 0 1px var(--cu-muted); }
 body[data-claude-ui] #nonQRFormItems { display: grid !important; grid-template-columns: 1fr auto; align-items: end; gap: 4px; }
