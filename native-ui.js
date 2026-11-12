@@ -2,6 +2,7 @@ import { setupMobileWorldInfo, setupMobilePanelViewport } from './world-info-ui.
 import { toggleDrawer } from '../../../utils.js';
 import { extensionNames } from '../../../extensions.js';
 import { nativeDrawerControl } from './native-controls.js';
+import { createAttributeOwner } from './control-attributes.js';
 /* Adapt native elements in place: their IDs, values and event handlers stay intact. */
 export function setupNativeUI({ settings, svg, ui = text => text, showCharacters, openCharacter, characterEntities }) {
     const hasBaiBaiTools = () => {
@@ -31,8 +32,13 @@ export function setupNativeUI({ settings, svg, ui = text => text, showCharacters
     });
     const compactViewport = matchMedia('(max-width: 899px), (max-width: 1100px) and (pointer: coarse)');
     const presetIcon = document.getElementById('leftNavDrawerIcon');
-    const originalPresetTitle = presetIcon?.title;
-    const toolbarAttributes = new Map();
+    const nativeAttributes = createAttributeOwner();
+    const stopControl = document.getElementById('mes_stop');
+    stopControl?.addEventListener('keydown', event => {
+        if (!settings().enabled || !['Enter',' '].includes(event.key)) return;
+        event.preventDefault(); event.stopPropagation();
+        if (event.key !== ' ' || !event.repeat) stopControl.click();
+    });
     let statusId = 0;
     const worldAttributes = new Map();
     // Weak keys release removed chat controls without walking all old messages.
@@ -81,37 +87,30 @@ export function setupNativeUI({ settings, svg, ui = text => text, showCharacters
         document.querySelectorAll('#WIMultiSelector .select2-selection__choice__remove').forEach(button=>attributes(button,{'aria-label':ui('移除此世界书'),title:ui('移除此世界书')}));
     }
     function refreshToolbar() {
+        if (!settings().enabled) { nativeAttributes.restore(); return; }
+        nativeAttributes.prune();
         document.querySelectorAll('#top-settings-holder > .drawer > .drawer-toggle').forEach(toggle => {
             const control = nativeDrawerControl(toggle);
             if (!control) return;
-            const keys = ['role','tabindex','aria-label','aria-controls','aria-expanded'];
             const icon = toggle.querySelector('.drawer-icon');
-            if (!toolbarAttributes.has(toggle)) toolbarAttributes.set(toggle,{attributes:Object.fromEntries(keys.map(key => [key,toggle.getAttribute(key)])),iconAttributes:icon && Object.fromEntries(['role','tabindex','aria-hidden'].map(key=>[key,icon.getAttribute(key)]))});
-            if (!settings().enabled) {
-                for (const [key,value] of Object.entries(toolbarAttributes.get(toggle).attributes)) value == null ? toggle.removeAttribute(key) : toggle.setAttribute(key,value);
-                if (icon) for (const [key,value] of Object.entries(toolbarAttributes.get(toggle).iconAttributes || {})) value == null ? icon.removeAttribute(key) : icon.setAttribute(key,value);
-                return;
-            }
-            if (icon) { icon.setAttribute('role','presentation'); icon.setAttribute('aria-hidden','true'); icon.tabIndex = -1; }
-            toggle.setAttribute('role','button'); toggle.tabIndex = 0;
-            toggle.setAttribute('aria-label',ui(control.label));
+            nativeAttributes.apply(icon, { role: 'presentation', 'aria-hidden': 'true', tabindex: -1 });
             const panel = toggle.parentElement.querySelector('.drawer-content');
-            if (panel?.id) toggle.setAttribute('aria-controls',panel.id);
-            toggle.setAttribute('aria-expanded',String(!!panel?.classList.contains('openDrawer')));
+            nativeAttributes.apply(toggle, { role: 'button', tabindex: 0, 'aria-label': ui(control.label),
+                ...(panel?.id ? { 'aria-controls': panel.id } : {}), 'aria-expanded': String(!!panel?.classList.contains('openDrawer')) });
         });
+        if (stopControl) nativeAttributes.apply(stopControl, { role: 'button', tabindex: 0, 'aria-label': stopControl.title || ui('停止生成') });
     }
     document.getElementById('top-settings-holder')?.addEventListener('keydown', event => {
         if (!settings().enabled || !['Enter',' '].includes(event.key) || !event.target.matches('.drawer-toggle') || !nativeDrawerControl(event.target)) return;
-        event.preventDefault(); event.target.click();
+        event.preventDefault();
+        if (event.key !== ' ' || !event.repeat) event.target.click();
     });
     new MutationObserver(records => {
         if (records.some(record=>record.target.matches('.drawer-icon,.drawer-content'))) refreshToolbar();
     }).observe(document.getElementById('top-settings-holder'),{subtree:true,attributes:true,attributeFilter:['class']});
     function refreshTitle() {
-        if (presetIcon) {
-            presetIcon.title = settings().enabled ? ui('预设') : originalPresetTitle;
-            presetIcon.setAttribute('aria-label', presetIcon.title);
-        }
+        if (settings().enabled) nativeAttributes.apply(presetIcon, { title: ui('预设'), 'aria-label': ui('预设') });
+        else nativeAttributes.restore();
     }
     const paintRange = input => {
         const minimum = Number(input.min) || 0, maximum = Number(input.max) || 100;

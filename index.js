@@ -2,6 +2,7 @@ import * as host from '../../../../script.js';
 import * as groupChats from '../../../group-chats.js';
 import { createChatNavigator } from './chat-navigation.js';
 import { observeMessageUpdates } from './message-updates.js';
+import { setupReasoningScroll } from './reasoning-scroll.js';
 import { setupSheetGesture } from './sheet-gesture.js';
 import { brandMarks } from './brand-marks.js';
 import { setupNativeUI } from './native-ui.js';
@@ -10,6 +11,8 @@ import { setupManagedTheme } from './theme-manager.js';
 import { designs, designOf, appearanceMode } from './designs.js';
 import { designBrand } from './design-branding.js';
 import { paletteOptions, selectedPalette } from './palettes.js';
+import { applyCustomPalette } from './custom-palettes.js';
+import { setupCustomPaletteUI } from './custom-palette-ui.js';
 import { setupExtensionCompatibility } from './extension-compat.js';
 import { visualEffectControls, visualEffectsOf, applyVisualEffects } from './visual-effects.js';
 import { createLocalizer } from './localization.js';
@@ -140,18 +143,21 @@ function refreshEffectControls(config = settings()) {
 function refreshPaletteControls(config = settings()) {
     const family = designOf(config.design).id;
     const selected = selectedPalette(config);
+    const options = paletteOptions(family, config);
+    const revision = JSON.stringify([family, options.map(({id,label,swatch}) => [id,label,swatch])]);
     for (const host of document.querySelectorAll('.cu-palette-options')) {
-        if (host.dataset.design !== family) {
-            host.dataset.design = family; host.replaceChildren();
-            for (const option of paletteOptions(family)) {
+        if (host.dataset.paletteRevision !== revision) {
+            host.dataset.paletteRevision = revision; host.replaceChildren();
+            for (const option of options) {
                 const control = document.createElement('button'); control.type = 'button'; control.className = 'cu-palette-chip'; control.dataset.palette = option.id;
                 const swatch = document.createElement('i'); swatch.style.setProperty('--cu-swatch', option.swatch); swatch.setAttribute('aria-hidden','true');
-                const label = document.createElement('span'); label.textContent = ui(option.label); control.append(swatch,label);
+                const label = document.createElement('span'); label.textContent = option.id.startsWith('custom-') ? option.label : ui(option.label); control.title = label.textContent; control.append(swatch,label);
                 control.addEventListener('click', () => { settings().designPalettes[family] = option.id; save(); applyAppearance(); });
                 host.append(control);
             }
+            host.append(button(ui('自定义颜色'), 'plus', () => state.customPaletteUI.open(), 'cu-icon cu-palette-add'));
         }
-        host.querySelectorAll('button').forEach(control => control.setAttribute('aria-pressed',String(control.dataset.palette === selected.id)));
+        host.querySelectorAll('[data-palette]').forEach(control => control.setAttribute('aria-pressed',String(control.dataset.palette === selected.id)));
     }
 }
 
@@ -173,7 +179,7 @@ function button(label, icon, action, className = '') {
         text.textContent = label;
         el.append(text);
     }
-    el.addEventListener('click', () => { state.invoker = el; Promise.resolve().then(action).catch(report); });
+    el.addEventListener('click', event => { state.invoker = el; state.keyboardAction = event.detail === 0; Promise.resolve().then(action).catch(report); });
     return el;
 }
 
@@ -183,6 +189,16 @@ function report(error) {
 }
 
 const editable = element => element?.matches('input:not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]),textarea,[contenteditable="true"],[role="textbox"]');
+function focusNavigation(preferred) {
+    const candidates = [preferred, document.getElementById('cu-sidebar-toggle'), document.querySelector('.cu-composer-meta button')];
+    for (const element of candidates) {
+        if (!element?.isConnected || editable(element) || element.disabled || element.closest('[inert],[hidden]') || !element.getClientRects().length) continue;
+        const style = getComputedStyle(element);
+        if (style.visibility === 'hidden' || style.display === 'none') continue;
+        element.focus({ preventScroll: true });
+        if (document.activeElement === element) return;
+    }
+}
 function quietNavigation() {
     revealHeader();
     state.navigationInputIntent = false;
@@ -217,6 +233,7 @@ function applyAppearance() {
     refreshPaletteControls(config);
     if (config.enabled) document.body.dataset.claudeUi = mode;
     else delete document.body.dataset.claudeUi;
+    applyCustomPalette(document.body, config, mode);
     document.body.classList.toggle('cu-shell-ready', config.enabled);
     document.body.classList.toggle('cu-background-enabled', config.enabled && config.background);
     applyVisualEffects(document.body, config);
@@ -273,9 +290,13 @@ function applyAppearance() {
     if (state.messageAppearance !== messageAppearance) {
         state.messageAppearance = messageAppearance; decorateMessages(config.enabled);
     }
+    if (state.reasoningEnabled !== config.enabled) {
+        state.reasoningEnabled = config.enabled; state.reasoningScroll?.refresh();
+        state.refreshViewport?.();
+    }
     if (config.enabled) updateContext();
     syncNativePanels();
-    setSidebar(false);
+    if (!config.enabled || desktop.matches) setSidebar(false);
 }
 
 function setNativeToolbar(visible) {
@@ -398,6 +419,8 @@ function setupHeaderScroll() {
 }
 
 function syncNativePanels() {
+    const close = document.getElementById('cu-native-close');
+    const closingFocused = document.activeElement === close;
     syncDesktopDocks();
     const panels = [...document.querySelectorAll('#top-settings-holder > .drawer > .drawer-content.openDrawer')];
     const opened = settings().enabled && panels.length > 0;
@@ -407,7 +430,7 @@ function syncNativePanels() {
     document.body.classList.toggle('cu-left-dock-open', settings().enabled && desktop.matches && panels.some(panel => panel.id === 'left-nav-panel'));
     document.body.classList.toggle('cu-right-dock-open', settings().enabled && desktop.matches && panels.some(panel => panel.id === 'right-nav-panel'));
     document.body.classList.toggle('cu-panel-open', opened);
-    const close = document.getElementById('cu-native-close');
+    const returnFocus = !opened && closingFocused ? state.nativeReturnFocus : null;
     if (close) close.hidden = !opened;
     const title = document.querySelector('.cu-title');
     const headerAvatar = document.querySelector('.cu-header-avatar');
@@ -416,6 +439,7 @@ function syncNativePanels() {
     if (title) title.textContent = pages.length
         ? (panelTitles[pages.at(-1).id] || pages.at(-1).parentElement.querySelector('.drawer-icon')?.title || ui('更多'))
         : (state.chatTitle || ui('新建对话'));
+    if (returnFocus) { state.nativeReturnFocus = null; focusNavigation(returnFocus); }
 }
 
 function closeNativePanels({ keepDocks = false } = {}) {
@@ -429,12 +453,16 @@ function closeNativePanels({ keepDocks = false } = {}) {
 }
 
 function openNative(toggle) {
+    const keyboard = state.keyboardAction;
+    const opener = state.sheet ? state.returnFocus : document.activeElement;
+    state.nativeReturnFocus = keyboard ? opener : null;
     revealHeader();
     quietNavigation();
     closeSheet();
     setSidebar(false);
     if (!toggle.querySelector('.openIcon')) toggle.click();
     syncNativePanels();
+    if (keyboard) focusNavigation(document.getElementById('cu-native-close'));
 }
 
 function decorateMessages(enabled = settings().enabled, messages) {
@@ -554,7 +582,7 @@ function closeSheet(immediate = false) {
     }
     state.sheet = null;
     syncHeaderVisibility();
-    if (!editable(state.returnFocus)) state.returnFocus?.focus({ preventScroll: true });
+    if (!editable(state.returnFocus)) focusNavigation(state.returnFocus);
 }
 
 function sheet(title, { anchor, closeButton = true, swipeToClose = false } = {}) {
@@ -847,23 +875,40 @@ function showChatActions() {
     list.className = 'cu-sheet-list';
     list.append(
         homeAction({ force: true }),
-        button(ui('聊天记录'), 'history', () => { quietNavigation(); closeSheet(); document.querySelector('#option_select_chat')?.click(); }),
-        button(ui('新建聊天'), 'plus', () => { quietNavigation(); closeSheet(); document.querySelector('#option_start_new_chat')?.click(); }),
+        button(ui('聊天记录'), 'history', () => afterChatSelection(() => document.querySelector('#option_select_chat')?.click())),
+        button(ui('新建聊天'), 'plus', () => afterChatSelection(() => document.querySelector('#option_start_new_chat')?.click())),
         button(ui('编辑角色世界书'), 'book', showCharacterWorld),
         button(ui('编辑角色详情'), 'edit', showCharacterEditor));
     content.append(list);
 }
 
+// Native getChat mutates shared chat state after its request completes. Let it
+// settle before a second Surface action changes that state; the latest wins.
+function afterChatSelection(action) {
+    quietNavigation(); closeSheet(); setSidebar(false);
+    if (state.selecting) { state.pendingNavigation = action; return; }
+    return action();
+}
+
+async function finishChatSelection() {
+    state.selecting = false;
+    const next = state.pendingNavigation; state.pendingNavigation = null;
+    if (next) await next();
+}
+
 async function goHome(forceClaude = false) {
     quietNavigation();
+    if (state.selecting) { afterChatSelection(() => goHome(forceClaude)); return; }
     if (forceClaude && settings().useNativeHome) { settings().useNativeHome = false; save(); }
     state.homeRecent = false;
     closeSheet();
     closeNativePanels();
     setSidebar(false);
-    await closeCurrentChat();
-    updateContext();
-    void refreshRecents();
+    state.selecting = true;
+    try {
+        await closeCurrentChat();
+        if (!state.pendingNavigation) { updateContext(); void refreshRecents(); }
+    } finally { await finishChatSelection(); }
 }
 
 function refreshRecents() {
@@ -960,10 +1005,10 @@ function characterRow(entity, subtitle, action = () => openCharacter(entity)) {
 
 async function openCharacter(entity, file) {
     quietNavigation();
-    if (state.selecting) return;
+    if (state.selecting) { afterChatSelection(() => openCharacter(entity, file)); return; }
     state.selecting = true;
     try {
-        if (!await navigateChat(entity, file)) return;
+        if (!await navigateChat(entity, file) || state.pendingNavigation) return;
         if (entity.group) setActiveGroup(entity.group);
         else setActiveCharacter(entity.avatar);
         settings().recentCharacters = [entity.key, ...settings().recentCharacters.filter(key => key !== entity.key)].slice(0, 60);
@@ -974,10 +1019,11 @@ async function openCharacter(entity, file) {
         if (desktop.matches && document.getElementById('right-nav-panel')?.classList.contains('openDrawer')) document.getElementById('rm_button_characters')?.click();
         updateContext();
         void refreshRecents();
-    } finally { state.selecting = false; }
+    } finally { await finishChatSelection(); }
 }
 
 async function showCharacterEditor() {
+    if (state.selecting) { afterChatSelection(showCharacterEditor); return; }
     quietNavigation();
     const id = ctx().characterId;
     if (id != null) await ctx().selectCharacterById(id, { switchMenu: true });
@@ -985,6 +1031,7 @@ async function showCharacterEditor() {
 }
 
 async function showCharacterWorld() {
+    if (state.selecting) { afterChatSelection(showCharacterWorld); return; }
     quietNavigation();
     closeSheet(); setSidebar(false);
     const id = ctx().characterId;
@@ -1134,7 +1181,12 @@ function initialize() {
     const subtitle = document.createElement('span'); subtitle.className = 'cu-header-subtitle'; subtitle.textContent = 'SillyTavern';
     const headerAvatar = document.createElement('span'); headerAvatar.className = 'cu-header-avatar'; headerAvatar.hidden = true; headerAvatar.setAttribute('aria-hidden', 'true');
     titleWrap.append(headerAvatar, title, subtitle);
-    const closeNative = button(ui('关闭原生面板'), 'close', closeNativePanels, 'cu-icon');
+    const closeNative = button(ui('关闭原生面板'), 'close', () => {
+        const keyboard = state.keyboardAction, opener = state.nativeReturnFocus;
+        state.nativeReturnFocus = null;
+        closeNativePanels();
+        if (keyboard) focusNavigation(opener);
+    }, 'cu-icon');
     closeNative.id = 'cu-native-close';
     closeNative.hidden = true;
     header.append(sidebarToggle, titleWrap, closeNative, button(ui('聊天操作'), 'more', showChatActions, 'cu-icon'), homeAction({className:'cu-icon', force:true}), button(ui('更多'), 'sliders', showTools, 'cu-icon'));
@@ -1204,9 +1256,20 @@ function initialize() {
     homeScroll.append(greeting, homeContent);
     welcome.append(homeScroll);
     document.querySelector('#sheld').append(welcome);
-    new ResizeObserver(([entry]) => {
-        document.body.style.setProperty('--cu-composer-height', `${Math.ceil(entry.target.getBoundingClientRect().height)}px`);
-    }).observe(document.querySelector('#form_sheld'));
+    const composer = document.querySelector('#form_sheld');
+    const composerItems = document.querySelector('#nonQRFormItems');
+    let composerFrame = null;
+    const refreshComposerSize = () => {
+        composerFrame = null;
+        const value = `${Math.ceil(composer.getBoundingClientRect().height)}px`;
+        if (document.body.style.getPropertyValue('--cu-composer-height') !== value) document.body.style.setProperty('--cu-composer-height', value);
+        const controlsWidth = ['leftSendForm','rightSendForm'].reduce((sum, id) => sum + document.getElementById(id).getBoundingClientRect().width, 0);
+        document.body.classList.toggle('cu-composer-crowded', composerItems.clientWidth - controlsWidth - 8 < 120);
+    };
+    const composerSize = new ResizeObserver(() => {
+        if (composerFrame === null) composerFrame = requestAnimationFrame(refreshComposerSize);
+    });
+    for (const target of [composer, composerItems, document.getElementById('leftSendForm'), document.getElementById('rightSendForm')]) composerSize.observe(target);
     const returnHome = homeAction({ prefix:ui('返回 '), force:true, className:'cu-return-home' }); returnHome.hidden = true; document.body.append(returnHome);
     // Home gestures must not move the canvas or implicitly expand recents.
     // Only an explicitly opened history list scrolls; two-finger zoom remains.
@@ -1240,6 +1303,7 @@ function initialize() {
     }
     state.compatUI = setupExtensionCompatibility({ settings, save, appearanceChanged: applyAppearance, ui });
     state.themeUI = setupManagedTheme({ settings, save, report, appearanceChanged: applyAppearance });
+    state.customPaletteUI = setupCustomPaletteUI({ settings, save, sheet, button, ui, applyAppearance, showAppearance });
     setupHeaderScroll();
     // Browsing stored alternatives is always available. An offline right swipe
     // at the end would enter the native generation path and increment its count.
@@ -1270,6 +1334,11 @@ function initialize() {
     });
     applyAppearance();
     void refreshRecents();
+    // Escape first cancels an active IME composition. Host Escape handlers do
+    // not all check composition state; keep the browser default and shield it.
+    document.addEventListener('keydown', event => {
+        if (settings().enabled && event.key === 'Escape' && (event.isComposing || event.keyCode === 229) && editable(event.target)) event.stopImmediatePropagation();
+    }, true);
     const context = ctx();
     for (const name of ['APP_READY','CHAT_CHANGED','CHAT_LOADED','SETTINGS_UPDATED','MAIN_API_CHANGED','CHATCOMPLETION_MODEL_CHANGED','ONLINE_STATUS_CHANGED','PERSONA_CHANGED']) {
         if (context.eventTypes[name]) context.eventSource.on(context.eventTypes[name], () => { queueContextUpdate(); if (name.includes('CHAT') || name === 'APP_READY') void refreshRecents(); });
@@ -1278,11 +1347,14 @@ function initialize() {
         if (context.eventTypes[name]) context.eventSource.on(context.eventTypes[name], refreshRecents);
     }
     const chatElement = document.querySelector('#chat');
+    state.reasoningScroll = setupReasoningScroll({ root: chatElement, enabled: () => settings().enabled });
     state.messageUpdates = observeMessageUpdates({
         root: chatElement, enabled: () => settings().enabled,
         decorate: messages => decorateMessages(true, messages),
         contextChanged: queueContextUpdate,
         followLoad: () => state.selecting && ctx().powerUserSettings.auto_scroll_chat_to_bottom !== false,
+        canPinLoad: () => ctx().powerUserSettings.auto_scroll_chat_to_bottom !== false,
+        loadKey: () => { const context = ctx(); return JSON.stringify([context.characterId, context.groupId, context.getCurrentChatId()]); },
     });
     document.addEventListener('click', captureEditorAnchor, true);
     const nativeObserver = new MutationObserver(() => {
@@ -1304,14 +1376,45 @@ function initialize() {
     });
     shortViewport.addEventListener('change', () => applyAppearance());
     // Keep the real composer above mobile keyboards without replacing its input handlers.
+    let viewportFrame = null;
     const adjustViewport = () => {
+        viewportFrame = null;
         const viewport = window.visualViewport;
         const keyboardInset = viewport && document.activeElement?.id === 'send_textarea'
             ? Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop) : 0;
-        document.body.style.setProperty('--cu-bottom-inset', `${keyboardInset}px`);
+        const value = `${keyboardInset}px`;
+        if (document.body.style.getPropertyValue('--cu-bottom-inset') !== value) document.body.style.setProperty('--cu-bottom-inset', value);
+        const sidebarInput = settings().enabled && !desktop.matches && viewport && viewport.scale === 1 && editable(document.activeElement) && document.activeElement.closest('.cu-sidebar');
+        for (const [key, next] of [['--cu-sidebar-height', sidebarInput ? `${viewport.height}px` : ''], ['--cu-sidebar-top', sidebarInput ? `${viewport.offsetTop}px` : '']]) {
+            if (document.body.style.getPropertyValue(key) === next) continue;
+            if (next) document.body.style.setProperty(key, next); else document.body.style.removeProperty(key);
+        }
+        document.body.classList.toggle('cu-sidebar-keyboard', !!sidebarInput && viewport.height < window.innerHeight - 100);
+        const sheetInput = settings().enabled && !desktop.matches && viewport && viewport.scale === 1 && editable(document.activeElement) && document.activeElement.closest('.cu-sheet-body');
+        const sheetKeyboard = !!sheetInput && viewport.height < window.innerHeight - 100;
+        for (const [key, next] of [['--cu-sheet-height', sheetKeyboard ? `${viewport.height}px` : ''], ['--cu-sheet-top', sheetKeyboard ? `${viewport.offsetTop}px` : '']]) {
+            if (document.body.style.getPropertyValue(key) === next) continue;
+            if (next) document.body.style.setProperty(key, next); else document.body.style.removeProperty(key);
+        }
+        document.body.classList.toggle('cu-sheet-keyboard', sheetKeyboard);
+        if (sheetKeyboard) {
+            const bounds = sheetInput.getBoundingClientRect(), input = document.activeElement.getBoundingClientRect();
+            if (input.bottom > bounds.bottom) sheetInput.scrollTop += input.bottom - bounds.bottom + 8;
+            else if (input.top < bounds.top) sheetInput.scrollTop -= bounds.top - input.top + 8;
+        }
     };
-    window.visualViewport?.addEventListener('resize', adjustViewport);
-    document.querySelector('#send_textarea').addEventListener('blur', () => document.body.style.setProperty('--cu-bottom-inset', '0px'));
+    const queueViewport = () => { if (viewportFrame === null) viewportFrame = requestAnimationFrame(adjustViewport); };
+    state.refreshViewport = queueViewport;
+    window.visualViewport?.addEventListener('resize', queueViewport);
+    window.visualViewport?.addEventListener('scroll', queueViewport);
+    window.addEventListener('resize', queueViewport);
+    for (const type of ['focusin','focusout']) document.addEventListener(type, queueViewport);
+    document.querySelector('#send_textarea').addEventListener('focus', queueViewport);
+    document.querySelector('#send_textarea').addEventListener('blur', () => {
+        if (viewportFrame !== null) cancelAnimationFrame(viewportFrame);
+        viewportFrame = null;
+        document.body.style.setProperty('--cu-bottom-inset', '0px');
+    });
 }
 
 jQuery(initialize);

@@ -1,15 +1,23 @@
-# Claude Surface 0.10.16
+# Claude Surface 0.10.17
 
 为 SillyTavern 提供 Claude、Material Design、Adwaita 和 FlatDesign 的界面扩展。
 
 | 分支 | 用途 | 当前版本 |
 | --- | --- | --- |
 | [`main`](https://github.com/lolo-desu/claude-surface/tree/main) | 主线，日常安装与更新使用 | 0.10.16 |
-| [`unstable`](https://github.com/lolo-desu/claude-surface/tree/unstable) | 开发，独立验证后再合入主线，不自动同步 | 0.10.16 |
+| [`unstable`](https://github.com/lolo-desu/claude-surface/tree/unstable) | 开发，独立验证后再合入主线，不自动同步 | 0.10.17 |
 | [`legacy`](https://github.com/lolo-desu/claude-surface/tree/legacy) | 遗产，保留本次升级前的主线版本 | 0.9.5 |
 | [`legacy-v0.8.1`](https://github.com/lolo-desu/claude-surface/tree/legacy-v0.8.1) | 早期遗产，保留原有 Claude 风格与行为 | 0.8.1 |
 
 ## 安装
+
+0.10.17 开发版：主题色末尾新增“＋”，可为当前设计创建、预览、保存、编辑和删除自定义配色，并通过 JSON／YAML 导入、导出。每套配色分别保存浅色与深色的 24 项颜色，包括正文引用、斜体、下划线和代码语法颜色；草稿只改变预览，保存后才应用并出现新色卡。主线保持 0.10.16，等待开发版实机验收后再决定合入。
+
+展开的思考内容限制为不超过 360px 或窗口高度的 45%，内部可上下滚动。正在生成且停留在思考框底部时跟随新增内容；向上阅读会暂停跟随，回到底部后恢复。折叠、历史内容和停用界面不会被持续强拉到底部。
+
+修复扩展管理条目的额外高度、按钮对齐和窄屏名称被挤掉的问题；少见的五操作按钮组合在窄屏分行，模块说明保留自然换行。修复生成中停止图标的居中、键盘操作，以及脚本执行时隐藏发送按钮留下的空位。可选输入按钮过多时，紧凑输入栏自动把正文移到整行，避免一字一行。
+
+补齐侧栏及设置页的键盘避让、横屏安全区和焦点恢复。中文输入仍在组词时，Escape 先取消组词，保留编辑页；长按空格不会反复开关原生抽屉。聊天加载及返回首页期间，后续 Surface 聊天操作等待前一操作完成，并保留最后一次选择，避免旧请求覆盖新选择。流式正文不再搜索整段新增或移除的 HTML；分批装饰结束时重新检查当前聊天和原生自动滚动偏好。普通消息的空思考框在首次展开前不挂接内部滚动监听；停用后释放新增的思考框观察器，并恢复自定义颜色及原生控件属性。
 
 0.10.16：移除“更多”菜单右上角的关闭按钮。手机可从标题、空白区域或菜单卡片上向下滑动收起，不再局限于顶部横条；横条的点击／拖动区域扩大，矮横屏也保留横条。小幅慢拖回弹，明确下拉或快速下甩关闭；长菜单仍可正常滚动，已滚动的内容优先滚动而不关闭。拖动不会误触起点卡片，取消与多指触摸不会触发关闭。保留横条点击、Escape 和点击遮罩关闭，其他面板的关闭按钮保持原状。主线与开发分支同步更新。
 
@@ -146,6 +154,14 @@ powershell -File install-startup.ps1 -SillyTavernPath 'D:\SillyTavern'
 
 也可下载 [深色主题](themes/Claude%20Surface%20Dark.json) 或 [浅色主题](themes/Claude%20Surface%20Light.json)，通过原版用户设置导入，获得仅 CSS 的外观；完整首页与侧栏需本扩展。两种方式任选其一即可。
 
+## 自定义颜色
+
+打开“更多 → 主题设置”，点击主题色最后的“＋”。选择“新建配色”会复制当前配色的浅色、深色两套颜色；也可导入 JSON／YAML 文件或粘贴文本。编辑页按背景、文字、交互和代码语法分组，颜色选择器调整 RGB，十六进制输入支持透明度，例如 `#33669980`。上方样本预览随输入更新，当前聊天颜色在“保存并应用”后才改变。
+
+保存后，新的色卡出现在当前设计的主题色列表。再次点击“＋”可编辑已有配色、导出 JSON／YAML，或确认删除。各设计分别保留自己的配色和选择；浅色、深色随现有主题模式切换。导入会在当前设计下创建新副本，不覆盖原配色。
+
+文件使用本扩展的 `claude-surface-palette` 第 1 版格式，包含名称、设计、色卡颜色，以及完整的 `light`／`dark` 颜色表。建议先导出一套作为模板；它与酒馆原生主题 JSON 的格式不同。仅接受十六进制颜色数据，不执行导入的 CSS；单文件最多 128 KiB，总计最多保存 64 套。自定义配色随酒馆扩展设置保存，停用后恢复原有颜色。
+
 ## 浏览器回归
 
 `tests/controls.browser.mjs` 使用独立的 Chromium、WebKit 无头浏览器，在四种风格、深浅色和手机／窄桌面／宽桌面窗口下实际点击更新通知、扩展管理、安装按钮和设置折叠项，并检查开关、下拉框、滑块键盘输入以及面板与侧栏的边界。还检查五套原生 CSS 主题的勾选图形边界。测试拦截设置保存、主题保存及扩展变更请求，避免测试写入服务器偏好或安装／更新扩展。
@@ -167,7 +183,10 @@ powershell -File install-startup.ps1 -SillyTavernPath 'D:\SillyTavern'
 
 `tests/sheet-gesture.browser.mjs` 使用 Chromium 的真实触摸注入，检查四种风格、手机竖横屏、从卡片下拉、防误触、短拖回弹、长菜单滚动、横向／取消／多指手势、横条点击、减少动态效果与桌面 Escape／遮罩关闭。需要本地 SillyTavern 和 Playwright Chromium，支持其他测试相同的 `CU_*` 环境变量；这不等于 iOS Safari 真机手势验证。
 
-## 待办（待讨论，尚未实现）
+`tests/custom-palettes.browser.mjs` 检查双模式草稿、实际保存与刷新、编辑、JSON／YAML 往返、无效导入、数量限制及停用恢复；`tests/reasoning-scroll.browser.mjs` 检查四种风格、竖横屏的实际思考框限高、跟随暂停／恢复及外层阅读位置。对应的数据、属性归属、消息增量处理和思考框生命周期也有 Node 单元测试，运行 `node --test tests/*.test.mjs`。
 
-- 自定义颜色：在现有主题配色选项中增加“自定义”，打开下一级编辑界面，允许逐项调整全部界面与正文颜色，并支持 JSON 导入、导出。覆盖背景、面板、输入框、边框、主／辅助文本、链接、引用、斜体、下划线、强调色及代码配色。
-- 实现前讨论：自定义配置如何按设计风格与深浅模式保存；与原生正文颜色设置的优先级；JSON 格式、导入校验、预览及恢复默认的行为。当前引用色被主题链接色覆盖的问题留待此方案一并处理，本次 hotfix 不改变颜色行为。
+`tests/extension-rows.browser.mjs` 覆盖原生更新／清理等 3–5 个按钮、模块说明、窄屏和中英文／德文；`tests/generation-controls.browser.mjs` 检查停止图标、原生生成状态、键盘触发一次和脚本按钮占位。`tests/chat-actions.browser.mjs` 使用延迟请求复现聊天／首页竞争，并检查最后一次操作；`tests/native-ownership.browser.mjs`、`tests/focus-lifecycle.browser.mjs` 和 `tests/viewport-lifecycle.browser.mjs` 检查启停恢复、键盘焦点、设置输入、侧栏、安全区和旋转。支持 `CU_SOURCE`、`CU_TEST_URL`、浏览器可执行路径及输出目录；新增用例也可通过 `CU_ENGINE=webkit` 使用 WebKit。所有写入及生成请求均拦截到测试资料中。
+
+`tests/ime-navigation.browser.mjs` 使用 Chromium 的真实输入法组词事件及 WebKit 组合键事件夹具，检查取消组词与随后正常 Escape；`tests/toolbar-keyboard.browser.mjs` 检查长按空格和第三方入口。`tests/mobile-controls-layout.browser.mjs` 检查 Adwaita 普通输入栏、多操作按钮与横屏弹窗安全区，`tests/reasoning-touch.browser.mjs` 使用 Chromium 触摸注入检查思考框内外滚动互不争抢。
+
+安全区、键盘可视区域、PWA 及旧版浏览器能力的受控模拟不等于 iPhone Safari 添加到主屏幕后的真机验收；开发版需由使用者补充该环境检查。

@@ -1,3 +1,5 @@
+import { customPaletteOptions } from './custom-palettes.js';
+
 // Curated color systems. Every choice belongs to one design and includes both modes.
 const colors = values => Object.fromEntries([
     'bg', 'sidebar', 'surface', 'input', 'text', 'muted', 'border', 'input-border',
@@ -94,12 +96,14 @@ export const palettesByDesign = {
     ],
 };
 
-export function paletteOptions(design) {
-    return palettesByDesign[Object.hasOwn(palettesByDesign, design) ? design : 'claude'];
+export function paletteOptions(design, config) {
+    const family = Object.hasOwn(palettesByDesign, design) ? design : 'claude';
+    const builtins = palettesByDesign[family];
+    return config ? [...builtins, ...customPaletteOptions(config, family)] : builtins;
 }
 
-export function paletteOf(design, id) {
-    const options = paletteOptions(design);
+export function paletteOf(design, id, config) {
+    const options = paletteOptions(design, config);
     return options.find(item => item.id === id) || options[0];
 }
 
@@ -107,7 +111,7 @@ export function selectedPalette(config = {}) {
     const design = Object.hasOwn(palettesByDesign, config.design) ? config.design : 'claude';
     const saved = config.designPalettes;
     const id = saved && typeof saved === 'object' && !Array.isArray(saved) && Object.hasOwn(saved, design) ? saved[design] : null;
-    return paletteOf(design, id);
+    return paletteOf(design, id, config);
 }
 
 export function paletteStyles() {

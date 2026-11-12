@@ -4,8 +4,7 @@ import fs from 'node:fs';
 
 const base = new URL('../', import.meta.url);
 const root = fs.existsSync(new URL('extension/palettes.js', base)) ? new URL('extension/', base) : base;
-const source = fs.readFileSync(new URL('palettes.js', root), 'utf8');
-const { palettesByDesign, paletteOptions, paletteOf, selectedPalette, paletteStyles } = await import('data:text/javascript;base64,' + Buffer.from(source).toString('base64'));
+const { palettesByDesign, paletteOptions, paletteOf, selectedPalette, paletteStyles } = await import(new URL('palettes.js', root));
 
 function rgb(hex, background = '#ffffff') {
     const channels = hex.slice(1).match(/../g).map(channel => parseInt(channel, 16));

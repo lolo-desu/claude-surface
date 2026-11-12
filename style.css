@@ -60,15 +60,18 @@ body[data-claude-ui] {
     --cu-panel-top: 56px;
     --cu-panel-max-height: calc(100dvh - var(--cu-panel-top) - 12px);
     --SmartThemeBodyColor: var(--cu-text);
-    --SmartThemeEmColor: var(--cu-muted);
+    --cu-italic: var(--cu-muted);
+    --cu-quote: var(--cu-link);
+    --cu-underline: var(--cu-accent);
+    --SmartThemeEmColor: var(--cu-italic);
     --SmartThemeBlurTintColor: var(--cu-surface);
     --SmartThemeChatTintColor: var(--cu-bg);
     --SmartThemeUserMesBlurTintColor: var(--cu-user);
     --SmartThemeBotMesBlurTintColor: transparent;
     --SmartThemeBorderColor: var(--cu-border);
     --SmartThemeShadowColor: transparent;
-    --SmartThemeQuoteColor: var(--cu-link);
-    --SmartThemeUnderlineColor: var(--cu-accent);
+    --SmartThemeQuoteColor: var(--cu-quote);
+    --SmartThemeUnderlineColor: var(--cu-underline);
     --mainFontSize: 15px;
     --mainFontFamily: var(--cu-sans);
     font-family: var(--cu-sans);
@@ -288,7 +291,7 @@ body[data-claude-ui] #chat .mes_reasoning_header_title { min-width: 0; overflow-
 body[data-claude-ui] #chat .mes_reasoning_details .mes_reasoning_arrow { position: static; flex: 0 0 10px; width: 10px; height: 10px; font-size: 10px; line-height: 10px; transform: none; transition: transform .16s ease; }
 body[data-claude-ui] #chat .mes_reasoning_arrow::before { content: '\f078'; }
 body[data-claude-ui] #chat .mes_reasoning_details[open] .mes_reasoning_arrow { transform: rotate(180deg); }
-body[data-claude-ui] #chat .mes_reasoning { max-width: 100%; margin: 8px 0 0 14px; padding: 4px 0 4px 16px; border: 0; border-left: 1px solid var(--cu-border); border-radius: 0; background: transparent; color: var(--cu-muted); font: 14px/1.65 var(--cu-sans); overflow-wrap: anywhere; }
+body[data-claude-ui] #chat .mes_reasoning { max-width: 100%; max-height: min(360px,45dvh); overflow-y: auto; overscroll-behavior-y: contain; overflow-anchor: none; margin: 8px 0 0 14px; padding: 4px 0 4px 16px; border: 0; border-left: 1px solid var(--cu-border); border-radius: 0; background: transparent; color: var(--cu-muted); font: 14px/1.65 var(--cu-sans); overflow-wrap: anywhere; }
 body[data-claude-ui] #chat .mes_reasoning_details[open] .mes_reasoning { animation: cu-thinking-reveal .16s ease-out; }
 body[data-claude-ui] #chat .mes_reasoning :is(p,ul,ol) { margin-top: 0; margin-bottom: 10px; }
 body[data-claude-ui] #chat .mes_reasoning :is(strong,h1,h2,h3) { color: var(--cu-text); }
@@ -320,7 +323,14 @@ body[data-claude-ui] #send_textarea::placeholder { color: var(--cu-muted); opaci
 body[data-claude-ui] #leftSendForm { grid-column: 1; grid-row: 2; display: flex; align-items: center; gap: 2px; width: auto; min-width: 0; }
 body[data-claude-ui] #rightSendForm { grid-column: 2; grid-row: 2; display: flex; width: auto; gap: 2px; align-items: center; }
 body[data-claude-ui] :is(#options_button,#extensionsMenuButton,#send_but,#mes_continue,#mes_impersonate,#mes_stop,.stscript_btn) { min-width: 32px; min-height: 32px; padding: 8px; border-radius: 8px; color: var(--cu-text); font-size: 16px; margin: 0; }
-body[data-claude-ui] #send_but { background: var(--cu-text); color: var(--cu-bg); }
+body[data-claude-ui] :is(#send_but,#mes_stop) { background: var(--cu-text); color: var(--cu-bg); }
+/* The host alone toggles display:none/flex. Draw a centered stop symbol rather
+   than stretching a small Font Awesome child at the top-left of its hit box. */
+body[data-claude-ui] #mes_stop { box-sizing: border-box; width: 32px; height: 32px; padding: 0; align-items: center; justify-content: center; opacity: 1; }
+body[data-claude-ui] #mes_stop > i { display: none; }
+body[data-claude-ui] #mes_stop::before { content: ''; flex: 0 0 12px; width: 12px; height: 12px; border-radius: 2px; background: currentColor; }
+body[data-claude-ui] #rightSendForm .stscript_btn > i.fa-solid { font-size: 16px; line-height: 1; }
+body[data-claude-ui] #form_sheld.isExecutingCommandsFromChatInput :is(#send_but,#mes_continue) { width: 0 !important; min-width: 0 !important; max-width: 0 !important; height: 0 !important; min-height: 0 !important; max-height: 0 !important; flex: 0 0 0 !important; padding: 0 !important; overflow: hidden; }
 body[data-claude-ui] #send_but::before { content: "\f062"; }
 body[data-claude-ui] #options_button::before { content: "\f141"; }
 body[data-claude-ui] #qr--bar { padding: 0 0 8px; }
@@ -487,7 +497,8 @@ body[data-claude-ui].cu-shell-ready.cu-home #chat { visibility: hidden; pointer-
 .cu-model-label { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .cu-composer-meta .cu-button svg { width: 14px; height: 14px; }
 .cu-sidebar { position: fixed; inset: 0 auto 0 0; width: var(--cu-sidebar-width); display: flex; flex-direction: column; z-index: 1030; background: var(--cu-sidebar); color: var(--cu-text); font-family: var(--cu-sans); transform: translateX(-100%); transition: transform 180ms ease; padding: 8px; }
-.cu-sidebar { height: 100dvh; }
+.cu-sidebar { top: var(--cu-sidebar-top,0px); height: var(--cu-sidebar-height,100dvh); padding-bottom: max(8px,env(safe-area-inset-bottom)); }
+.cu-sidebar-keyboard .cu-sidebar { padding-bottom: 8px; }
 .cu-sheet, .cu-backdrop { height: 100dvh; width: 100vw; }
 .cu-sidebar-open .cu-sidebar { transform: translateX(0); }
 .cu-sidebar-top { height: 36px; display: flex; align-items: center; gap: 8px; padding: 0 2px; margin-bottom: 8px; }
@@ -516,6 +527,7 @@ body[data-claude-ui].cu-shell-ready.cu-home #chat { visibility: hidden; pointer-
 .cu-sheet-body { min-height: 0; overflow-y: auto; }
 .cu-tool-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
 .cu-tool-grid .cu-button { flex-direction: column; gap: 10px; min-height: 86px; text-align: center; padding: 12px 5px; font-size: 12px; background: var(--cu-hover); }
+.cu-tool-grid .cu-button, .cu-tool-grid .cu-button > span { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
 .cu-tool-grid i { font-size: 20px; }
 .cu-sheet-note { margin: 16px 0 4px; font-size: 12px; color: var(--cu-muted); line-height: 1.6; }
 .cu-settings-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--cu-border); }
@@ -890,9 +902,15 @@ body[data-claude-ui].cu-header-hidden .cu-header { transform: translateY(-100%);
 body[data-claude-ui].cu-header-hidden #top-settings-holder { top: -48px !important; }
 body[data-claude-ui].cu-compact-composer #nonQRFormItems { grid-template-columns: auto minmax(0,1fr) auto; align-items: end; gap: 4px; min-width: 0; min-height: 36px; }
 body[data-claude-ui].cu-compact-composer #leftSendForm { grid-column: 1; grid-row: 1; flex-wrap: nowrap; }
-body[data-claude-ui].cu-compact-composer #send_textarea { grid-column: 2; grid-row: 1; min-width: 0; height: auto !important; min-height: 36px !important; max-height: min(32dvh,240px) !important; overflow-x: hidden; overflow-y: auto; padding: 7px 4px !important; line-height: 22px !important; field-sizing: content; scrollbar-width: none; }
+body[data-claude-ui].cu-compact-composer #send_textarea { grid-column: 2; grid-row: 1; min-width: 0; min-height: 36px !important; max-height: min(32dvh,240px) !important; overflow-x: hidden; overflow-y: auto; padding: 7px 4px !important; line-height: 22px !important; field-sizing: content; scrollbar-width: none; }
+@supports (field-sizing: content) { body[data-claude-ui].cu-compact-composer #send_textarea { height: auto !important; } }
 body[data-claude-ui].cu-compact-composer #send_textarea::-webkit-scrollbar { display: none; width: 0; height: 0; }
 body[data-claude-ui].cu-compact-composer #rightSendForm { grid-column: 3; grid-row: 1; flex-wrap: nowrap; }
+/* Keep room for text when optional native/extension controls fill the row. */
+body[data-claude-ui].cu-composer-crowded:is(.cu-compact-composer,[data-cu-design="adwaita"]) #nonQRFormItems { grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
+body[data-claude-ui].cu-composer-crowded:is(.cu-compact-composer,[data-cu-design="adwaita"]) #send_textarea { grid-column: 1 / -1; grid-row: 1; }
+body[data-claude-ui].cu-composer-crowded:is(.cu-compact-composer,[data-cu-design="adwaita"]) #leftSendForm { grid-column: 1; grid-row: 2; justify-self: start; }
+body[data-claude-ui].cu-composer-crowded:is(.cu-compact-composer,[data-cu-design="adwaita"]) #rightSendForm { grid-column: 2; grid-row: 2; justify-self: end; }
 body[data-claude-ui].cu-compact-composer #send_form { padding: 4px 6px !important; }
 body[data-claude-ui].cu-compact-composer :is(#leftSendForm,#rightSendForm) { align-items: center; align-self: end; min-height: 36px; gap: 2px; }
 body[data-claude-ui].cu-compact-composer :is(#options_button,#extensionsMenuButton,#send_but,#mes_continue,#mes_impersonate,#mes_stop,.stscript_btn,#quickPersona) { box-sizing: border-box; flex: 0 0 36px; width: 36px !important; min-width: 36px !important; max-width: 36px !important; height: 36px !important; min-height: 36px !important; max-height: 36px !important; margin-block: 0 !important; padding: 0 !important; line-height: 36px; text-align: center; }
@@ -1029,6 +1047,22 @@ body[data-claude-ui] #rm_extensions_block label[for="extensions_notify_updates"]
 }
 body[data-claude-ui] #extensions_notify_updates { margin: 0; position: relative; transform: none; }
 body[data-claude-ui] #rm_extensions_block :is(#extensions_details,#third_party_extension_button) { margin: 0; min-height: 36px; align-items: center; justify-content: center; }
+/* Native action margins add 10px to every row; baseline alignment also offsets
+   checkbox/name rows from their buttons. Keep touch targets, remove empty space. */
+body[data-claude-ui] .extensions_info .extension_block { align-items: center; }
+body[data-claude-ui] .extensions_info .extension_actions { align-items: center; gap: 4px; }
+body[data-claude-ui] .extensions_info .extension_actions > .menu_button { margin: 0; flex-shrink: 0; }
+body[data-claude-ui] .extensions_info .extension_name { display: block; overflow: hidden; text-overflow: ellipsis; }
+body[data-claude-ui] .extensions_info .extension_modules { white-space: normal; overflow-wrap: anywhere; }
+@media (max-width: 360px) {
+    body[data-claude-ui] .extensions_info .extension_block:has(.btn_branch):has(.btn_move):has(.btn_update:not(.displayNone)),
+    body[data-claude-ui] .extensions_info .extension_block:has(.btn_clean) { display: grid; grid-template-columns: 24px 18px minmax(0,1fr); }
+    body[data-claude-ui] .extensions_info .extension_block > .extension_actions { grid-column: 1 / -1; justify-content: flex-end; }
+}
+@media (min-width: 361px) and (max-width: 430px) {
+    body[data-claude-ui] .extensions_info .extension_block:has(.btn_branch):has(.btn_move):has(.btn_update:not(.displayNone)):has(.btn_clean) { display: grid; grid-template-columns: 24px 18px minmax(0,1fr); }
+    body[data-claude-ui] .extensions_info .extension_block > .extension_actions { grid-column: 1 / -1; justify-content: flex-end; }
+}
 /* One fixed hit box aligns every native glyph independently of Font Awesome. */
 body[data-claude-ui].cu-shell-ready.cu-native-open #top-settings-holder { align-items: center; }
 body[data-claude-ui].cu-shell-ready.cu-native-open #top-settings-holder > .drawer { display: flex; align-items: center; justify-content: center; min-width: 0; }
@@ -1050,6 +1084,8 @@ body[data-claude-ui][data-cu-message-style="banner"] #chat .mes > .cu-message-he
     mask-image: linear-gradient(to bottom,transparent 0%,#000 22%,#000 78%,transparent 100%);
 }
 .cu-sheet-body { padding: 3px; }
+body.cu-sheet-keyboard .cu-sheet { top: var(--cu-sheet-top,0px); bottom: auto; height: var(--cu-sheet-height,100dvh); }
+body.cu-sheet-keyboard .cu-sheet-panel { max-height: calc(var(--cu-sheet-height,100dvh) - 16px) !important; padding-bottom: 16px; }
 .cu-tools-footer { display: flex; justify-content: flex-start; padding: 16px 4px 2px; }
 .cu-tools-footer > .cu-button { padding: 10px 12px; }
 .cu-settings-footer { display: flex; justify-content: flex-start; padding: 20px 0 4px; }
@@ -1116,7 +1152,8 @@ body[data-claude-ui] #chat #curEditTextarea:focus-visible { outline: 2px solid v
 body[data-claude-ui] #chat .mes:has(#curEditTextarea) .mes_edit { display: none !important; }
 body[data-claude-ui] #chat .welcomePanel { background: var(--cu-surface); color: var(--cu-text); border-radius: 12px; padding: 16px; }
 @media (pointer: coarse) {
-    body[data-claude-ui] .cu-header { height: var(--cu-header); padding: 2px 4px; gap: 2px; }
+    body[data-claude-ui] .cu-sheet { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+    body[data-claude-ui] .cu-header { height: var(--cu-header); padding: 2px max(4px,env(safe-area-inset-right)) 2px max(4px,env(safe-area-inset-left)); gap: 2px; }
     body[data-claude-ui] .cu-header .cu-icon { width: 44px; height: 44px; min-width: 44px; min-height: 44px; }
     body[data-claude-ui] .cu-sheet-heading .cu-icon { width: 44px; height: 44px; }
     body[data-claude-ui] #chat .ch_name :is(.mes_button,.mes_edit_buttons .menu_button) { min-width: 44px; min-height: 44px; }
@@ -1180,7 +1217,7 @@ body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"]) {
     --cu-serif: var(--cu-sans) !important;
 }
 body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"]) :is(.cu-header,.cu-sidebar,.cu-sheet,.cu-composer-meta) { font-family: var(--cu-sans); }
-body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"]) #send_but { background: var(--cu-accent); color: var(--cu-on-accent); }
+body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"]) :is(#send_but,#mes_stop) { background: var(--cu-accent); color: var(--cu-on-accent); }
 :where(body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"])) :is(.select2-selection,.select2-dropdown) { border-radius: var(--cu-control-radius) !important; }
 :where(body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"])) :is(.drawer-content,.popup,.floating_panel) :is(input.text_pole,input[type="text"],input[type="number"],input[type="search"],input[type="password"],input[type="url"],textarea,select,.menu_button,.menu_button_icon) { border-radius: var(--cu-control-radius) !important; }
 body[data-claude-ui][data-cu-design]:not([data-cu-design="claude"]) :focus-visible { outline-color: var(--cu-accent) !important; }
@@ -1239,8 +1276,8 @@ body[data-claude-ui][data-cu-design="material"] #chat .mes[is_user="true"] .mes_
 body[data-claude-ui][data-cu-design="material"] #send_form { border: 1px solid transparent !important; border-radius: 32px; padding: 12px 18px; background: var(--cu-input) !important; box-shadow: 0 2px 8px #0000000d; }
 body[data-claude-ui][data-cu-design="material"] #send_form:focus-within { border-color: var(--cu-input-border) !important; }
 body[data-claude-ui][data-cu-design="material"] #send_textarea { padding: 10px 6px; font-size: 16px !important; }
-body[data-claude-ui][data-cu-design="material"] :is(#send_but,#leftSendForm .menu_button,#rightSendForm .menu_button) { border-radius: 50%; }
-body[data-claude-ui][data-cu-design="material"] :is(#send_but,.cu-segment .cu-button) { border-radius: 24px; }
+body[data-claude-ui][data-cu-design="material"] :is(#send_but,#mes_stop,#leftSendForm .menu_button,#rightSendForm .menu_button) { border-radius: 50%; }
+body[data-claude-ui][data-cu-design="material"] :is(#send_but,#mes_stop,.cu-segment .cu-button) { border-radius: 24px; }
 body[data-claude-ui][data-cu-design="material"] :is(.cu-sheet-panel,.popup) { border-radius: 24px; }
 /* The group owns its outline: mixed div/label rows and hidden brand controls must not create extra top corners. */
 body[data-claude-ui][data-cu-design="material"] .cu-settings-group { display: block; min-width: 0; margin-bottom: 14px; border-radius: 18px; overflow: hidden; overflow: clip; background: var(--cu-input); }
@@ -1290,7 +1327,7 @@ body[data-claude-ui][data-cu-design="adwaita"] #leftSendForm { grid-column: 1; g
 body[data-claude-ui][data-cu-design="adwaita"] #send_textarea { grid-column: 2; grid-row: 1; min-height: 32px; padding: 5px 6px; font-size: 15px !important; }
 body[data-claude-ui][data-cu-design="adwaita"] #rightSendForm { grid-column: 3; grid-row: 1; }
 body[data-claude-ui][data-cu-design="adwaita"].cu-compact-composer #send_form { padding: 2px; }
-body[data-claude-ui][data-cu-design="adwaita"] #send_but { border-radius: 6px; min-height: 32px; min-width: 32px; box-shadow: inset 0 1px #ffffff20,0 1px 2px #0001; }
+body[data-claude-ui][data-cu-design="adwaita"] :is(#send_but,#mes_stop) { border-radius: 6px; min-height: 32px; min-width: 32px; box-shadow: inset 0 1px #ffffff20,0 1px 2px #0001; }
 body[data-claude-ui][data-cu-design="adwaita"] .cu-sheet-panel { border-radius: 12px; padding: 16px; background: var(--cu-surface); }
 body[data-claude-ui][data-cu-design="adwaita"] .cu-sheet-heading { justify-content: center; font-size: 14px; font-weight: 700; text-align: center; padding-bottom: 12px; border-bottom: 1px solid var(--cu-border); }
 body[data-claude-ui][data-cu-design="adwaita"] .cu-appearance-settings { padding: 8px 12px; background: transparent; }
@@ -1334,7 +1371,7 @@ body[data-claude-ui][data-cu-design="swiss"] .cu-brand-name { font: 700 20px/24p
 body[data-claude-ui][data-cu-design="swiss"] .cu-brand-mark { color: var(--cu-text); }
 body[data-claude-ui][data-cu-design="swiss"] .cu-sidebar .cu-nav { gap: 3px; border: 0; margin-block: 12px 20px; }
 body[data-claude-ui][data-cu-design="swiss"] .cu-sidebar .cu-nav .cu-button { min-height: 40px; font-weight: 500; border-radius: 5px; border: 0; padding-inline: 12px; }
-body[data-claude-ui][data-cu-design="swiss"] :is(.cu-button,.cu-recent,.cu-design-card,.cu-settings-select,.cu-brand-name-input,#send_but,.qr--button,#options .options-content,.list-group) { border-radius: 5px; box-shadow: none; }
+body[data-claude-ui][data-cu-design="swiss"] :is(.cu-button,.cu-recent,.cu-design-card,.cu-settings-select,.cu-brand-name-input,#send_but,#mes_stop,.qr--button,#options .options-content,.list-group) { border-radius: 5px; box-shadow: none; }
 body[data-claude-ui][data-cu-design="swiss"] .cu-search { border-radius: 5px !important; background: var(--cu-input) !important; border: 1px solid var(--cu-border) !important; min-height: 34px; padding: 6px 10px; }
 body[data-claude-ui][data-cu-design="swiss"] #chat { padding-top: 32px !important; }
 body[data-claude-ui][data-cu-design="swiss"] #chat .mes { margin-bottom: 32px; }
@@ -1377,8 +1414,13 @@ body[data-claude-ui]:is([data-cu-design="material"],[data-cu-design="adwaita"]) 
 .cu-palette-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 5px 9px; font: 12px/18px var(--cu-sans); border: 1px solid var(--cu-border); border-radius: var(--cu-control-radius,8px); color: var(--cu-text); background: transparent; cursor: pointer; }
 .cu-palette-chip i { width: 12px; height: 12px; flex: none; border-radius: 50%; background: var(--cu-swatch); }
 .cu-palette-chip[aria-pressed="true"] { background: var(--cu-selected); border-color: var(--cu-text); box-shadow: inset 0 0 0 1px var(--cu-text); }
+.cu-palette-chip { min-width: 0; max-width: 100%; }
+.cu-palette-chip span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cu-palette-add { width: 32px; min-height: 32px; padding: 6px; border: 1px dashed var(--cu-border); }
 body[data-claude-ui][data-cu-design="material"] .cu-palette-chip { border-radius: 20px; }
 @media(max-width: 480px) { .cu-palette-row { align-items: flex-start; } .cu-palette-options { flex: 1 1 100%; justify-content: flex-start; } }
+body[data-claude-ui][data-cu-design] .cu-sidebar { padding-bottom: max(8px,env(safe-area-inset-bottom)); }
+body[data-claude-ui][data-cu-design].cu-sidebar-keyboard .cu-sidebar { padding-bottom: 8px; }
 
 /* Different motion cadence per family; never animate message or drawer dimensions. */
 @keyframes cu-material-enter { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: none; } }
@@ -1925,6 +1967,8 @@ body[data-claude-ui].cu-background-enabled #sheld {
 }
 body[data-claude-ui].cu-background-enabled #form_sheld { background: transparent; }
 body[data-claude-ui].cu-background-enabled #chat .mes_text :is(i,em) { color: var(--cu-text); }
+body[data-claude-ui][data-cu-palette^="custom-"].cu-background-enabled #chat .mes_text :is(i,em) { color: var(--cu-italic); }
+body[data-claude-ui][data-cu-palette^="custom-"] #chat blockquote { color: var(--cu-quote); }
 
 /* Filtering #sheld or #top-settings-holder would change fixed-drawer containing blocks. */
 body[data-claude-ui].cu-glass-enabled :is(.cu-header,#extensionTopBar) {

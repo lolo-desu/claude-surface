@@ -9,7 +9,10 @@ export function setupSheetGesture({ panel, handle, enabled, dismiss }) {
         panel.style.removeProperty('transform');
     };
     function blockClick() {
-        const stop = event => { event.preventDefault(); event.stopImmediatePropagation(); };
+        const stop = event => {
+            if (event.detail === 0) return; // Keyboard and assistive activation is not a ghost tap.
+            event.preventDefault(); event.stopImmediatePropagation();
+        };
         const clear = () => {
             clearTimeout(timer);
             doc.removeEventListener('click', stop, true);
