@@ -2,6 +2,7 @@ import * as host from '../../../../script.js';
 import * as groupChats from '../../../group-chats.js';
 import { createChatNavigator } from './chat-navigation.js';
 import { observeMessageUpdates } from './message-updates.js';
+import { setupSheetGesture } from './sheet-gesture.js';
 import { brandMarks } from './brand-marks.js';
 import { setupNativeUI } from './native-ui.js';
 import { nativeDrawerControl } from './native-controls.js';
@@ -556,13 +557,14 @@ function closeSheet(immediate = false) {
     if (!editable(state.returnFocus)) state.returnFocus?.focus({ preventScroll: true });
 }
 
-function sheet(title, { anchor, closeButton = true } = {}) {
+function sheet(title, { anchor, closeButton = true, swipeToClose = false } = {}) {
     revealHeader();
     quietNavigation();
     closeSheet(true);
     state.returnFocus = document.activeElement;
     const root = document.createElement('div');
     root.className = 'cu-sheet';
+    root.classList.toggle('cu-swipe-sheet', swipeToClose);
     root.setAttribute('role', 'presentation');
     const panel = document.createElement('section');
     panel.className = 'cu-sheet-panel';
@@ -571,27 +573,32 @@ function sheet(title, { anchor, closeButton = true } = {}) {
     panel.setAttribute('aria-modal', 'true');
     panel.setAttribute('aria-label', title);
     const handle = button(ui('关闭面板（也可向下拖动）'), 'chevron', closeSheet, 'cu-sheet-handle');
-    let drag;
-    handle.addEventListener('pointerdown', event => {
-        drag = { y: event.clientY, distance: 0 };
-        handle.setPointerCapture(event.pointerId);
-        panel.classList.add('cu-dragging');
-    });
-    handle.addEventListener('pointermove', event => {
-        if (!drag) return;
-        drag.distance = Math.max(0, event.clientY - drag.y);
-        panel.style.transform = `translateY(${drag.distance}px)`;
-    });
-    const finishDrag = () => {
-        if (!drag) return;
-        const dismiss = drag.distance > 70;
-        drag = null;
-        panel.classList.remove('cu-dragging');
-        panel.style.transform = '';
-        if (dismiss) closeSheet();
-    };
-    handle.addEventListener('pointerup', finishDrag);
-    handle.addEventListener('pointercancel', () => { drag = null; panel.style.transform = ''; panel.classList.remove('cu-dragging'); });
+    if (swipeToClose) {
+        const cleanup = setupSheetGesture({ panel, handle, enabled: () => !desktop.matches, dismiss: closeSheet });
+        root.addEventListener('cu-sheet-remove', cleanup, { once: true });
+    } else {
+        let drag;
+        handle.addEventListener('pointerdown', event => {
+            drag = { y: event.clientY, distance: 0 };
+            handle.setPointerCapture(event.pointerId);
+            panel.classList.add('cu-dragging');
+        });
+        handle.addEventListener('pointermove', event => {
+            if (!drag) return;
+            drag.distance = Math.max(0, event.clientY - drag.y);
+            panel.style.transform = `translateY(${drag.distance}px)`;
+        });
+        const finishDrag = () => {
+            if (!drag) return;
+            const dismiss = drag.distance > 70;
+            drag = null;
+            panel.classList.remove('cu-dragging');
+            panel.style.transform = '';
+            if (dismiss) closeSheet();
+        };
+        handle.addEventListener('pointerup', finishDrag);
+        handle.addEventListener('pointercancel', () => { drag = null; panel.style.transform = ''; panel.classList.remove('cu-dragging'); });
+    }
     const heading = document.createElement('div');
     heading.className = 'cu-sheet-heading';
     const label = document.createElement('span');
@@ -648,7 +655,7 @@ function nativeTarget(selector) {
 }
 
 function showTools() {
-    const content = sheet(ui('更多'), { anchor: state.invoker });
+    const content = sheet(ui('更多'), { anchor: state.invoker, closeButton: false, swipeToClose: true });
     const grid = document.createElement('div');
     grid.className = 'cu-tool-grid';
     document.querySelectorAll('#top-settings-holder > .drawer > .drawer-toggle').forEach((toggle, index) => {

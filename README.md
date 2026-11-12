@@ -1,15 +1,17 @@
-# Claude Surface 0.10.15
+# Claude Surface 0.10.16
 
 为 SillyTavern 提供 Claude、Material Design、Adwaita 和 FlatDesign 的界面扩展。
 
 | 分支 | 用途 | 当前版本 |
 | --- | --- | --- |
-| [`main`](https://github.com/lolo-desu/claude-surface/tree/main) | 主线，日常安装与更新使用 | 0.10.15 |
-| [`unstable`](https://github.com/lolo-desu/claude-surface/tree/unstable) | 开发，独立验证后再合入主线，不自动同步 | 0.10.15 |
+| [`main`](https://github.com/lolo-desu/claude-surface/tree/main) | 主线，日常安装与更新使用 | 0.10.16 |
+| [`unstable`](https://github.com/lolo-desu/claude-surface/tree/unstable) | 开发，独立验证后再合入主线，不自动同步 | 0.10.16 |
 | [`legacy`](https://github.com/lolo-desu/claude-surface/tree/legacy) | 遗产，保留本次升级前的主线版本 | 0.9.5 |
 | [`legacy-v0.8.1`](https://github.com/lolo-desu/claude-surface/tree/legacy-v0.8.1) | 早期遗产，保留原有 Claude 风格与行为 | 0.8.1 |
 
 ## 安装
+
+0.10.16：移除“更多”菜单右上角的关闭按钮。手机可从标题、空白区域或菜单卡片上向下滑动收起，不再局限于顶部横条；横条的点击／拖动区域扩大，矮横屏也保留横条。小幅慢拖回弹，明确下拉或快速下甩关闭；长菜单仍可正常滚动，已滚动的内容优先滚动而不关闭。拖动不会误触起点卡片，取消与多指触摸不会触发关闭。保留横条点击、Escape 和点击遮罩关闭，其他面板的关闭按钮保持原状。主线与开发分支同步更新。
 
 0.10.15 hotfix：修复 iOS Safari 添加到主屏幕后，酒馆外层容器与 Surface 输入区重复预留底部安全区、导致输入栏偏高的问题。安全区统一由输入区保留，常见竖屏可释放约 34px 聊天高度；矮横屏也保留 Home 指示条空间。保留输入栏结构、底部工具行及原有键盘定位逻辑；普通浏览器、Android 和桌面布局不受此 iOS 主屏幕规则影响。主线与开发分支同步更新。
 
@@ -162,6 +164,8 @@ powershell -File install-startup.ps1 -SillyTavernPath 'D:\SillyTavern'
 `tests/chat-performance.browser.mjs` 使用合成的 400／1000 条全量显示与 5000 条保留原生 100 条窗口的聊天，对比历史请求数、消息装饰访问数、主线程长任务和导航耗时；同时验证新增消息、流式正文、编辑／取消、旧楼层加载、群聊切换、原生自动滚动偏好、横幅恢复及停用。`CU_SOURCE` 指定基线代码目录，`CU_BASELINE=1` 只记录旧版行为；两版使用相同数据与 Chromium，需要默认 Seraphina 角色卡，写入请求拦截到测试内存。耗时是本机测量，不等于客户手机或 iOS TauriTavern 真机表现。
 
 `tests/ios-composer.browser.mjs` 在 Chromium 中启用酒馆现有 iOS CSS 分支并模拟安全区，验证四种风格、普通／紧凑输入栏、主屏幕／浏览器、横屏、无安全区、Android 与桌面的几何边界。通过 VisualViewport 模拟键盘展开／收起，检查输入内容、底部边界及停用后的原生安全区恢复；`CU_BASELINE_CSS` 可指定旧 CSS 对比聊天高度。模拟不等于 iPhone Safari 主屏幕应用的真机验证。
+
+`tests/sheet-gesture.browser.mjs` 使用 Chromium 的真实触摸注入，检查四种风格、手机竖横屏、从卡片下拉、防误触、短拖回弹、长菜单滚动、横向／取消／多指手势、横条点击、减少动态效果与桌面 Escape／遮罩关闭。需要本地 SillyTavern 和 Playwright Chromium，支持其他测试相同的 `CU_*` 环境变量；这不等于 iOS Safari 真机手势验证。
 
 ## 待办（待讨论，尚未实现）
 

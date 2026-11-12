@@ -599,11 +599,13 @@ body[data-claude-ui] .cu-native-icon { display: flex; justify-content: center; a
 .cu-sheet-handle { display: none; }
 .cu-sheet-handle span { display: none; }
 .cu-sheet-panel.cu-dragging { animation: none; transition: none; }
+.cu-swipe-sheet .cu-sheet-panel:focus { outline: none !important; }
 body[data-claude-ui].cu-shell-ready #top-settings-holder > .drawer > .openDrawer { animation: cu-native-in 200ms cubic-bezier(.2,.8,.2,1) both; }
 @keyframes cu-backdrop-in { from { background-color: transparent; } }
 @keyframes cu-backdrop-out { to { background-color: transparent; } }
 @keyframes cu-sheet-in { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes cu-sheet-out { to { opacity: 0; transform: translateY(40px); } }
+@keyframes cu-sheet-swipe-out { from { transform: translateY(var(--cu-sheet-release-y,0px)); } to { opacity: 0; transform: translateY(100%); } }
 @keyframes cu-native-in { from { opacity: 0; transform: translateY(-18px); } to { opacity: 1; transform: translateY(0); } }
 body[data-claude-ui] #left-nav-panel :is(#clickSlidersTips,.topRightInset:has([name="samplerHelpButton"]),#lm_button_panel_pin_div,#left-nav-panelheader) { display: none !important; }
 body[data-claude-ui] :is(.drawer-content,.popup,.floating_panel) .cu-range-row {
@@ -696,6 +698,7 @@ body[data-claude-ui]:not(.cu-baibai-tools) #left-nav-panel #completion_prompt_ma
     .cu-sheet-handle { display: grid; place-items: center; width: 64px; height: 22px; padding: 8px 14px; margin: -12px auto 10px; touch-action: none; cursor: grab; flex-shrink: 0; }
     .cu-sheet-handle svg { display: none; }
     .cu-sheet-handle::after { content: ''; width: 36px; height: 4px; border-radius: 4px; background: var(--cu-border); }
+    body[data-claude-ui] .cu-swipe-sheet .cu-sheet-handle { display: grid; width: 100%; }
     .cu-sheet-panel { animation-name: cu-sheet-mobile-in; }
     .cu-sheet-closing .cu-sheet-panel { animation-name: cu-sheet-mobile-out; }
     body[data-claude-ui] .cu-range-row { flex-basis: 100%; }
