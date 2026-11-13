@@ -2,6 +2,7 @@ import * as host from '../../../../script.js';
 import * as groupChats from '../../../group-chats.js';
 import { createChatNavigator } from './chat-navigation.js';
 import { observeMessageUpdates } from './message-updates.js';
+import { setupMessageEditControls } from './message-edit-controls.js';
 import { setupReasoningScroll } from './reasoning-scroll.js';
 import { setupSheetGesture } from './sheet-gesture.js';
 import { brandMarks } from './brand-marks.js';
@@ -18,6 +19,7 @@ import { visualEffectControls, visualEffectsOf, applyVisualEffects } from './vis
 import { createLocalizer } from './localization.js';
 import { getCurrentLocale, translate } from '../../../i18n.js';
 import { openWorldInfoEditor } from '../../../world-info.js';
+import { resetScrollHeight } from '../../../utils.js';
 
 const { closeCurrentChat, setActiveCharacter, setActiveGroup } = host;
 const ui = createLocalizer(getCurrentLocale(), translate);
@@ -103,11 +105,12 @@ function applyBranding() {
     });
 }
 
-async function storeBrandImage(file) {
+async function storeBrandImage(file, revision = (state.brandImageRevision = (state.brandImageRevision || 0) + 1)) {
     if (!file || !file.type.startsWith('image/') || file.size > 20 * 1024 * 1024) throw new Error(ui('请选择小于 20 MB 的图片。'));
     const url = URL.createObjectURL(file);
     try {
         const image = new Image(); image.src = url; await image.decode();
+        if (revision !== state.brandImageRevision) return;
         const canvas = document.createElement('canvas'); canvas.width = canvas.height = 128;
         const scale = Math.min(128 / image.naturalWidth, 128 / image.naturalHeight);
         const width = image.naturalWidth * scale, height = image.naturalHeight * scale;
@@ -290,6 +293,7 @@ function applyAppearance() {
     if (state.messageAppearance !== messageAppearance) {
         state.messageAppearance = messageAppearance; decorateMessages(config.enabled);
     }
+    state.messageEditControls?.refresh();
     if (state.reasoningEnabled !== config.enabled) {
         state.reasoningEnabled = config.enabled; state.reasoningScroll?.refresh();
         state.refreshViewport?.();
@@ -470,6 +474,8 @@ function decorateMessages(enabled = settings().enabled, messages) {
         state.messageUpdates.refreshAll(() => decorateMessages(enabled, document.querySelectorAll('#chat > .mes')));
         return;
     }
+    state.messageEditControls?.refresh(messages);
+    trackEditorWidth();
     const config = settings();
     (messages || document.querySelectorAll('#chat > .mes')).forEach(message => {
         state.nativeUI?.refreshActions(message);
@@ -534,9 +540,47 @@ function decorateMessages(enabled = settings().enabled, messages) {
     }
 }
 
+function trackEditorWidth() {
+    if (state.viewportEditor && !state.viewportEditor.isConnected) {
+        state.viewportEditor = null; state.refreshViewport?.();
+    }
+    const editor = settings().enabled ? document.getElementById('curEditTextarea') : null;
+    if (state.editorSizing?.editor === editor) return;
+    if (state.editorSizing) {
+        state.editorSizing.observer.disconnect();
+        if (state.editorSizing.frame !== null) cancelAnimationFrame(state.editorSizing.frame);
+        state.editorSizing = null;
+    }
+    if (!editor || !editor.closest('#chat')) return;
+    const text = editor.closest('.mes_text');
+    const record = { editor, width: editor.getBoundingClientRect().width, frame: null, observer: null };
+    record.observer = new ResizeObserver(() => {
+        const width = editor.getBoundingClientRect().width;
+        if (!Number.isFinite(width) || width <= 0 || Math.abs(width - record.width) < .5) return;
+        record.width = width;
+        if (record.frame !== null) return;
+        record.frame = requestAnimationFrame(() => {
+            record.frame = null;
+            if (state.editorSizing !== record || !settings().enabled || !editor.isConnected) return;
+            const legacySizing = !CSS.supports('field-sizing', 'content');
+            const chat = legacySizing ? document.getElementById('chat') : null;
+            const scrollTop = chat?.scrollTop;
+            text?.style.removeProperty('--cu-edit-min-height');
+            // Older Safari relies on the host's autosize fallback instead.
+            if (legacySizing) {
+                void resetScrollHeight(editor);
+                // Its temporary height=0 must not clamp the outer reading spot.
+                if (chat) chat.scrollTop = scrollTop;
+            }
+        });
+    });
+    state.editorSizing = record;
+    record.observer.observe(editor);
+}
+
 function captureEditorAnchor(event) {
     if (!settings().enabled) return;
-    const control = event.target.closest?.('.mes_edit,.mes_edit_done,.mes_edit_cancel');
+    const control = event.target.closest?.('.mes_edit,.mes_edit_done,.mes_edit_cancel,.mes_edit_up,.mes_edit_down');
     const text = control?.closest('.mes')?.querySelector('.mes_text');
     if (!text) return;
     state.editorAnchor = { text, top: text.getBoundingClientRect().top };
@@ -585,13 +629,14 @@ function closeSheet(immediate = false) {
     if (!editable(state.returnFocus)) focusNavigation(state.returnFocus);
 }
 
-function sheet(title, { anchor, closeButton = true, swipeToClose = false } = {}) {
+function sheet(title, { anchor, closeButton = true, swipeToClose = false, fullPage = false } = {}) {
     revealHeader();
     quietNavigation();
     closeSheet(true);
     state.returnFocus = document.activeElement;
     const root = document.createElement('div');
     root.className = 'cu-sheet';
+    root.classList.toggle('cu-full-page', fullPage);
     root.classList.toggle('cu-swipe-sheet', swipeToClose);
     root.setAttribute('role', 'presentation');
     const panel = document.createElement('section');
@@ -601,10 +646,10 @@ function sheet(title, { anchor, closeButton = true, swipeToClose = false } = {})
     panel.setAttribute('aria-modal', 'true');
     panel.setAttribute('aria-label', title);
     const handle = button(ui('关闭面板（也可向下拖动）'), 'chevron', closeSheet, 'cu-sheet-handle');
-    if (swipeToClose) {
+    if (!fullPage && swipeToClose) {
         const cleanup = setupSheetGesture({ panel, handle, enabled: () => !desktop.matches, dismiss: closeSheet });
         root.addEventListener('cu-sheet-remove', cleanup, { once: true });
-    } else {
+    } else if (!fullPage) {
         let drag;
         handle.addEventListener('pointerdown', event => {
             drag = { y: event.clientY, distance: 0 };
@@ -635,9 +680,10 @@ function sheet(title, { anchor, closeButton = true, swipeToClose = false } = {})
     if (closeButton) heading.append(button(ui('关闭'), 'close', closeSheet, 'cu-icon'));
     const content = document.createElement('div');
     content.className = 'cu-sheet-body';
-    panel.append(handle, heading, content);
+    if (!fullPage) panel.append(handle);
+    panel.append(heading, content);
     root.append(panel);
-    if (anchor && desktop.matches) {
+    if (!fullPage && anchor && desktop.matches) {
         root.classList.add('cu-sheet-anchored');
         const positionPanel = () => {
             if (!anchor.isConnected) return;
@@ -654,7 +700,7 @@ function sheet(title, { anchor, closeButton = true, swipeToClose = false } = {})
         window.addEventListener('resize', positionPanel);
         root.addEventListener('cu-sheet-remove', () => window.removeEventListener('resize', positionPanel), { once: true });
     }
-    root.addEventListener('click', event => { if (event.target === root) closeSheet(); });
+    if (!fullPage) root.addEventListener('click', event => { if (event.target === root) closeSheet(); });
     const onKey = event => {
         if (state.sheet !== root) return;
         if (event.key === 'Escape') { event.preventDefault(); event.stopImmediatePropagation(); closeSheet(); }
@@ -699,7 +745,7 @@ function showTools() {
 }
 
 function showAppearance() {
-    const content = sheet(ui('主题设置'));
+    const content = sheet(ui('主题设置'), { fullPage: true });
     content.classList.add('cu-appearance-settings');
     const row = document.createElement('div');
     row.className = 'cu-settings-row';
@@ -838,14 +884,15 @@ function showAppearance() {
     const uploadButton = button(ui('上传图标'), 'image', () => {});
     // Keep the picker inside the original user gesture in WKWebView.
     uploadButton.addEventListener('click', () => fileInput.click());
-    const clearButton = button(ui('移除自定义图标'), 'trash', () => { settings().customBrandIcon = ''; save(); applyBranding(); }, 'cu-icon');
+    const clearButton = button(ui('移除自定义图标'), 'trash', () => { state.brandImageRevision = (state.brandImageRevision || 0) + 1; settings().customBrandIcon = ''; save(); applyBranding(); }, 'cu-icon');
     clearButton.id = 'cu-clear-brand-icon';
     fileInput.addEventListener('change', async () => {
         const file = fileInput.files?.[0];
         if (!file) return;
+        const revision = state.brandImageRevision = (state.brandImageRevision || 0) + 1;
         uploadButton.disabled = true;
-        try { await storeBrandImage(file); }
-        catch (error) { toastr.error(error.message || ui('图片加载失败，请换一张图片。')); }
+        try { await storeBrandImage(file, revision); }
+        catch (error) { if (revision === state.brandImageRevision) toastr.error(error.message || ui('图片加载失败，请换一张图片。')); }
         finally { uploadButton.disabled = false; fileInput.value = ''; }
     });
     uploadRow.append(uploadLabel, preview, uploadButton, clearButton, fileInput);
@@ -1303,7 +1350,7 @@ function initialize() {
     }
     state.compatUI = setupExtensionCompatibility({ settings, save, appearanceChanged: applyAppearance, ui });
     state.themeUI = setupManagedTheme({ settings, save, report, appearanceChanged: applyAppearance });
-    state.customPaletteUI = setupCustomPaletteUI({ settings, save, sheet, button, ui, applyAppearance, showAppearance });
+    state.customPaletteUI = setupCustomPaletteUI({ settings, save, sheet: (title, options) => sheet(title, { ...options, fullPage: true }), button, ui, applyAppearance, showAppearance });
     setupHeaderScroll();
     // Browsing stored alternatives is always available. An offline right swipe
     // at the end would enter the native generation path and increment its count.
@@ -1347,11 +1394,12 @@ function initialize() {
         if (context.eventTypes[name]) context.eventSource.on(context.eventTypes[name], refreshRecents);
     }
     const chatElement = document.querySelector('#chat');
+    state.messageEditControls = setupMessageEditControls({ root: chatElement, enabled: () => settings().enabled, ui });
     state.reasoningScroll = setupReasoningScroll({ root: chatElement, enabled: () => settings().enabled });
     state.messageUpdates = observeMessageUpdates({
         root: chatElement, enabled: () => settings().enabled,
         decorate: messages => decorateMessages(true, messages),
-        contextChanged: queueContextUpdate,
+        contextChanged: () => { trackEditorWidth(); queueContextUpdate(); },
         followLoad: () => state.selecting && ctx().powerUserSettings.auto_scroll_chat_to_bottom !== false,
         canPinLoad: () => ctx().powerUserSettings.auto_scroll_chat_to_bottom !== false,
         loadKey: () => { const context = ctx(); return JSON.stringify([context.characterId, context.groupId, context.getCurrentChatId()]); },
@@ -1380,7 +1428,16 @@ function initialize() {
     const adjustViewport = () => {
         viewportFrame = null;
         const viewport = window.visualViewport;
-        const keyboardInset = viewport && document.activeElement?.id === 'send_textarea'
+        const active = document.activeElement;
+        if (active?.matches('#curEditTextarea,.reasoning_edit_textarea') && active.closest('#chat')) state.viewportEditor = active;
+        if (state.viewportEditor && !state.viewportEditor.isConnected) state.viewportEditor = null;
+        const editor = state.viewportEditor;
+        const editorKeyboard = editor && viewport && viewport.height < window.innerHeight - 100 && !state.sheet
+            && (desktop.matches || !document.body.classList.contains('cu-sidebar-open'))
+            && (active === document.body || active?.closest('.mes') === editor.closest('.mes'));
+        // A tap on an edit action can focus its button before key dismissal.
+        // Keep the viewport steady until that keyboard actually retracts.
+        const keyboardInset = settings().enabled && viewport && viewport.scale === 1 && (active?.id === 'send_textarea' || editorKeyboard)
             ? Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop) : 0;
         const value = `${keyboardInset}px`;
         if (document.body.style.getPropertyValue('--cu-bottom-inset') !== value) document.body.style.setProperty('--cu-bottom-inset', value);
@@ -1398,17 +1455,28 @@ function initialize() {
         }
         document.body.classList.toggle('cu-sheet-keyboard', sheetKeyboard);
         if (sheetKeyboard) {
+            const padding = getComputedStyle(sheetInput);
+            const fieldHeight = `${Math.max(40, sheetInput.clientHeight - parseFloat(padding.paddingTop) - parseFloat(padding.paddingBottom))}px`;
+            if (document.body.style.getPropertyValue('--cu-sheet-field-height') !== fieldHeight) document.body.style.setProperty('--cu-sheet-field-height', fieldHeight);
             const bounds = sheetInput.getBoundingClientRect(), input = document.activeElement.getBoundingClientRect();
-            if (input.bottom > bounds.bottom) sheetInput.scrollTop += input.bottom - bounds.bottom + 8;
+            // An oversized editor cannot align both edges. Leave it steady
+            // while it covers the scroller; its own caret can scroll inside.
+            if (input.height > bounds.height) {
+                if (input.top > bounds.top) sheetInput.scrollTop += input.top - bounds.top;
+                else if (input.bottom < bounds.bottom) sheetInput.scrollTop -= bounds.bottom - input.bottom;
+            } else if (input.bottom > bounds.bottom) sheetInput.scrollTop += input.bottom - bounds.bottom + 8;
             else if (input.top < bounds.top) sheetInput.scrollTop -= bounds.top - input.top + 8;
-        }
+        } else document.body.style.removeProperty('--cu-sheet-field-height');
     };
     const queueViewport = () => { if (viewportFrame === null) viewportFrame = requestAnimationFrame(adjustViewport); };
     state.refreshViewport = queueViewport;
     window.visualViewport?.addEventListener('resize', queueViewport);
     window.visualViewport?.addEventListener('scroll', queueViewport);
     window.addEventListener('resize', queueViewport);
-    for (const type of ['focusin','focusout']) document.addEventListener(type, queueViewport);
+    for (const type of ['focusin','focusout']) document.addEventListener(type, event => {
+        if (type === 'focusin' && event.target.matches?.('#curEditTextarea,.reasoning_edit_textarea') && event.target.closest('#chat')) state.viewportEditor = event.target;
+        queueViewport();
+    });
     document.querySelector('#send_textarea').addEventListener('focus', queueViewport);
     document.querySelector('#send_textarea').addEventListener('blur', () => {
         if (viewportFrame !== null) cancelAnimationFrame(viewportFrame);

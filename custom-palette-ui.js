@@ -113,7 +113,11 @@ export function setupCustomPaletteUI({ settings, save, sheet, button, ui = text 
     const page = title => {
         const content = sheet(ui(title)); content.classList.add('cu-custom-palettes'); return content;
     };
-    const back = (content, label, run) => content.append(action(label, 'chevron', run, 'cu-custom-back'));
+    const back = (content, label, run) => {
+        const heading = content.closest?.('.cu-full-page')?.querySelector('.cu-sheet-heading');
+        const control = action(label, 'chevron', run, 'cu-custom-back' + (heading ? ' cu-icon' : ''));
+        if (heading) heading.prepend(control); else content.append(control);
+    };
     const formats = (value, change) => {
         const select = element('select', 'cu-settings-select'); select.setAttribute('aria-label', ui('导出格式'));
         for (const format of ['json', 'yaml']) { const option = element('option', '', format.toUpperCase()); option.value = format; select.append(option); }
@@ -209,9 +213,9 @@ export function setupCustomPaletteUI({ settings, save, sheet, button, ui = text 
         body.append(prose, code, states, input); preview.append(side, body); return preview;
     }
 
-    function openEditor(initial) {
+    function openEditor(initial, initialMode) {
         const draft = clone(initial), raw = { light: {}, dark: {} };
-        let mode = document.body.dataset.claudeUi === 'light' ? 'light' : 'dark';
+        let mode = ['light','dark'].includes(initialMode) ? initialMode : document.body.dataset.claudeUi === 'light' ? 'light' : 'dark';
         const content = page('编辑配色'); content.classList.add('cu-custom-editor');
         back(content, '返回自定义颜色', open);
         const error = errorBox();
@@ -272,7 +276,7 @@ export function setupCustomPaletteUI({ settings, save, sheet, button, ui = text 
         footer.append(saveDraft, action('导出草稿', 'copy', () => {
             try {
                 const palette = validatedDraft();
-                openExport(palette, () => openEditor(draft));
+                openExport(palette, () => openEditor(draft, mode));
             } catch (cause) { fail(error, '请填写名称并修正颜色后再导出。', cause); }
         }));
         content.append(nameLabel, modeRow, preview); describe(content, '颜色只在上方预览中变化。可输入 6 位颜色，或用 8 位颜色设置透明度；浅色和深色会随主题自动切换。');

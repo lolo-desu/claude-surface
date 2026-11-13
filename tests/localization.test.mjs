@@ -19,7 +19,7 @@ test('Chinese locale uses consistent terminology; names and content remain uncha
  assert.equal(createLocalizer('fr-FR',(value,key)=>key.endsWith('Appearance')?'Apparence':value)('主题设置'),'Apparence');
 });
 test('every literal ui() call has a translation, including errors and accessible names',()=>{
- const source=['index.js','world-info-ui.js','custom-palette-ui.js','native-ui.js'].map(name=>fs.readFileSync(new URL(name,root),'utf8')).join('\n');const en=createLocalizer('en');
+ const source=['index.js','world-info-ui.js','custom-palette-ui.js','native-ui.js','message-edit-controls.js'].map(name=>fs.readFileSync(new URL(name,root),'utf8')).join('\n');const en=createLocalizer('en');
  for(const [,value] of source.matchAll(/ui\('([^']+)'\)/g))assert(!/[\u4e00-\u9fff]/.test(en(value)),value);
 });
 test('custom palette color labels and groups have English names',async()=>{

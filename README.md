@@ -1,15 +1,21 @@
-# Claude Surface 0.10.17
+# Claude Surface 0.10.18
 
 为 SillyTavern 提供 Claude、Material Design、Adwaita 和 FlatDesign 的界面扩展。
 
 | 分支 | 用途 | 当前版本 |
 | --- | --- | --- |
 | [`main`](https://github.com/lolo-desu/claude-surface/tree/main) | 主线，日常安装与更新使用 | 0.10.16 |
-| [`unstable`](https://github.com/lolo-desu/claude-surface/tree/unstable) | 开发，独立验证后再合入主线，不自动同步 | 0.10.17 |
+| [`unstable`](https://github.com/lolo-desu/claude-surface/tree/unstable) | 开发，独立验证后再合入主线，不自动同步 | 0.10.18 |
 | [`legacy`](https://github.com/lolo-desu/claude-surface/tree/legacy) | 遗产，保留本次升级前的主线版本 | 0.9.5 |
 | [`legacy-v0.8.1`](https://github.com/lolo-desu/claude-surface/tree/legacy-v0.8.1) | 早期遗产，保留原有 Claude 风格与行为 | 0.8.1 |
 
 ## 安装
+
+0.10.18 开发版：外观设置与其下的配色管理、编辑、导入和导出统一改为整页，标题、返回和关闭入口固定在顶部，内容在页面内部滚动。整页边缘不再触发浮层的点击外部关闭，横屏安全区也可正常触碰而不会丢失草稿。键盘展开时限制过高的导入文本框，避免滚动定位反复跳动。
+
+编辑消息时，消息正文上方新增一套编辑操作，底部原生操作保留；长消息可在顶部直接确认、取消、复制和上下切换，不必滚到底部。顶部操作使用当前消息的原生行为，保留删除／复制确认和第三方扩展按钮。正在编辑时的键盘避让同时覆盖消息编辑器，操作按钮获得焦点期间保持位置；跨长消息移动时保留阅读锚点。横竖屏或侧栏改变编辑区宽度时重新适配高度，避免旧阅读高度留下大片空白；只改变高度的键盘展开不会清除该锚点。未编辑的消息不创建这套按钮或逐条挂接观察器。
+
+本版还修复自定义品牌图片异步解码覆盖移除或新上传结果的问题。只发布至 `unstable`；主线保持 0.10.16，等待开发版实机验收。
 
 0.10.17 开发版：主题色末尾新增“＋”，可为当前设计创建、预览、保存、编辑和删除自定义配色，并通过 JSON／YAML 导入、导出。每套配色分别保存浅色与深色的 24 项颜色，包括正文引用、斜体、下划线和代码语法颜色；草稿只改变预览，保存后才应用并出现新色卡。主线保持 0.10.16，等待开发版实机验收后再决定合入。
 
@@ -188,5 +194,9 @@ powershell -File install-startup.ps1 -SillyTavernPath 'D:\SillyTavern'
 `tests/extension-rows.browser.mjs` 覆盖原生更新／清理等 3–5 个按钮、模块说明、窄屏和中英文／德文；`tests/generation-controls.browser.mjs` 检查停止图标、原生生成状态、键盘触发一次和脚本按钮占位。`tests/chat-actions.browser.mjs` 使用延迟请求复现聊天／首页竞争，并检查最后一次操作；`tests/native-ownership.browser.mjs`、`tests/focus-lifecycle.browser.mjs` 和 `tests/viewport-lifecycle.browser.mjs` 检查启停恢复、键盘焦点、设置输入、侧栏、安全区和旋转。支持 `CU_SOURCE`、`CU_TEST_URL`、浏览器可执行路径及输出目录；新增用例也可通过 `CU_ENGINE=webkit` 使用 WebKit。所有写入及生成请求均拦截到测试资料中。
 
 `tests/ime-navigation.browser.mjs` 使用 Chromium 的真实输入法组词事件及 WebKit 组合键事件夹具，检查取消组词与随后正常 Escape；`tests/toolbar-keyboard.browser.mjs` 检查长按空格和第三方入口。`tests/mobile-controls-layout.browser.mjs` 检查 Adwaita 普通输入栏、多操作按钮与横屏弹窗安全区，`tests/reasoning-touch.browser.mjs` 使用 Chromium 触摸注入检查思考框内外滚动互不争抢。
+
+`tests/appearance-pages.browser.mjs` 检查四种风格和手机／桌面的整页层级、固定标题、返回、内部滚动、键盘及安全区边缘；`tests/message-edit-controls.browser.mjs`、`tests/message-edit-compat.browser.mjs` 和 `tests/message-edit-focus.browser.mjs` 使用实际原生长消息编辑器，验证双端按钮只执行一次、草稿复制／确认／取消、跨消息移动、第三方按钮、焦点和清理。`tests/brand-image-lifecycle.browser.mjs` 用可控的图片解码顺序回归移除／替换上传操作。测试全部使用合成聊天和拦截的保存请求。
+
+`tests/message-edit-layout.browser.mjs` 定向检查长消息上下端操作、键盘、长标签及旋转；`CU_RESIZE_ONLY=1` 运行编辑区宽度变化检查，`tests/message-edit-reading.browser.mjs` 验证键盘完成后的阅读焦点和属性恢复。`tests/editor-width-legacy.browser.mjs` 模拟不支持自动文本框尺寸的旧版浏览器，检查侧栏改变宽度时的高度重算、阅读位置及原文保留。各脚本开头说明其浏览器与 `CU_*` 参数；真实触摸注入使用 Chromium，WebKit 与 iOS 键盘／安全区模拟的范围分别记录。
 
 安全区、键盘可视区域、PWA 及旧版浏览器能力的受控模拟不等于 iPhone Safari 添加到主屏幕后的真机验收；开发版需由使用者补充该环境检查。

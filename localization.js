@@ -1,6 +1,7 @@
 // Surface-owned messages only. Native controls and user-authored names/content
 // remain under SillyTavern's localization and data ownership.
 export const messages = {
+    '消息编辑操作':'Message editing actions', '编辑操作':'Editing action',
     'SillyTavern 首页':'SillyTavern home', 'Claude 首页':'Claude home',
     '停用界面':'Disable interface', '停用 Claude Surface':'Disable Claude Surface',
     '请选择小于 20 MB 的图片。':'Choose an image smaller than 20 MB.',
