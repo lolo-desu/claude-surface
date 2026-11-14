@@ -1,6 +1,7 @@
 import * as host from '../../../../script.js';
 import * as groupChats from '../../../group-chats.js';
 import { createChatNavigator } from './chat-navigation.js';
+import { setupNativePerformance } from './native-performance.js';
 import { observeMessageUpdates } from './message-updates.js';
 import { setupMessageEditControls } from './message-edit-controls.js';
 import { setupReasoningScroll } from './reasoning-scroll.js';
@@ -36,7 +37,7 @@ const media = matchMedia('(prefers-color-scheme: dark)');
 const desktop = matchMedia('(min-width: 900px) and (pointer: fine), (min-width: 1101px)');
 const shortViewport = matchMedia('(max-height: 500px) and (pointer: coarse)');
 const mediaReduced = matchMedia('(prefers-reduced-motion: reduce)');
-const defaults = { enabled: true, mode: 'dark', serif: true, background: false, nativeToolbar: false, quickRepliesCollapsed: false, compactComposer: false, headerMode: 'always', sidebarPinned: false, useNativeHome: false, messageStyle: 'minimal', brandName: 'Claude', brandIcon: 'claude', customBrandIcon: '', recentCharacters: [] };
+const defaults = { enabled: true, mode: 'dark', serif: true, background: false, nativeToolbar: false, nativePerformance: false, quickRepliesCollapsed: false, compactComposer: false, headerMode: 'always', sidebarPinned: false, useNativeHome: false, messageStyle: 'minimal', brandName: 'Claude', brandIcon: 'claude', customBrandIcon: '', recentCharacters: [] };
 const state = { initialized: false, recents: [], sheet: null, returnFocus: null, refreshing: false };
 const icons = {
     sidebar: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M5.8 8v8"/>',
@@ -226,6 +227,8 @@ function syncBackgroundLayer(enabled) {
 
 function applyAppearance() {
     const config = settings();
+    state.nativePerformance?.refresh();
+    document.querySelectorAll('[data-cu-native-performance]').forEach(input => { input.checked = config.nativePerformance === true; });
     syncBackgroundLayer(config.enabled);
     applyBranding();
     const mode = appearanceMode(config);
@@ -909,7 +912,7 @@ function showAppearance() {
         section.append(heading, list); return section;
     };
     const effectsSection = group(ui('背景与毛玻璃'), [backgroundRow, ...effectsRows, effectsReset]); effectsSection.classList.add('cu-effects-section');
-    content.append(designGrid, group(ui('外观'), [row, paletteRow, fontRow]), effectsSection, group(ui('聊天'), [messageRow, qrRow, ...layoutRows]), group(ui('布局'), [toolbarRow, homeRow, headerRow]), group(ui('品牌'), [fixedBrandRow, nameRow, iconRow, uploadRow]), footer);
+    content.append(designGrid, group(ui('外观'), [row, paletteRow, fontRow]), effectsSection, group(ui('聊天'), [messageRow, qrRow, ...layoutRows, nativePerformanceControl()]), group(ui('布局'), [toolbarRow, homeRow, headerRow]), group(ui('品牌'), [fixedBrandRow, nameRow, iconRow, uploadRow]), footer);
     refreshEffectControls();
     refreshPaletteControls();
     applyBranding();
@@ -1014,10 +1017,13 @@ function renderRecents(entities) {
 function characterEntities() {
     const context = ctx();
     return [
-        ...context.characters.map((char, id) => ({ key: char.avatar, id, name: char.name || char.avatar, avatar: char.avatar, favorite: [true, 'true'].includes(char.fav ?? char.data?.extensions?.fav), detail: (char.data?.tags || char.tags || []).join(' · ') })),
-        ...context.groups.map(group => ({ key: `group:${group.id}`, group: group.id, name: group.name, avatar: group.avatar_url, detail: `${group.members?.length || 0} 位成员 · 群聊` })),
+        ...context.characters.map(characterEntity),
+        ...context.groups.map(groupEntity),
     ];
 }
+
+const characterEntity = (char, id) => ({ key: char.avatar, id, name: char.name || char.avatar, avatar: char.avatar, favorite: [true, 'true'].includes(char.fav ?? char.data?.extensions?.fav), detail: (char.data?.tags || char.tags || []).join(' · ') });
+const groupEntity = group => ({ key: `group:${group.id}`, group: group.id, name: group.name, avatar: group.avatar_url, detail: `${group.members?.length || 0} 位成员 · 群聊` });
 
 function avatarElement(entity) {
     const avatar = document.createElement('span');
@@ -1133,12 +1139,17 @@ function renderHome(entities) {
     if (!list.children.length) { const empty = document.createElement('p'); empty.className = 'cu-empty'; empty.textContent = ui('还没有最近聊天'); list.append(empty); }
 }
 
-function queueContextUpdate() {
+function queueContextUpdate(refreshLists = true) {
+    state.contextRefreshLists ||= refreshLists;
     if (state.contextFrame != null) return;
-    state.contextFrame = requestAnimationFrame(() => { state.contextFrame = null; updateContext(); });
+    state.contextFrame = requestAnimationFrame(() => {
+        state.contextFrame = null;
+        const refresh = state.contextRefreshLists; state.contextRefreshLists = false;
+        updateContext(refresh);
+    });
 }
 
-function updateContext() {
+function updateContext(refreshLists = true) {
     if (!settings().enabled) return;
     const context = ctx();
     const home = context.characterId == null && !context.groupId && (!!document.querySelector('#chat .welcomePanel') || context.chat.every(message => message.is_system));
@@ -1151,8 +1162,9 @@ function updateContext() {
     state.chatTitle = home ? ui('新建对话') : (context.groups.find(group => group.id === context.groupId)?.name || context.characters[context.characterId]?.name || context.name2 || ui('对话'));
     document.querySelector('.cu-title').textContent = state.chatTitle;
     const headerAvatar = document.querySelector('.cu-header-avatar');
-    const entities = characterEntities();
-    const entity = entities.find(entity => entity.group ? entity.group === context.groupId : !context.groupId && String(entity.id) === String(context.characterId));
+    const selectedGroup = context.groupId && context.groups.find(group => group.id === context.groupId);
+    const selectedCharacter = context.characterId != null && context.characters[context.characterId];
+    const entity = selectedGroup ? groupEntity(selectedGroup) : selectedCharacter ? characterEntity(selectedCharacter, context.characterId) : null;
     state.headerEntity = home ? null : entity;
     if (state.headerEntity && headerAvatar.dataset.character !== entity.key) {
         headerAvatar.dataset.character = entity.key; headerAvatar.replaceChildren(avatarElement(entity));
@@ -1168,9 +1180,36 @@ function updateContext() {
     const textarea = document.querySelector('#send_textarea');
     textarea.placeholder = !connected ? ui('未连接到 API，请先连接模型') : home ? ui('今天我能为您做些什么？') : ui('回复');
     textarea.setAttribute('aria-label', ui('消息'));
-    if (document.querySelector('.cu-recents')) renderRecents(entities);
+    // Appending/streaming/loading older messages cannot change the catalog.
+    // Only host context/settings events and explicit UI actions rebuild lists.
+    if (refreshLists && document.querySelector('.cu-recents')) renderRecents();
     document.querySelector('.cu-return-home').hidden = !home || !settings().useNativeHome;
     syncNativePanels();
+}
+
+function nativePerformanceControl(native = false) {
+    const row = document.createElement('label'); row.className = native ? 'checkbox_label cu-performance-option' : 'cu-settings-row cu-performance-option';
+    const copy = document.createElement('span');
+    const title = document.createElement('span'); title.textContent = ui('酒馆性能模式');
+    const hint = document.createElement('small'); hint.id = native ? 'cu-extension-performance-hint' : 'cu-performance-hint';
+    hint.textContent = ui('减少打开长聊天时的渲染开销。每批最多显示 50 条，完整历史保留，可加载更早消息；下次显示消息时生效。可能影响依赖页面消息的扩展，遇到兼容问题请关闭。');
+    copy.append(title, hint);
+    const input = document.createElement('input'); input.type = 'checkbox'; input.setAttribute('role', 'switch');
+    input.id = native ? 'cu-extension-native-performance' : 'cu-native-performance'; input.dataset.cuNativePerformance = '';
+    input.checked = settings().nativePerformance === true;
+    input.setAttribute('aria-label', ui('酒馆性能模式')); input.setAttribute('aria-describedby', hint.id);
+    input.addEventListener('change', () => { settings().nativePerformance = input.checked; save(); applyAppearance(); });
+    row.append(copy, input); return row;
+}
+
+// SillyTavern calls these manifest hooks before disabling/deleting and saving.
+export function restoreNativePerformance() {
+    // A disabled extension can be imported only to run its delete hook, before
+    // its DOM-ready initializer has run. Restore persisted ownership then too.
+    state.removing = true;
+    const manager = state.nativePerformance || setupNativePerformance({ settings, powerUser: () => ctx().powerUserSettings, save });
+    manager.restore();
+    if (!state.nativePerformance) manager.destroy();
 }
 
 function registerExtensionSettings() {
@@ -1185,6 +1224,7 @@ function registerExtensionSettings() {
     const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
     for (let node; (node = walker.nextNode());) node.textContent = ui(node.textContent);
     const options = block.querySelector('.inline-drawer-content');
+    options.append(nativePerformanceControl(true));
     const companionOption = document.createElement('option'); companionOption.value = 'companion'; companionOption.textContent = ui('跟随主题伴侣');
     block.querySelector('#cu-extension-mode').append(companionOption);
     const designLabel = document.createElement('label'); designLabel.textContent = ui('设计风格 ');
@@ -1211,7 +1251,7 @@ function registerExtensionSettings() {
 }
 
 function initialize() {
-    if (state.initialized) return;
+    if (state.initialized || state.removing) return;
     state.initialized = true;
     const header = document.createElement('header');
     header.className = 'cu-header'; header.id = 'cu-header';
@@ -1337,6 +1377,7 @@ function initialize() {
     document.querySelector('#options_button')?.setAttribute('aria-label', ui('完整聊天菜单'));
     document.querySelector('#extensionsMenuButton')?.setAttribute('aria-label', ui('附件与扩展菜单'));
     registerExtensionSettings();
+    state.nativePerformance = setupNativePerformance({ settings, powerUser: () => ctx().powerUserSettings, save });
     state.nativeUI = setupNativeUI({ settings, save, button, svg, ui, showCharacters, openCharacter, characterEntities });
     for (const [id, name] of [['left-nav-panel',ui('预设')],['right-nav-panel',ui('角色卡')]]) {
         const panel = document.getElementById(id);
@@ -1388,7 +1429,10 @@ function initialize() {
     }, true);
     const context = ctx();
     for (const name of ['APP_READY','CHAT_CHANGED','CHAT_LOADED','SETTINGS_UPDATED','MAIN_API_CHANGED','CHATCOMPLETION_MODEL_CHANGED','ONLINE_STATUS_CHANGED','PERSONA_CHANGED']) {
-        if (context.eventTypes[name]) context.eventSource.on(context.eventTypes[name], () => { queueContextUpdate(); if (name.includes('CHAT') || name === 'APP_READY') void refreshRecents(); });
+        if (context.eventTypes[name]) context.eventSource.on(context.eventTypes[name], () => { state.nativePerformance?.refresh(); queueContextUpdate(); if (name.includes('CHAT') || name === 'APP_READY') void refreshRecents(); });
+    }
+    for (const name of ['SETTINGS_LOADED', 'SETTINGS_LOADED_AFTER']) {
+        if (context.eventTypes[name]) context.eventSource.on(context.eventTypes[name], () => state.nativePerformance?.refresh());
     }
     for (const name of ['CHAT_DELETED','CHAT_CREATED','CHAT_RENAMED','GROUP_CHAT_CREATED','GROUP_CHAT_DELETED']) {
         if (context.eventTypes[name]) context.eventSource.on(context.eventTypes[name], refreshRecents);
@@ -1399,7 +1443,7 @@ function initialize() {
     state.messageUpdates = observeMessageUpdates({
         root: chatElement, enabled: () => settings().enabled,
         decorate: messages => decorateMessages(true, messages),
-        contextChanged: () => { trackEditorWidth(); queueContextUpdate(); },
+        contextChanged: () => { trackEditorWidth(); queueContextUpdate(false); },
         followLoad: () => state.selecting && ctx().powerUserSettings.auto_scroll_chat_to_bottom !== false,
         canPinLoad: () => ctx().powerUserSettings.auto_scroll_chat_to_bottom !== false,
         loadKey: () => { const context = ctx(); return JSON.stringify([context.characterId, context.groupId, context.getCurrentChatId()]); },

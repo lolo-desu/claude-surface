@@ -41,14 +41,18 @@ export function setupNativeUI({ settings, svg, ui = text => text, showCharacters
     });
     let statusId = 0;
     const worldAttributes = new Map();
+    // Native updates can replace a field while leaving our sibling label.
+    const worldLabels = new Map();
+    const controlsIn = (root, selector) => root?.querySelectorAll
+        ? [...(root.matches?.(selector) ? [root] : []), ...root.querySelectorAll(selector)] : [];
     // Weak keys release removed chat controls without walking all old messages.
     const actionNames = new WeakMap();
     function refreshActions(root = document) {
         const enabled = settings().enabled;
         const selector = root === document
             ? '#top-settings-holder :is(.menu_button,.right_menu_button),#chat .ch_name .mes_button,#chat .swipe_left,#chat .swipe_right'
-            : root.id === 'top-settings-holder' ? '.menu_button,.right_menu_button' : '.ch_name .mes_button,.swipe_left,.swipe_right';
-        root.querySelectorAll(selector).forEach(control => {
+            : root?.id === 'top-settings-holder' || root?.closest?.('#top-settings-holder') ? '.menu_button,.right_menu_button' : '.ch_name .mes_button,.swipe_left,.swipe_right';
+        controlsIn(root, selector).forEach(control => {
             const record = actionNames.get(control);
             if (!enabled) {
                 if (record && control.getAttribute('aria-label') === record.applied) record.original == null ? control.removeAttribute('aria-label') : control.setAttribute('aria-label',record.original);
@@ -65,26 +69,37 @@ export function setupNativeUI({ settings, svg, ui = text => text, showCharacters
             actionNames.get(control).applied=value;
         });
     }
-    function decorateWorld() {
+    function pruneWorldAttributes() {
         for (const element of worldAttributes.keys()) if (!element.isConnected) worldAttributes.delete(element);
+        for (const [label, control] of worldLabels) {
+            if (!label.isConnected) worldLabels.delete(label);
+            else if (!control.isConnected) { label.remove(); worldLabels.delete(label); }
+        }
+    }
+    function decorateWorld(root = document) {
         if (!settings().enabled) {
-            document.querySelectorAll('.cu-wi-state-label').forEach(x=>x.remove());
+            if (!worldAttributes.size && !worldLabels.size) return;
+            for (const label of worldLabels.keys()) label.remove();
+            worldLabels.clear();
             for (const [element,attrs] of worldAttributes) for (const [name,value] of Object.entries(attrs)) value == null ? element.removeAttribute(name) : element.setAttribute(name,value);
             worldAttributes.clear(); return;
         }
         const attributes = (element,values) => {
             if (!worldAttributes.has(element)) worldAttributes.set(element,Object.fromEntries(Object.keys(values).map(key=>[key,element.getAttribute(key)])));
-            for (const [name,value] of Object.entries(values)) element.setAttribute(name,value);
+            for (const [name,value] of Object.entries(values)) if (element.getAttribute(name) !== String(value)) element.setAttribute(name,value);
         };
-        document.querySelectorAll('#WorldInfo .world_entry select[name="entryStateSelector"]').forEach(select=>{
+        controlsIn(root, '#WorldInfo .world_entry select[name="entryStateSelector"]').forEach(select=>{
             attributes(select,{'aria-label':ui('状态'),id:select.id || `cu-wi-state-${++statusId}`});
-            if (!select.previousElementSibling?.classList.contains('cu-wi-state-label')) {
-                const label = document.createElement('label'); label.className='cu-wi-state-label'; label.htmlFor=select.id; label.textContent=ui('状态'); label.addEventListener('click',event=>event.stopPropagation()); select.before(label);
+            let label = select.previousElementSibling;
+            if (!label?.classList.contains('cu-wi-state-label')) {
+                label = document.createElement('label'); label.className='cu-wi-state-label'; label.htmlFor=select.id; label.textContent=ui('状态'); label.addEventListener('click',event=>event.stopPropagation()); select.before(label);
             }
+            // Re-adopt a retained Surface label when a native tree remounts.
+            worldLabels.set(label, select);
         });
-        document.querySelectorAll('#WorldInfo .switch_input_type_icon').forEach(button=>attributes(button,{tabindex:'0'}));
-        document.querySelectorAll('#WIMultiSelector .select2-selection__clear').forEach(button=>attributes(button,{'aria-label':ui('清空全部世界书'),title:ui('清空全部世界书')}));
-        document.querySelectorAll('#WIMultiSelector .select2-selection__choice__remove').forEach(button=>attributes(button,{'aria-label':ui('移除此世界书'),title:ui('移除此世界书')}));
+        controlsIn(root, '#WorldInfo .switch_input_type_icon').forEach(button=>attributes(button,{tabindex:'0'}));
+        controlsIn(root, '#WIMultiSelector .select2-selection__clear').forEach(button=>attributes(button,{'aria-label':ui('清空全部世界书'),title:ui('清空全部世界书')}));
+        controlsIn(root, '#WIMultiSelector .select2-selection__choice__remove').forEach(button=>attributes(button,{'aria-label':ui('移除此世界书'),title:ui('移除此世界书')}));
     }
     function refreshToolbar() {
         if (!settings().enabled) { nativeAttributes.restore(); return; }
@@ -114,15 +129,11 @@ export function setupNativeUI({ settings, svg, ui = text => text, showCharacters
     }
     const paintRange = input => {
         const minimum = Number(input.min) || 0, maximum = Number(input.max) || 100;
-        input.style.setProperty('--cu-range-fill', `${Math.max(0, Math.min(100, 100 * (Number(input.value) - minimum) / (maximum - minimum || 1)))}%`);
+        const value = `${Math.max(0, Math.min(100, 100 * (Number(input.value) - minimum) / (maximum - minimum || 1)))}%`;
+        if (input.style.getPropertyValue('--cu-range-fill') !== value) input.style.setProperty('--cu-range-fill', value);
     };
-    function decorate(root = document) {
-        refreshToolbar();
-        decorateWorld();
-        refreshActions(document.getElementById('top-settings-holder'));
-        document.body.classList.toggle('cu-baibai-tools', settings().enabled && hasBaiBaiTools());
-        mobileWorld.refresh();
-        root.querySelectorAll('input[type="range"]').forEach(input => {
+    function decorateRanges(root) {
+        controlsIn(root, 'input[type="range"]').forEach(input => {
             const parent = input.parentElement;
             if (input.closest('#WorldInfo') && !compactViewport.matches) {
                 const row = parent.classList.contains('range-block-range') ? parent.parentElement : parent;
@@ -139,6 +150,14 @@ export function setupNativeUI({ settings, svg, ui = text => text, showCharacters
             }
             paintRange(input);
         });
+    }
+    function decorate() {
+        refreshToolbar();
+        pruneWorldAttributes(); decorateWorld();
+        refreshActions(document.getElementById('top-settings-holder'));
+        document.body.classList.toggle('cu-baibai-tools', settings().enabled && hasBaiBaiTools());
+        mobileWorld.refresh();
+        decorateRanges(document);
         refreshTitle();
         document.querySelectorAll('#top-settings-holder > .drawer > .drawer-toggle > .drawer-icon').forEach(icon => {
             const control = nativeDrawerControl(icon);
@@ -152,7 +171,7 @@ export function setupNativeUI({ settings, svg, ui = text => text, showCharacters
         }
     }
     decorate();
-    compactViewport.addEventListener('change', () => decorate());
+    compactViewport.addEventListener('change', () => refresh());
     document.addEventListener('input', event => {
         if (event.target.matches('input[type="range"]')) paintRange(event.target);
         if (event.target.matches('input[type="number"]')) {
@@ -160,14 +179,50 @@ export function setupNativeUI({ settings, svg, ui = text => text, showCharacters
             if (related?.type === 'range') requestAnimationFrame(() => paintRange(related));
         }
     });
-    let frame;
+    let frame = null, prunePending = false, fullPending = false;
+    const pendingRoots = new Set();
+    function queueRoot(root) {
+        if (root?.nodeType !== 1) return;
+        // Ancestor lookups scale with DOM depth, including a large native
+        // list mounted one sibling at a time in the same mutation delivery.
+        for (let parent = root; parent; parent = parent.parentElement) if (pendingRoots.has(parent)) return;
+        pendingRoots.add(root);
+        if (frame === null) frame = requestAnimationFrame(flushRoots);
+    }
+    function flushRoots() {
+        frame = null;
+        if (fullPending) { refresh(); return; }
+        if (prunePending) { prunePending = false; pruneWorldAttributes(); }
+        const roots = [...pendingRoots].filter(root => {
+            for (let parent = root.parentElement; parent; parent = parent.parentElement) if (pendingRoots.has(parent)) return false;
+            return true;
+        });
+        pendingRoots.clear();
+        for (const root of roots) {
+            if (!root.isConnected) continue;
+            decorateWorld(root); decorateRanges(root); refreshActions(root);
+        }
+    }
+    const dynamicControls = 'input[type="range"],.world_entry,select[name="entryStateSelector"],.switch_input_type_icon,.select2-selection__choice,.select2-selection__choice__remove,.select2-selection__clear,.menu_button,.right_menu_button';
     const observer = new MutationObserver(records => {
-        if (!records.some(record => [...record.addedNodes].some(node => node.nodeType === 1 && (node.matches('input[type="range"],.world_entry,.select2-selection__choice') || node.querySelector('input[type="range"],.world_entry'))))) return;
-        cancelAnimationFrame(frame); frame = requestAnimationFrame(() => decorate());
+        for (const record of records) {
+            for (const node of record.addedNodes) if (node.nodeType === 1 && (node.matches(dynamicControls) || node.querySelector(dynamicControls))) queueRoot(node);
+            if (!prunePending && [...record.removedNodes].some(node => node.nodeType === 1 && (node.matches(dynamicControls) || node.querySelector(dynamicControls)))) {
+                prunePending = true;
+                if (frame === null) frame = requestAnimationFrame(flushRoots);
+            }
+        }
     });
     observer.observe(document.getElementById('top-settings-holder'), { childList: true, subtree: true });
-    document.getElementById('top-settings-holder').addEventListener('change', () => {
-        cancelAnimationFrame(frame); frame = requestAnimationFrame(() => decorate());
+    document.getElementById('top-settings-holder').addEventListener('change', event => {
+        if (event.target.id === 'bai_bai_toolkit_world_info_list_optimization_enabled') {
+            fullPending = true;
+            if (frame === null) frame = requestAnimationFrame(flushRoots);
+            return;
+        }
+        queueRoot(event.target);
+        const related = document.getElementById(event.target.dataset?.for);
+        if (related?.type === 'range') queueRoot(related);
     });
     // Open chats directly from the native list; keep explicit editing as a separate action.
     document.addEventListener('click', event => {
@@ -181,6 +236,11 @@ export function setupNativeUI({ settings, svg, ui = text => text, showCharacters
         openCharacter(entity).catch(error => { console.error('[Claude Surface]', error); });
     }, true);
     const context = SillyTavern.getContext();
-    for (const name of ['SETTINGS_UPDATED','MAIN_API_CHANGED']) if (context.eventTypes[name]) context.eventSource.on(context.eventTypes[name], () => { decorate(); });
-    return { refreshActions, refresh: () => { refreshTitle(); refreshToolbar(); decorateWorld(); refreshActions(document.getElementById('top-settings-holder')); mobileWorld.refresh(); refreshPromptViewport(); } };
+    for (const name of ['SETTINGS_UPDATED','MAIN_API_CHANGED']) if (context.eventTypes[name]) context.eventSource.on(context.eventTypes[name], refresh);
+    function refresh() {
+        if (frame !== null) cancelAnimationFrame(frame);
+        frame = null; pendingRoots.clear(); prunePending = false; fullPending = false;
+        decorate(); refreshPromptViewport();
+    }
+    return { refreshActions, refresh };
 }

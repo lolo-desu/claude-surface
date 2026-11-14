@@ -1,6 +1,8 @@
 // Surface-owned messages only. Native controls and user-authored names/content
 // remain under SillyTavern's localization and data ownership.
 export const messages = {
+    '酒馆性能模式':'SillyTavern performance mode',
+    '减少打开长聊天时的渲染开销。每批最多显示 50 条，完整历史保留，可加载更早消息；下次显示消息时生效。可能影响依赖页面消息的扩展，遇到兼容问题请关闭。':'Reduce rendering work when opening long chats. Display up to 50 messages per batch and load earlier messages as needed; the full history is kept. Applies on the next message render. May affect extensions that depend on displayed messages; turn off if compatibility issues occur.',
     '消息编辑操作':'Message editing actions', '编辑操作':'Editing action',
     'SillyTavern 首页':'SillyTavern home', 'Claude 首页':'Claude home',
     '停用界面':'Disable interface', '停用 Claude Surface':'Disable Claude Surface',

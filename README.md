@@ -1,15 +1,21 @@
-# Claude Surface 0.10.18
+# Claude Surface 0.10.19
 
 为 SillyTavern 提供 Claude、Material Design、Adwaita 和 FlatDesign 的界面扩展。
 
 | 分支 | 用途 | 当前版本 |
 | --- | --- | --- |
 | [`main`](https://github.com/lolo-desu/claude-surface/tree/main) | 主线，日常安装与更新使用 | 0.10.16 |
-| [`unstable`](https://github.com/lolo-desu/claude-surface/tree/unstable) | 开发，独立验证后再合入主线，不自动同步 | 0.10.18 |
+| [`unstable`](https://github.com/lolo-desu/claude-surface/tree/unstable) | 开发，独立验证后再合入主线，不自动同步 | 0.10.19 |
 | [`legacy`](https://github.com/lolo-desu/claude-surface/tree/legacy) | 遗产，保留本次升级前的主线版本 | 0.9.5 |
 | [`legacy-v0.8.1`](https://github.com/lolo-desu/claude-surface/tree/legacy-v0.8.1) | 早期遗产，保留原有 Claude 风格与行为 | 0.8.1 |
 
 ## 安装
+
+0.10.19 开发版：新增默认关闭的“酒馆性能模式”，可在外观设置的“聊天”分组或原生扩展设置中开启。开启后使用酒馆原生的消息显示窗口，每批最多显示 50 条；原本设置更小的用户继续使用较小值。完整聊天数据、发送给模型的上下文和保存内容不被截断，“加载更早消息”继续由酒馆处理。切换时不强制重载当前聊天，从下次原生显示／加载消息起生效。
+
+该模式可能影响依赖页面中已显示消息的扩展，遇到兼容问题请关闭。扩展会保存原来的原生显示条数，关闭模式或停用界面时按所有权恢复；期间在酒馆原生设置中主动选择的新值会成为新的恢复值。支持生命周期 hooks 的酒馆版本在扩展管理器停用／卸载时也会先恢复；旧版酒馆或直接删除扩展目录前，请先关闭模式。若绕过恢复，可在原生“聊天显示条数”中自行调整。
+
+本版还减少原生设置局部变化时的全页扫描：新增一个控件只处理对应区域，未变化的滑块不重复写样式；聊天追加消息和加载旧楼层也不再重建完整角色目录与侧栏列表。调优使用 [Modern Web Guidance](https://github.com/GoogleChrome/modern-web-guidance-src)，相关验证见 [性能调优说明](docs/performance.md)。只发布至 `unstable`，主线保持 0.10.16。
 
 0.10.18 开发版：外观设置与其下的配色管理、编辑、导入和导出统一改为整页，标题、返回和关闭入口固定在顶部，内容在页面内部滚动。整页边缘不再触发浮层的点击外部关闭，横屏安全区也可正常触碰而不会丢失草稿。键盘展开时限制过高的导入文本框，避免滚动定位反复跳动。
 

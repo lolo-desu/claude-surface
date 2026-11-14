@@ -2475,3 +2475,6 @@ body[data-claude-ui] #chat :is(.cu-message-edit-controls,.cu-message-edit-contro
 @media (pointer: coarse) {
     body[data-claude-ui] #chat .cu-message-edit-control { min-width: 44px; min-height: 44px; }
 }
+/* Keep the native performance tradeoff next to both copies of its switch. */
+.cu-performance-option > span { min-width: 0; flex: 1; }
+.cu-performance-option small { display: block; margin-top: .4em; font-size: .8em; font-weight: normal; line-height: 1.5; opacity: .75; }
