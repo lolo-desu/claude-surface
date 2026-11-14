@@ -18,18 +18,22 @@ const properties = ['--cu-ui-opacity', '--cu-ui-backdrop', '--cu-background-filt
 // Change surface paint only; never set opacity/filter on messages or layout containers.
 export function applyVisualEffects(body, config) {
     const values = visualEffectsOf(config);
-    body.classList.toggle('cu-glass-enabled', !!config.enabled && (values.uiTransparency > 0 || values.uiBlur > 0));
-    body.classList.toggle('cu-background-blurred', !!config.enabled && !!config.background && values.backgroundBlur > 0);
+    // Keep the user's preferences intact while the opt-in performance mode
+    // avoids translucent backdrop layers and oversized blurred backgrounds.
+    const effective = config.enabled && config.nativePerformance === true
+        ? { ...values, uiTransparency: 0, uiBlur: 0, backgroundBlur: 0 } : values;
+    body.classList.toggle('cu-glass-enabled', !!config.enabled && (effective.uiTransparency > 0 || effective.uiBlur > 0));
+    body.classList.toggle('cu-background-blurred', !!config.enabled && !!config.background && effective.backgroundBlur > 0);
     if (!config.enabled) {
         for (const property of properties) body.style.removeProperty(property);
         return values;
     }
-    const opacity = 100 - values.uiTransparency;
+    const opacity = 100 - effective.uiTransparency;
     const css = [
         opacity + '%',
-        values.uiBlur ? `blur(${values.uiBlur}px)` : 'none',
-        `blur(${values.backgroundBlur}px) brightness(${(100 - values.backgroundDim) / 100})`,
-        values.backgroundBlur * 3 + 'px',
+        effective.uiBlur ? `blur(${effective.uiBlur}px)` : 'none',
+        `blur(${effective.backgroundBlur}px) brightness(${(100 - effective.backgroundDim) / 100})`,
+        effective.backgroundBlur * 3 + 'px',
         Math.round(opacity * .6) + '%',
     ];
     properties.forEach((property, index) => body.style.setProperty(property, css[index]));

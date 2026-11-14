@@ -84,3 +84,40 @@ test('switching design and day/night mode leaves all four saved effect choices i
         }
     }
 });
+
+test('performance mode suspends costly paint effects without changing saved preferences', () => {
+    const host = body();
+    const values = { uiTransparency: 40, uiBlur: 24, backgroundBlur: 18, backgroundDim: 35 };
+    const normal = Object.freeze({ enabled: true, background: true, ...values });
+    applyVisualEffects(host, normal);
+    const previous = [...host.properties];
+    const active = Object.freeze({ ...normal, nativePerformance: true });
+    assert.deepEqual(applyVisualEffects(host, active), values);
+    assert.deepEqual(visualEffectsOf(active), values);
+    assert.equal(host.classes.has('cu-glass-enabled'), false);
+    assert.equal(host.classes.has('cu-background-blurred'), false);
+    assert.equal(host.properties.get('--cu-ui-opacity'), '100%');
+    assert.equal(host.properties.get('--cu-ui-backdrop'), 'none');
+    assert.equal(host.properties.get('--cu-background-filter'), 'blur(0px) brightness(0.65)');
+    assert.equal(host.properties.get('--cu-background-spread'), '0px');
+    assert.equal(host.properties.get('--foreign-property'), 'preserved');
+    assert.deepEqual(Object.fromEntries(Object.keys(values).map(key => [key, active[key]])), values);
+    applyVisualEffects(host, normal);
+    assert.deepEqual([...host.properties], previous);
+    assert.equal(host.classes.has('cu-glass-enabled'), true);
+    assert.equal(host.classes.has('cu-background-blurred'), true);
+});
+
+test('performance effect override requires an enabled interface and an explicit boolean preference', () => {
+    for (const mode of [false, undefined, 'true', 1]) {
+        const host = body();
+        applyVisualEffects(host, { enabled: true, nativePerformance: mode, background: true, uiTransparency: 40, uiBlur: 24, backgroundBlur: 18 });
+        assert.equal(host.classes.has('cu-glass-enabled'), true);
+        assert.equal(host.classes.has('cu-background-blurred'), true);
+    }
+    const host = body();
+    applyVisualEffects(host, { enabled: true, nativePerformance: true, background: true, backgroundBlur: 18 });
+    applyVisualEffects(host, { enabled: false, nativePerformance: true, background: true, backgroundBlur: 18 });
+    assert.deepEqual([...host.classes], ['foreign-class']);
+    assert.deepEqual([...host.properties], [['--foreign-property', 'preserved']]);
+});

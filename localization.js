@@ -2,7 +2,8 @@
 // remain under SillyTavern's localization and data ownership.
 export const messages = {
     '酒馆性能模式':'SillyTavern performance mode',
-    '减少打开长聊天时的渲染开销。每批最多显示 50 条，完整历史保留，可加载更早消息；下次显示消息时生效。可能影响依赖页面消息的扩展，遇到兼容问题请关闭。':'Reduce rendering work when opening long chats. Display up to 50 messages per batch and load earlier messages as needed; the full history is kept. Applies on the next message render. May affect extensions that depend on displayed messages; turn off if compatibility issues occur.',
+    '减少长聊天和生成时的渲染开销。每批最多显示 25 条，支持的酒馆版本每秒最多刷新生成界面 10 次，并暂时关闭毛玻璃、背景模糊与装饰动效；完整历史和生成内容保留。显示条数从下次加载消息起生效，刷新频率从下次生成起生效。可能影响其他扩展，遇到兼容问题请关闭。':'Reduce rendering work in long chats and during generation. Display up to 25 messages per batch, refresh generation up to 10 times per second on supported hosts, and temporarily disable glass, background blur and decorative motion; full history and generated content are kept. The message limit applies on the next load; the refresh limit applies on the next generation. May affect other extensions; turn off if compatibility issues occur.',
+    '性能模式已暂时关闭此效果，关闭性能模式后恢复。':'Performance mode temporarily disables this effect. Turn it off to restore the effect.',
     '消息编辑操作':'Message editing actions', '编辑操作':'Editing action',
     'SillyTavern 首页':'SillyTavern home', 'Claude 首页':'Claude home',
     '停用界面':'Disable interface', '停用 Claude Surface':'Disable Claude Surface',

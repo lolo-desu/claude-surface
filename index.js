@@ -2,9 +2,11 @@ import * as host from '../../../../script.js';
 import * as groupChats from '../../../group-chats.js';
 import { createChatNavigator } from './chat-navigation.js';
 import { setupNativePerformance } from './native-performance.js';
+import { setupNativeStreaming } from './native-streaming.js';
 import { observeMessageUpdates } from './message-updates.js';
 import { setupMessageEditControls } from './message-edit-controls.js';
 import { setupReasoningScroll } from './reasoning-scroll.js';
+import { createReasoningIcons } from './reasoning-icons.js';
 import { setupSheetGesture } from './sheet-gesture.js';
 import { brandMarks } from './brand-marks.js';
 import { setupNativeUI } from './native-ui.js';
@@ -69,6 +71,7 @@ const icons = {
     collapse: '<path d="m7 4 5 5 5-5M7 20l5-5 5 5M4 12h16"/>',
 };
 const svg = (name) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || icons.sliders}</svg>`;
+const decorateReasoningIcons = createReasoningIcons({ svg });
 const star = '<svg class="cu-star" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" aria-hidden="true"><path d="M16 2v28M2 16h28M6 6l20 20M6 26 26 6M10 3l12 26M3 10l26 12M3 22l26-12M10 29 22 3"/></svg>';
 
 function brandElement() {
@@ -138,7 +141,9 @@ function refreshEffectControls(config = settings()) {
         const input = document.getElementById('cu-effect-' + control.key);
         if (!input) continue;
         input.value = values[control.key];
-        input.disabled = !!control.backgroundOnly && !config.background;
+        const reduced = config.enabled && config.nativePerformance === true && ['uiTransparency','uiBlur','backgroundBlur'].includes(control.key);
+        input.disabled = reduced || (!!control.backgroundOnly && !config.background);
+        input.title = reduced ? ui('性能模式已暂时关闭此效果，关闭性能模式后恢复。') : '';
         input.style.setProperty('--cu-range-fill', (values[control.key] - control.min) / (control.max - control.min) * 100 + '%');
         document.getElementById(input.id + '-value').value = values[control.key] + control.unit;
     }
@@ -228,6 +233,10 @@ function syncBackgroundLayer(enabled) {
 function applyAppearance() {
     const config = settings();
     state.nativePerformance?.refresh();
+    const performanceMode = config.enabled && config.nativePerformance === true;
+    document.body.toggleAttribute('data-cu-performance', performanceMode);
+    state.useReasoningMasks = performanceMode && CSS.supports('mask-image', 'url("")');
+    document.body.toggleAttribute('data-cu-reasoning-masks', state.useReasoningMasks);
     document.querySelectorAll('[data-cu-native-performance]').forEach(input => { input.checked = config.nativePerformance === true; });
     syncBackgroundLayer(config.enabled);
     applyBranding();
@@ -294,8 +303,14 @@ function applyAppearance() {
     void state.themeUI?.sync().catch(report);
     const messageAppearance = `${config.enabled}:${config.messageStyle}`;
     if (state.messageAppearance !== messageAppearance) {
-        state.messageAppearance = messageAppearance; decorateMessages(config.enabled);
+        state.messageAppearance = messageAppearance;
+        decorateReasoningIcons.cancel(); decorateMessages(config.enabled);
+    } else if (state.reasoningMaskMode !== state.useReasoningMasks) {
+        void decorateReasoningIcons.refreshAll(document.getElementById('chat'), {
+            enabled: () => settings().enabled, lightweight: () => state.useReasoningMasks,
+        }).catch(report);
     }
+    state.reasoningMaskMode = state.useReasoningMasks;
     state.messageEditControls?.refresh();
     if (state.reasoningEnabled !== config.enabled) {
         state.reasoningEnabled = config.enabled; state.reasoningScroll?.refresh();
@@ -527,12 +542,7 @@ function decorateMessages(enabled = settings().enabled, messages) {
                 restoreBannerAttributes(image);
             }
         }
-        for (const [name, icon] of [['copy','copy'],['edit','edit'],['close_all','collapse'],['edit_done','check'],['edit_cancel','close'],['delete','trash']]) {
-            const control = message.querySelector(`.mes_reasoning_${name}`);
-            if (control && !control.classList.contains('cu-reasoning-icon')) {
-                control.classList.add('cu-reasoning-icon'); control.innerHTML = svg(icon);
-            }
-        }
+        decorateReasoningIcons(message, { enabled, lightweight: state.useReasoningMasks });
     });
     const anchor = state.editorAnchor;
     if (anchor && !anchor.text.isConnected) state.editorAnchor = null;
@@ -1192,7 +1202,7 @@ function nativePerformanceControl(native = false) {
     const copy = document.createElement('span');
     const title = document.createElement('span'); title.textContent = ui('酒馆性能模式');
     const hint = document.createElement('small'); hint.id = native ? 'cu-extension-performance-hint' : 'cu-performance-hint';
-    hint.textContent = ui('减少打开长聊天时的渲染开销。每批最多显示 50 条，完整历史保留，可加载更早消息；下次显示消息时生效。可能影响依赖页面消息的扩展，遇到兼容问题请关闭。');
+    hint.textContent = ui('减少长聊天和生成时的渲染开销。每批最多显示 25 条，支持的酒馆版本每秒最多刷新生成界面 10 次，并暂时关闭毛玻璃、背景模糊与装饰动效；完整历史和生成内容保留。显示条数从下次加载消息起生效，刷新频率从下次生成起生效。可能影响其他扩展，遇到兼容问题请关闭。');
     copy.append(title, hint);
     const input = document.createElement('input'); input.type = 'checkbox'; input.setAttribute('role', 'switch');
     input.id = native ? 'cu-extension-native-performance' : 'cu-native-performance'; input.dataset.cuNativePerformance = '';
@@ -1207,9 +1217,11 @@ export function restoreNativePerformance() {
     // A disabled extension can be imported only to run its delete hook, before
     // its DOM-ready initializer has run. Restore persisted ownership then too.
     state.removing = true;
+    decorateReasoningIcons.cancel();
     const manager = state.nativePerformance || setupNativePerformance({ settings, powerUser: () => ctx().powerUserSettings, save });
     manager.restore();
     if (!state.nativePerformance) manager.destroy();
+    if (state.initialized) applyAppearance();
 }
 
 function registerExtensionSettings() {
@@ -1377,7 +1389,8 @@ function initialize() {
     document.querySelector('#options_button')?.setAttribute('aria-label', ui('完整聊天菜单'));
     document.querySelector('#extensionsMenuButton')?.setAttribute('aria-label', ui('附件与扩展菜单'));
     registerExtensionSettings();
-    state.nativePerformance = setupNativePerformance({ settings, powerUser: () => ctx().powerUserSettings, save });
+    state.nativeStreaming = setupNativeStreaming({ context: ctx, host, enabled: () => settings().enabled && settings().nativePerformance === true });
+    state.nativePerformance = setupNativePerformance({ settings, powerUser: () => ctx().powerUserSettings, save, streamingSupported: () => state.nativeStreaming.supported });
     state.nativeUI = setupNativeUI({ settings, save, button, svg, ui, showCharacters, openCharacter, characterEntities });
     for (const [id, name] of [['left-nav-panel',ui('预设')],['right-nav-panel',ui('角色卡')]]) {
         const panel = document.getElementById(id);
@@ -1443,6 +1456,7 @@ function initialize() {
     state.messageUpdates = observeMessageUpdates({
         root: chatElement, enabled: () => settings().enabled,
         decorate: messages => decorateMessages(true, messages),
+        isOwnReasoningIconChange: decorateReasoningIcons.isOwnMutation,
         contextChanged: () => { trackEditorWidth(); queueContextUpdate(false); },
         followLoad: () => state.selecting && ctx().powerUserSettings.auto_scroll_chat_to_bottom !== false,
         canPinLoad: () => ctx().powerUserSettings.auto_scroll_chat_to_bottom !== false,

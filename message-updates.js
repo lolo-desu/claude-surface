@@ -1,6 +1,6 @@
 // Mutation work is proportional to changed messages, not the entire chat.
 // Disconnect while decorating so moving avatars cannot schedule another pass.
-export function observeMessageUpdates({ root, enabled, decorate, contextChanged, followLoad = () => false, canPinLoad = () => true, loadKey = () => undefined, batchSize = 80 }) {
+export function observeMessageUpdates({ root, enabled, decorate, contextChanged, followLoad = () => false, canPinLoad = () => true, loadKey = () => undefined, isOwnReasoningIconChange = () => false, batchSize = 80 }) {
     const dirty = new Set();
     let frame = null, rootChanged = false, pinLoad = null;
     const releasePin = () => { pinLoad = null; };
@@ -22,6 +22,7 @@ export function observeMessageUpdates({ root, enabled, decorate, contextChanged,
                 // The native editor is a direct child of .mes_text. Do not
                 // traverse every streamed paragraph (including removed HTML).
                 if (text && !nodes.some(node => node.id === 'curEditTextarea')) continue;
+                if (record.target.closest?.('.mes_reasoning_actions') && isOwnReasoningIconChange(record)) continue;
                 const message = record.target.parentElement?.closest('.mes') || record.target.closest?.('.mes');
                 if (message?.parentElement === root) dirty.add(message);
             }

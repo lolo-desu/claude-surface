@@ -1,12 +1,12 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {observeMessageUpdates} from '../message-updates.js';
-function harness({enabled=true,follow=false,canPin=true,key='current'}={}){
+function harness({enabled=true,follow=false,canPin=true,key='current',isOwnReasoningIconChange}={}){
  const previous={MutationObserver:globalThis.MutationObserver,requestAnimationFrame:globalThis.requestAnimationFrame,cancelAnimationFrame:globalThis.cancelAnimationFrame};
  let callback,observer,seq=0;const frames=new Map(),listeners=new Map(),batches=[];let changed=0;
  globalThis.requestAnimationFrame=fn=>{frames.set(++seq,fn);return seq;};globalThis.cancelAnimationFrame=id=>frames.delete(id);
  globalThis.MutationObserver=class{constructor(fn){callback=fn;observer=this;}observe(){this.active=true;}disconnect(){this.active=false;}takeRecords(){return[];}};
  const root={scrollTop:5,scrollHeight:5000,addEventListener:(type,fn)=>listeners.set(type,fn)};
- const api=observeMessageUpdates({root,enabled:()=>enabled,followLoad:()=>follow,canPinLoad:()=>canPin,loadKey:()=>key,contextChanged:()=>changed++,decorate:messages=>{batches.push(messages);assert.equal(observer.active,false,'Own DOM writes must not trigger another pass');}});
+ const api=observeMessageUpdates({root,enabled:()=>enabled,followLoad:()=>follow,canPinLoad:()=>canPin,loadKey:()=>key,isOwnReasoningIconChange,contextChanged:()=>changed++,decorate:messages=>{batches.push(messages);assert.equal(observer.active,false,'Own DOM writes must not trigger another pass');}});
  const message=()=>({nodeType:1,parentElement:root,matches:s=>s==='.mes',closest:s=>s==='.mes'?null:undefined});
  const emit=records=>callback(records,observer);
  const record=(added=[],removed=[])=>({target:root,addedNodes:added,removedNodes:removed});
@@ -54,4 +54,15 @@ test('disabled Surface does not enqueue or decorate messages',()=>{
 });
 test('explicit restore cancels pending chunks and observes again after its writes',()=>{
  const h=harness();try{h.emit([h.record(Array.from({length:100},h.message))]);let restored=false;h.api.refreshAll(()=>{restored=true;});assert(restored);assert.equal(h.frames.size,0);h.emit([h.record([h.message()])]);h.tick();assert.equal(h.batches.flat().length,1);}finally{h.restore();}
+});
+test('owned reasoning glyph records skip message work, while other structural changes remain visible',()=>{
+ const h=harness({isOwnReasoningIconChange:r=>r.owned});try{
+  const m=h.message(),glyph={nodeType:1},actions={};
+  const target={closest:s=>s==='.mes_reasoning_actions'?actions:null,parentElement:{closest:()=>m}};
+  h.emit([{target,addedNodes:[glyph],removedNodes:[],owned:true}]);assert.equal(h.frames.size,0);
+  h.emit([{target,addedNodes:[],removedNodes:[glyph],owned:true}]);assert.equal(h.frames.size,0);
+  h.emit([{target,addedNodes:[glyph],removedNodes:[],owned:false}]);h.tick();assert.deepEqual(h.batches,[[m]]);
+  target.closest=()=>null;
+  h.emit([{target,addedNodes:[glyph],removedNodes:[],owned:true}]);h.tick();assert.equal(h.batches.length,2,'Ownership cannot hide non-reasoning controls');
+ }finally{h.restore();}
 });
